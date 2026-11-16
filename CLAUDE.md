@@ -20,6 +20,7 @@ Royston, étudiant ingénieur Big Data & ML (EFREI), profil data avec des bases 
 9. Toute décision technique non triviale → ADR court dans `docs/decisions/NNN-titre.md`.
 10. Sécurité : mots de passe hachés (argon2), jamais de secret dans les logs, validation de toutes les entrées, dépendances auditées en CI.
 11. Réponds à Royston en français.
+12. Ne jamais ajouter de ligne `Co-Authored-By` ni de mention de Claude dans les commits ou les PR.
 
 ## Organisation du monorepo
 - `pipeline/` — Data/ML Python (Spark, Airflow, entraînement)
