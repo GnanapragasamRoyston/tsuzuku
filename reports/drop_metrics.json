@@ -1,0 +1,636 @@
+{
+  "generated_at": "2026-11-16T21:20:13Z",
+  "run_id": "3e8b164f-1a69-4423-bf5d-df30210f0f99",
+  "data": {
+    "rows": 2114716,
+    "users": 9576,
+    "splits": {
+      "train": {
+        "rows": 1485922,
+        "users": 6702,
+        "prevalence": 0.05720084903514451
+      },
+      "val": {
+        "rows": 315549,
+        "users": 1437,
+        "prevalence": 0.06482986794443969
+      },
+      "test": {
+        "rows": 313245,
+        "users": 1437,
+        "prevalence": 0.05603281776245431
+      }
+    }
+  },
+  "selection": {
+    "dummy": {
+      "params": {},
+      "val_pr_auc": 0.06482986794443969
+    },
+    "logreg": {
+      "params": {
+        "C": 1.0,
+        "max_iter": 1000
+      },
+      "val_pr_auc": 0.3697834761730768
+    },
+    "hgb": {
+      "params": {
+        "learning_rate": 0.05,
+        "max_leaf_nodes": 31,
+        "max_iter": 300
+      },
+      "val_pr_auc": 0.425589784922097
+    }
+  },
+  "final_model": "hgb",
+  "calibration": "none",
+  "test": {
+    "dummy": {
+      "n": 313245,
+      "prevalence": 0.05603281776245431,
+      "threshold": 0.05720084903514451,
+      "roc_auc": 0.5,
+      "pr_auc": 0.05603281776245431,
+      "f1": 0.10611946299392075,
+      "precision": 0.05603281776245431,
+      "recall": 1.0,
+      "brier": 0.05289450539310786,
+      "log_loss": 0.2159219067971642,
+      "ece": 0.0011680312726902037,
+      "confusion": {
+        "tn": 0,
+        "fp": 295693,
+        "fn": 0,
+        "tp": 17552
+      }
+    },
+    "logreg": {
+      "n": 313245,
+      "prevalence": 0.05603281776245431,
+      "threshold": 0.16118458581176667,
+      "roc_auc": 0.8692297686712019,
+      "pr_auc": 0.36141601336898077,
+      "f1": 0.39614801779342035,
+      "precision": 0.3468881088947864,
+      "recall": 0.4617137648131267,
+      "brier": 0.043749449082765506,
+      "log_loss": 0.16079320266368882,
+      "ece": 0.006460496840486312,
+      "confusion": {
+        "tn": 280435,
+        "fp": 15258,
+        "fn": 9448,
+        "tp": 8104
+      }
+    },
+    "hgb": {
+      "n": 313245,
+      "prevalence": 0.05603281776245431,
+      "threshold": 0.24055477660509145,
+      "roc_auc": 0.9010120243779349,
+      "pr_auc": 0.43218248510789353,
+      "f1": 0.43690851735015773,
+      "precision": 0.39469571612428755,
+      "recall": 0.4892319963536919,
+      "brier": 0.04041871098900332,
+      "log_loss": 0.14419559348136574,
+      "ece": 0.0053043723121071135,
+      "confusion": {
+        "tn": 282524,
+        "fp": 13169,
+        "fn": 8965,
+        "tp": 8587
+      }
+    }
+  },
+  "calibration_bins_test": [
+    {
+      "mean_pred": 0.0005220930159884211,
+      "observed": 6.384676775738229e-05,
+      "n": 31325
+    },
+    {
+      "mean_pred": 0.0010934285058368967,
+      "observed": 0.00041501723917762736,
+      "n": 31324
+    },
+    {
+      "mean_pred": 0.002337333589183703,
+      "observed": 0.001819632881085395,
+      "n": 31325
+    },
+    {
+      "mean_pred": 0.005236304176551827,
+      "observed": 0.004277870003830928,
+      "n": 31324
+    },
+    {
+      "mean_pred": 0.009996635036031928,
+      "observed": 0.007661856723279275,
+      "n": 31324
+    },
+    {
+      "mean_pred": 0.018795528261503238,
+      "observed": 0.015163607342378291,
+      "n": 31325
+    },
+    {
+      "mean_pred": 0.03462530888293503,
+      "observed": 0.03048780487804878,
+      "n": 31324
+    },
+    {
+      "mean_pred": 0.06358103934217976,
+      "observed": 0.05564245810055866,
+      "n": 31325
+    },
+    {
+      "mean_pred": 0.1255807066138798,
+      "observed": 0.11291661345932831,
+      "n": 31324
+    },
+    {
+      "mean_pred": 0.35159936837923605,
+      "observed": 0.3318754988028731,
+      "n": 31325
+    }
+  ],
+  "permutation_importance_test": [
+    {
+      "feature": "user_drop_rate",
+      "importance": 0.30059162436987724,
+      "std": 0.0014400674553002278
+    },
+    {
+      "feature": "episodes",
+      "importance": 0.21549105706390104,
+      "std": 0.00221603634762068
+    },
+    {
+      "feature": "popularity",
+      "importance": 0.12415907665480037,
+      "std": 0.002018491732265053
+    },
+    {
+      "feature": "start_year",
+      "importance": 0.08878553760920796,
+      "std": 0.0005278785499673071
+    },
+    {
+      "feature": "duration_min",
+      "importance": 0.012404617823745056,
+      "std": 0.0004225266973704862
+    },
+    {
+      "feature": "genre_affinity",
+      "importance": 0.008353107794494875,
+      "std": 0.0005790319718160875
+    },
+    {
+      "feature": "main_studio",
+      "importance": 0.008109955350491771,
+      "std": 0.0006064626900886786
+    },
+    {
+      "feature": "format",
+      "importance": 0.006257552969158054,
+      "std": 0.0006178132799920705
+    },
+    {
+      "feature": "source",
+      "importance": 0.00602063158578533,
+      "std": 0.00030335778380308806
+    },
+    {
+      "feature": "genre_ecchi",
+      "importance": 0.003552889717185892,
+      "std": 0.0004601627122985367
+    },
+    {
+      "feature": "genre_adventure",
+      "importance": 0.003008004272645004,
+      "std": 0.0002222055705718986
+    },
+    {
+      "feature": "genre_sports",
+      "importance": 0.002702800967517649,
+      "std": 0.0002876558502578203
+    },
+    {
+      "feature": "genre_action",
+      "importance": 0.0026400935704823936,
+      "std": 0.00025022012415096354
+    },
+    {
+      "feature": "age_rating",
+      "importance": 0.002588679667806304,
+      "std": 0.00018989321252631738
+    },
+    {
+      "feature": "user_share_sports",
+      "importance": 0.00223141362312661,
+      "std": 0.00027346722902661273
+    },
+    {
+      "feature": "user_share_dementia",
+      "importance": 0.0018738962078014621,
+      "std": 0.0004746520614020123
+    },
+    {
+      "feature": "user_share_music",
+      "importance": 0.0018263260020810023,
+      "std": 0.00015943125173145727
+    },
+    {
+      "feature": "genre_music",
+      "importance": 0.0016174494655619154,
+      "std": 0.0001583669348436748
+    },
+    {
+      "feature": "user_share_parody",
+      "importance": 0.0014946589674880717,
+      "std": 0.00023970654525217727
+    },
+    {
+      "feature": "genre_slice_of_life",
+      "importance": 0.0014182454138757406,
+      "std": 0.0002748512887656205
+    },
+    {
+      "feature": "user_share_comedy",
+      "importance": 0.001276882156186898,
+      "std": 0.00015761887830003534
+    },
+    {
+      "feature": "user_share_school",
+      "importance": 0.0012613210120326567,
+      "std": 0.00011892553673329753
+    },
+    {
+      "feature": "genre_game",
+      "importance": 0.0012112315473716718,
+      "std": 5.7242263914055565e-05
+    },
+    {
+      "feature": "genre_comedy",
+      "importance": 0.0011854790962751217,
+      "std": 0.00022141888294740491
+    },
+    {
+      "feature": "genre_historical",
+      "importance": 0.0011416824699838402,
+      "std": 0.00010032369436640898
+    },
+    {
+      "feature": "genre_space",
+      "importance": 0.0011200449326506322,
+      "std": 0.00013703720370947077
+    },
+    {
+      "feature": "genre_drama",
+      "importance": 0.0011173026762477333,
+      "std": 7.612208896259769e-05
+    },
+    {
+      "feature": "genre_harem",
+      "importance": 0.0011053131308354502,
+      "std": 0.0002222766880699679
+    },
+    {
+      "feature": "user_share_shounen",
+      "importance": 0.0011036872486209991,
+      "std": 0.0002677707845494131
+    },
+    {
+      "feature": "user_share_game",
+      "importance": 0.0010983673717460895,
+      "std": 0.00032276241329807213
+    },
+    {
+      "feature": "user_share_demons",
+      "importance": 0.0010753191191016475,
+      "std": 0.00021398620136111918
+    },
+    {
+      "feature": "genre_mystery",
+      "importance": 0.0010277616609245198,
+      "std": 8.00430589123149e-05
+    },
+    {
+      "feature": "user_share_adventure",
+      "importance": 0.0009909734108337399,
+      "std": 0.00027126281582973177
+    },
+    {
+      "feature": "genre_fantasy",
+      "importance": 0.0009703097770410007,
+      "std": 0.000121025713472881
+    },
+    {
+      "feature": "user_share_cars",
+      "importance": 0.0009069809079501722,
+      "std": 8.250611293627967e-05
+    },
+    {
+      "feature": "user_share_space",
+      "importance": 0.0009029172879193581,
+      "std": 0.00012507935304840326
+    },
+    {
+      "feature": "genre_shoujo",
+      "importance": 0.0008942684995927209,
+      "std": 7.522014021218712e-05
+    },
+    {
+      "feature": "user_share_fantasy",
+      "importance": 0.0008020240052690975,
+      "std": 0.00011354259708059408
+    },
+    {
+      "feature": "user_share_drama",
+      "importance": 0.0007892594570973021,
+      "std": 9.495878241820668e-05
+    },
+    {
+      "feature": "genre_supernatural",
+      "importance": 0.0007168426014902863,
+      "std": 1.8757686104121335e-05
+    },
+    {
+      "feature": "user_share_action",
+      "importance": 0.0007020463341831706,
+      "std": 0.00010300364466270911
+    },
+    {
+      "feature": "user_share_harem",
+      "importance": 0.0006839225659502346,
+      "std": 0.00020992892099689158
+    },
+    {
+      "feature": "user_share_thriller",
+      "importance": 0.0006809107176822149,
+      "std": 0.00037674155478067376
+    },
+    {
+      "feature": "user_share_vampire",
+      "importance": 0.0006273825362106078,
+      "std": 6.467512864941542e-05
+    },
+    {
+      "feature": "user_share_ecchi",
+      "importance": 0.0006052674524903767,
+      "std": 0.00011710919224274777
+    },
+    {
+      "feature": "genre_school",
+      "importance": 0.0005534849263977182,
+      "std": 5.462245720247537e-05
+    },
+    {
+      "feature": "user_share_shounen_ai",
+      "importance": 0.0005416161325739411,
+      "std": 7.115487301207497e-05
+    },
+    {
+      "feature": "genre_military",
+      "importance": 0.0005261262805792532,
+      "std": 0.000187739258845573
+    },
+    {
+      "feature": "user_cd_count",
+      "importance": 0.0005234398333408107,
+      "std": 0.0005252025010820093
+    },
+    {
+      "feature": "genre_romance",
+      "importance": 0.0005112135143937935,
+      "std": 5.7411267177145035e-05
+    },
+    {
+      "feature": "user_share_supernatural",
+      "importance": 0.0005103267342291163,
+      "std": 0.0001563582960392138
+    },
+    {
+      "feature": "genre_parody",
+      "importance": 0.0004789310091966481,
+      "std": 5.086668471234547e-05
+    },
+    {
+      "feature": "user_mean_score",
+      "importance": 0.00043925876396442296,
+      "std": 0.00021100888937151716
+    },
+    {
+      "feature": "genre_seinen",
+      "importance": 0.0004367495181793912,
+      "std": 7.663679916120919e-05
+    },
+    {
+      "feature": "genre_super_power",
+      "importance": 0.0004247632135541135,
+      "std": 2.5672804702857118e-05
+    },
+    {
+      "feature": "user_share_martial_arts",
+      "importance": 0.00042326108516692605,
+      "std": 0.00013468969447104543
+    },
+    {
+      "feature": "genre_demons",
+      "importance": 0.0004179098841518125,
+      "std": 2.8171101717240305e-05
+    },
+    {
+      "feature": "user_share_mystery",
+      "importance": 0.0003753877083994883,
+      "std": 0.00011882057599652072
+    },
+    {
+      "feature": "user_share_josei",
+      "importance": 0.0003676805399972061,
+      "std": 3.210516131142597e-05
+    },
+    {
+      "feature": "genre_thriller",
+      "importance": 0.0003663160180527814,
+      "std": 9.684985418705908e-05
+    },
+    {
+      "feature": "user_share_slice_of_life",
+      "importance": 0.0003632853505389111,
+      "std": 0.00014933877522551285
+    },
+    {
+      "feature": "genre_shounen",
+      "importance": 0.000347864774140505,
+      "std": 7.964025004925332e-05
+    },
+    {
+      "feature": "genre_martial_arts",
+      "importance": 0.00034681160005867184,
+      "std": 5.5069734786418055e-05
+    },
+    {
+      "feature": "user_share_mecha",
+      "importance": 0.00032637899843555027,
+      "std": 0.00012841747216527574
+    },
+    {
+      "feature": "user_share_horror",
+      "importance": 0.00032121544242337264,
+      "std": 6.68664641791852e-05
+    },
+    {
+      "feature": "user_share_psychological",
+      "importance": 0.00028254913432070874,
+      "std": 5.6045092415696335e-05
+    },
+    {
+      "feature": "genre_samurai",
+      "importance": 0.0002801249393936778,
+      "std": 0.00012027535451856069
+    },
+    {
+      "feature": "genre_magic",
+      "importance": 0.00024272867438338564,
+      "std": 8.732778433656076e-05
+    },
+    {
+      "feature": "genre_horror",
+      "importance": 0.00021245911080629564,
+      "std": 1.9514013764139622e-05
+    },
+    {
+      "feature": "genre_psychological",
+      "importance": 0.0002079740519424833,
+      "std": 6.718012825835462e-05
+    },
+    {
+      "feature": "genre_shoujo_ai",
+      "importance": 0.00014994309140026196,
+      "std": 4.105133546766236e-05
+    },
+    {
+      "feature": "genre_josei",
+      "importance": 0.0001207813649520717,
+      "std": 9.881412959281143e-06
+    },
+    {
+      "feature": "genre_kids",
+      "importance": 0.00010506737060553828,
+      "std": 5.6284382605056895e-05
+    },
+    {
+      "feature": "genre_shounen_ai",
+      "importance": 0.00010029458117689627,
+      "std": 2.08820272977607e-05
+    },
+    {
+      "feature": "genre_cars",
+      "importance": 9.519604143111149e-05,
+      "std": 2.336805608465643e-05
+    },
+    {
+      "feature": "genre_dementia",
+      "importance": 9.420345882151792e-05,
+      "std": 1.7977483996024134e-05
+    },
+    {
+      "feature": "genre_vampire",
+      "importance": 4.948485735538633e-05,
+      "std": 9.601498475811076e-06
+    },
+    {
+      "feature": "genre_sci_fi",
+      "importance": 4.7736670421016925e-05,
+      "std": 1.3362525111051621e-05
+    },
+    {
+      "feature": "genre_mecha",
+      "importance": 2.2203089231254137e-05,
+      "std": 4.7494848873987705e-07
+    },
+    {
+      "feature": "genre_police",
+      "importance": 1.0798047343196782e-05,
+      "std": 2.649394814455826e-05
+    },
+    {
+      "feature": "user_share_yaoi",
+      "importance": 9.923300695036107e-06,
+      "std": 9.757009283017013e-05
+    },
+    {
+      "feature": "genre_yaoi",
+      "importance": 1.868642795133102e-06,
+      "std": 2.815529284394429e-05
+    },
+    {
+      "feature": "user_share_magic",
+      "importance": -6.126739571765683e-06,
+      "std": 0.0001484742822450101
+    },
+    {
+      "feature": "user_share_historical",
+      "importance": -1.2372997322684931e-05,
+      "std": 0.00015013018555586625
+    },
+    {
+      "feature": "user_share_seinen",
+      "importance": -0.00021873509562886362,
+      "std": 0.0001334879904704619
+    },
+    {
+      "feature": "user_share_romance",
+      "importance": -0.00023626004359448283,
+      "std": 0.00029793603472478934
+    },
+    {
+      "feature": "user_share_police",
+      "importance": -0.00023683382780448348,
+      "std": 5.668620557274661e-05
+    },
+    {
+      "feature": "user_share_military",
+      "importance": -0.0003328720719461886,
+      "std": 0.00018068711702260313
+    },
+    {
+      "feature": "user_share_shoujo_ai",
+      "importance": -0.000346363555653062,
+      "std": 0.00013710086956544387
+    },
+    {
+      "feature": "user_share_shoujo",
+      "importance": -0.00036133308084431717,
+      "std": 0.00015064881216862266
+    },
+    {
+      "feature": "user_share_super_power",
+      "importance": -0.0005307051270296737,
+      "std": 0.00022816556185273988
+    },
+    {
+      "feature": "user_share_kids",
+      "importance": -0.0008146552010547259,
+      "std": 0.00017415582956282295
+    },
+    {
+      "feature": "user_share_samurai",
+      "importance": -0.0008929072685951445,
+      "std": 4.801870085323194e-05
+    },
+    {
+      "feature": "user_share_sci_fi",
+      "importance": -0.0008986229175366956,
+      "std": 0.0003287972014497359
+    },
+    {
+      "feature": "user_list_size",
+      "importance": -0.002147718249586761,
+      "std": 0.00029845031250265273
+    }
+  ]
+}

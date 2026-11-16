@@ -4,12 +4,18 @@ version = "0.1.0"
 description = "Pipeline Data/ML de Tsuzuku (Spark, Airflow, entraînement)"
 requires-python = ">=3.11,<3.12"
 dependencies = [
+    # (uv trie cette liste : chaque commentaire porte sur la ligne juste en dessous)
     "kaggle>=2.2.5",
+    "matplotlib>=3.9",
+    # pandas + pyarrow : lecture de l'échantillon de features (Parquet) pour scikit-learn.
+    "pandas>=2.2",
     "psycopg[binary]>=3.2",
+    "pyarrow>=17",
     # SPEC : PySpark 3.5 (Java 17). On bloque la mineure pour ne pas changer d'API par surprise.
     "pyspark>=3.5,<3.6",
     "python-dotenv>=1.0",
     "pyyaml>=6.0",
+    "scikit-learn>=1.6",
     # kaggle 2.2.5 importe `six` sans le déclarer dans ses dépendances : on l'ajoute nous-mêmes.
     "six>=1.17.0",
 ]

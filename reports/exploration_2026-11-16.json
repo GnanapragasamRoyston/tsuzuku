@@ -1,0 +1,53 @@
+{
+  "note": "Mesures ponctuelles faites avec des scripts d'exploration (non rejoués par make). Valeurs recopiées telles quelles depuis la sortie des scripts, le 2026-11-16, sur data/parquet/clean. Elles ont motivé des décisions documentées dans les ADR cités.",
+  "measurements": [
+    {
+      "id": "phase2_drop_profile",
+      "phase": 2,
+      "source": "script d'exploration phase 2 (profil des drops, lignes Completed/Dropped jointes au catalogue) ; voir ADR 003",
+      "values": {
+        "drops_at_episode_0": 885298,
+        "drops_on_anime_with_unknown_episodes": 51714,
+        "drops_with_watched_ge_episodes": 46276,
+        "completed_with_watched_lt_episodes": 332795,
+        "anime_with_at_least_n_drops": {"10": 12426, "30": 6116, "50": 4613, "100": 3436, "500": 1849},
+        "anime_with_50_drops_and_3_episodes": 3798
+      }
+    },
+    {
+      "id": "phase2_point_of_no_return_definitions",
+      "phase": 2,
+      "source": "scratchpad ponr_options.py sur les 3 339 animes publiés dans mart.critical_episode ; voir ADR 003",
+      "values": {
+        "anime": 3339,
+        "median_initial_drop_risk": 0.0804462083020487,
+        "definitions": [
+          {"definition": "absolue, complétion >= 0.9", "found": 3305, "at_episode_1": 2022, "median_position_in_series": 0.08, "median_episode": 1},
+          {"definition": "absolue, complétion >= 0.97", "found": 3305, "at_episode_1": 553, "median_position_in_series": 0.33, "median_episode": 5},
+          {"definition": "absolue, complétion >= 0.98", "found": 3302, "at_episode_1": 337, "median_position_in_series": 0.42, "median_episode": 6},
+          {"definition": "absolue, complétion >= 0.99", "found": 3293, "at_episode_1": 117, "median_position_in_series": 0.58, "median_episode": 8},
+          {"definition": "relative, risque <= 0.5 x départ", "found": 3311, "at_episode_1": 0, "median_position_in_series": 0.27, "median_episode": 4},
+          {"definition": "relative, risque <= 0.25 x départ (retenue)", "found": 3306, "at_episode_1": 0, "median_position_in_series": 0.46, "median_episode": 6},
+          {"definition": "relative, risque <= 0.2 x départ", "found": 3301, "at_episode_1": 0, "median_position_in_series": 0.5, "median_episode": 7}
+        ]
+      }
+    },
+    {
+      "id": "phase3_population_profile",
+      "phase": 3,
+      "source": "scratchpad phase3_profile.py sur clean/animelist ; voir ADR 004",
+      "values": {
+        "completed_plus_dropped_rows": 71053711,
+        "dropped_rows": 4198605,
+        "drop_share": 0.0591,
+        "users_with_completed_or_dropped": 320335,
+        "users_with_at_least_one_drop": 227706,
+        "list_size_cd_quantiles": {"p10": 20, "p50": 142, "p90": 496, "p99": 1217},
+        "dropped_rows_unrated": 2272587,
+        "completed_rows_unrated": 10128245,
+        "distinct_genres": 41,
+        "distinct_studios": 676
+      }
+    }
+  ]
+}

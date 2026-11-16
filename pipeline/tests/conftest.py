@@ -11,7 +11,10 @@ from psycopg.conninfo import make_conninfo
 from tsuzuku_pipeline.db import loader
 from tsuzuku_pipeline.spark.session import build_spark
 
-TEST_DB = "tsuzuku_test"
+# Une base PAR exécution de pytest (suffixe = pid) : deux suites lancées en même temps (ex. un
+# relecteur qui lance les tests pendant les miens) partageaient « tsuzuku_test » ; leurs DROP
+# SCHEMA s'attendaient mutuellement et la suite se bloquait sans fin (vécu en phase 3).
+TEST_DB = f"tsuzuku_test_{os.getpid()}"
 
 TEST_SETTINGS = {
     "project": {"seed": 42},
@@ -40,19 +43,21 @@ def pg_url():
     Sans Postgres joignable, les tests `db` sont sautés en local, mais ÉCHOUENT si REQUIRE_DB=1
     (posé en CI) : un test sauté en silence en CI, c'est un test qui n'existe pas.
     """
+    name = sql.Identifier(TEST_DB)
     try:
         base = loader.database_url()
         with psycopg.connect(base, autocommit=True, connect_timeout=3) as admin:
-            exists = admin.execute(
-                "SELECT 1 FROM pg_database WHERE datname = %s", (TEST_DB,)
-            ).fetchone()
-            if not exists:
-                admin.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(TEST_DB)))
+            admin.execute(sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(name))
+            admin.execute(sql.SQL("CREATE DATABASE {}").format(name))
     except (psycopg.OperationalError, loader.LoaderError) as exc:
         if os.environ.get("REQUIRE_DB") == "1":
             raise
         pytest.skip(f"Postgres indisponible ({type(exc).__name__}) : lance `make up`")
-    return make_conninfo(base, dbname=TEST_DB)
+    yield make_conninfo(base, dbname=TEST_DB)
+    # Nettoyage : la base de cette exécution disparaît avec elle. WITH (FORCE) ferme une
+    # connexion de test restée ouverte au lieu d'attendre.
+    with psycopg.connect(base, autocommit=True, connect_timeout=3) as admin:
+        admin.execute(sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(name))
 
 
 @pytest.fixture

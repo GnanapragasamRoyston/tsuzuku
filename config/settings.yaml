@@ -10,6 +10,7 @@ paths:
   parquet: data/parquet
   samples: data/samples
   marts: data/marts
+  features: data/features
   models: models
   reports: reports
 
@@ -18,6 +19,8 @@ spark:
   driver_memory: 6g
   # Partitions de shuffle : 200 par défaut, trop pour du local[*] ; ~2-3x le nombre de cœurs.
   shuffle_partitions: 48
+  # Déversement disque de Spark : PAS /tmp (tmpfs en RAM sous WSL, saturé en phase 3).
+  local_dir: data/.spark-tmp
 
 data:
   # Slug vérifié via l'API Kaggle le 2026-11-16 (kaggle datasets list -s ...). Licence lue dans les
@@ -54,6 +57,42 @@ retention:
   min_interactions: 1000  # lignes Completed + Dropped
   min_anime: 5
 
+drop_model:
+  # Features calculées par Spark sur les 71 M lignes Completed/Dropped, puis échantillon
+  # d'utilisateurs (toutes leurs lignes) pour scikit-learn. 3 % ≈ 2,1 M lignes (validé le 2026-11-16).
+  sample_user_fraction: 0.03
+  # Split par utilisateur (GroupShuffleSplit) : le reste va au train.
+  val_fraction: 0.15
+  test_fraction: 0.15
+  # Studios : les N plus fréquents du train gardent leur catégorie, les autres → « infrequent ».
+  top_studios: 30
+  # Grilles de recherche, sélection sur la PR-AUC de validation.
+  logreg:
+    C: [0.1, 1.0]
+    max_iter: 1000
+  hgb:
+    learning_rate: [0.05, 0.1]
+    max_leaf_nodes: [31, 63]
+    max_iter: 300
+  # Calibration : none | isotonic. Pas de pondération des classes (probabilités honnêtes) ;
+  # isotonique seulement si la courbe de calibration du meilleur modèle dévie (décidé après mesure).
+  calibration: none
+  # Importance par permutation sur un sous-échantillon du test (coût ∝ lignes × répétitions).
+  permutation_rows: 200000
+  permutation_repeats: 5
+
+key_figures:
+  # Exemples mis en avant dans reports/key_figures (épisode critique, point de non-retour).
+  # Titres EXACTS tels qu'ils figurent dans anime.csv (vérifiés dans catalog.media le 2026-11-16).
+  # Guillemets obligatoires : « Fullmetal Alchemist: Brotherhood » sans guillemets est lu par
+  # YAML comme un dictionnaire (à cause du « : »).
+  showcase_titles:
+    - "Death Note"
+    - "Naruto"
+    - "Steins;Gate"
+    - "Shingeki no Kyojin"
+    - "Sword Art Online"
+    - "Fullmetal Alchemist: Brotherhood"
+
 # Sections complétées dans les phases suivantes :
-# drop_model:       (phase 3) taille d'échantillon, seuils
 # als:              (phase 4) seuils d'activité, grille rank/regParam, note par défaut d'onboarding

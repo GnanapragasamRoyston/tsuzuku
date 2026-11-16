@@ -4,7 +4,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help setup up down db-check lint format test audit \
-        data spark train reco api web migrate
+        data spark train figures reco api web migrate
 
 PY_PROJECTS := pipeline backend
 
@@ -55,9 +55,18 @@ data: ## [phase 1] Téléchargement Kaggle, Parquet, filtre adulte, rapport qual
 spark: ## [phase 2] Transformations Spark -> marts Postgres (catalogue + drop + rétention)
 	cd pipeline && uv run python -m tsuzuku_pipeline.spark_cli $(ARGS)
 
+# --- Modèle de drop (phase 3) -----------------------------------------------
+# Nécessite `make data` (et `make up` pour l'enregistrement du run). Features recalculées
+# seulement si périmées ; un changement de grille réentraîne sans relancer Spark.
+train: ## [phase 3] Modèle de drop : features Spark, 3 modèles sklearn, métriques, artefact
+	cd pipeline && uv run python -m tsuzuku_pipeline.train_cli $(ARGS)
+
+# --- Chiffres clés ------------------------------------------------------------
+# Regroupe les chiffres des rapports générés (aucun calcul, aucune saisie à la main) pour export.
+figures: ## Chiffres clés de toutes les phases -> reports/key_figures.{json,md}
+	cd pipeline && uv run python -m tsuzuku_pipeline.key_figures
+
 # --- Phases suivantes (pas encore implémentées) ----------------------------
-train: ## [phase 3] Entraînement du modèle de drop
-	@echo "Pas encore implémenté (phase 3)"; exit 1
 reco: ## [phase 4] Entraînement ALS
 	@echo "Pas encore implémenté (phase 4)"; exit 1
 api: ## [phase 5] Lance l'API FastAPI en local

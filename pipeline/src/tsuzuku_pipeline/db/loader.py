@@ -19,6 +19,7 @@ import psycopg
 from dotenv import load_dotenv
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict
+from psycopg.types.json import Jsonb
 
 from tsuzuku_pipeline.config import REPO_ROOT
 from tsuzuku_pipeline.spark.build_catalog import MEDIA_COLUMNS
@@ -296,3 +297,46 @@ def _replace_mart(
             n = _copy(conn, target, columns, rows)
     logger.info("mart.%s : %d lignes chargées", name, n)
     return n
+
+
+MODEL_RUN_FIELDS = (
+    "run_id",
+    "created_at",
+    "model_name",
+    "model_type",
+    "params",
+    "metrics",
+    "data_fingerprint",
+    "artifact",
+)
+
+
+def insert_model_run(conn: psycopg.Connection, run: dict[str, Any]) -> bool:
+    """Enregistre un entraînement dans mart.model_runs (ajout seul).
+
+    Idempotent par run_id : réenregistrer le même run (ex. `make train` relancé sans réentraîner)
+    ne crée pas de doublon. Renvoie True si une ligne a été ajoutée.
+    """
+    missing = [f for f in MODEL_RUN_FIELDS if f not in run]
+    if missing:
+        raise LoaderError(f"model_run incomplet : {', '.join(missing)}")
+    with conn.transaction():
+        cur = conn.execute(
+            "INSERT INTO mart.model_runs"
+            " (run_id, created_at, model_name, model_type, params, metrics, data_fingerprint,"
+            " artifact) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+            " ON CONFLICT (run_id) DO NOTHING",
+            (
+                run["run_id"],
+                run["created_at"],
+                run["model_name"],
+                run["model_type"],
+                Jsonb(run["params"]),
+                Jsonb(run["metrics"]),
+                run["data_fingerprint"],
+                run["artifact"],
+            ),
+        )
+    added = cur.rowcount == 1
+    logger.info("mart.model_runs : run %s %s", run["run_id"], "ajouté" if added else "déjà présent")
+    return added

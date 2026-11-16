@@ -125,3 +125,58 @@ lignes. Kaplan-Meier complet gardé comme piste.
    Postgres n'est pas fait pour scanner 107 M lignes à chaque calcul ; Spark parallélise sur tous
    les cœurs et lit du Parquet colonnaire. Postgres sert les *résultats* (quelques centaines de
    milliers de lignes) à l'API et à Power BI, avec index et contraintes.
+
+## Phase 3 — Modèle de drop (2026-11-16)
+**Ce qui a été construit :** `make train` calcule avec Spark les features des 71 M lignes
+Completed/Dropped, entraîne trois modèles scikit-learn sur 3 % des utilisateurs, puis écrit
+`reports/drop_metrics.json`, quatre figures, une fiche modèle et un artefact archivé par run.
+
+**Concepts clés :**
+- **PR-AUC plutôt que ROC-AUC** : avec 5,91 % de drops, la ROC-AUC est flattée par la masse des
+  négatifs faciles à classer. La PR-AUC ne regarde que la classe rare (précision et rappel) ; son
+  plancher est le taux de positifs (0,056 sur le test), pas 0,5. C'est elle qui sert à choisir.
+- **Split par groupe** : toutes les lignes d'un utilisateur vont dans un seul des trois lots
+  (`GroupShuffleSplit`, 6 702 / 1 437 / 1 437 utilisateurs). Sinon le modèle reconnaît un profil
+  déjà vu à l'entraînement et les métriques sont trop optimistes pour un nouvel utilisateur.
+- **Leave-one-out et fuite de la cible** : le taux de drop d'un utilisateur est calculé sans la
+  ligne qu'on prédit, sinon la réponse est dans la feature. Même logique pour les colonnes
+  interdites (`watched_episodes`, note de la ligne, agrégats MAL) : un test bloque leur retour.
+- **Training-serving skew** : les features sont codées deux fois, en Spark (entraînement) et en
+  Python pur (API). Si les deux versions divergent, le modèle reçoit en production des valeurs
+  qu'il n'a jamais vues. Un test de parité les compare valeur par valeur sur un même jeu.
+- **Calibration et ECE** : un modèle est calibré si, parmi les cas notés « 30 % », environ 30 %
+  lâchent vraiment. L'ECE est l'écart moyen entre probabilité prédite et taux observé, par
+  déciles. Ici 0,0053 sans correction : la calibration isotonique n'a pas été activée.
+- **Importance par permutation** : on mélange une colonne du test et on mesure la perte de PR-AUC.
+  Elle dit *quelles* variables comptent, pas *dans quel sens*. Des variables corrélées (les parts
+  de genre) se compensent : leur importance individuelle est sous-estimée.
+- **Disque local de Spark** : sous WSL, `/tmp` est un tmpfs en RAM ; le job y a échoué (« No space
+  left on device »). Correctif : `spark.local.dir` sur le disque, et jointure broadcast des totaux
+  par utilisateur (≈ 320 000 lignes) au lieu d'un shuffle des 71 M lignes.
+- **Tests isolés** : deux suites lancées en même temps sur la même base de test se bloquaient.
+  Chaque exécution crée maintenant sa propre base jetable.
+
+**Pourquoi ce choix :** voir [ADR 004](decisions/004-modele-de-drop.md). `class_weight="balanced"`
+écarté : il gonfle les probabilités, or l'appli affiche un pourcentage. Split aléatoire par ligne
+écarté (fuite par l'utilisateur). Calibration isotonique codée mais laissée inactive, l'ECE étant
+déjà faible. Figure précision-rappel de la baseline : une droite horizontale au taux de positifs,
+car la diagonale tracée d'abord était trompeuse. Piste non traitée : intervalles de confiance par
+bootstrap par utilisateur sur la PR-AUC test.
+
+**3 questions d'entretien possibles :**
+1. *Ton modèle a une ROC-AUC de 0,90 : il est bon ?*
+   Ce chiffre seul ne suffit pas avec 5,6 % de positifs sur le test. Je regarde la PR-AUC : 0,432
+   pour le gradient boosting, contre 0,361 pour la régression logistique et 0,056 pour la baseline.
+   Au seuil choisi sur la validation (0,241), la précision est de 0,395 et le rappel de 0,489 :
+   8 587 drops détectés sur 17 552, pour 13 169 fausses alertes.
+2. *Comment t'assures-tu qu'il n'y a pas de fuite de données ?*
+   Trois garde-fous. Le split est fait par utilisateur. Les features utilisateur sont en
+   leave-one-out. Une liste de colonnes interdites est testée automatiquement : par exemple, 54 %
+   des drops ne sont pas notés contre 15 % des Completed, donc la note révèle presque l'issue.
+   Le test n'est évalué qu'une fois ; hyperparamètres, modèle et seuil sont choisis sur la validation.
+   Limite assumée : le dataset n'a pas de dates, donc pas de split temporel.
+3. *Quelles variables comptent le plus, et que peux-tu en conclure ?*
+   En perte de PR-AUC par permutation : le taux de drop historique de l'utilisateur (0,301), le
+   nombre d'épisodes (0,215), le rang de popularité (0,124) et l'année (0,089). La suivante tombe à
+   0,012. Je n'en conclus pas le sens de l'effet : la permutation mesure une importance, pas une
+   direction, et elle sous-estime les variables corrélées entre elles.

@@ -58,3 +58,16 @@ CREATE TABLE IF NOT EXISTS mart.retention_by_studio (
     completion_rate      real    NOT NULL CHECK (completion_rate BETWEEN 0 AND 1),
     median_drop_progress real    CHECK (median_drop_progress BETWEEN 0 AND 1)
 );
+
+-- Historique des entraînements (phase 3+). AJOUT SEUL : jamais vidée ni remplacée, c'est la trace
+-- de ce qui a été entraîné, sur quelles données, avec quels résultats.
+CREATE TABLE IF NOT EXISTS mart.model_runs (
+    run_id           uuid        PRIMARY KEY,
+    created_at       timestamptz NOT NULL,
+    model_name       text        NOT NULL,  -- ex. drop
+    model_type       text        NOT NULL,  -- ex. hgb
+    params           jsonb       NOT NULL,
+    metrics          jsonb       NOT NULL,
+    data_fingerprint text        NOT NULL,  -- empreinte des données brutes + config
+    artifact         text
+);

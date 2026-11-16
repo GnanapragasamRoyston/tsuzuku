@@ -207,6 +207,33 @@ def test_malformed_url_never_leaks_password(url, caplog):
     assert "s3cr3t" not in caplog.text
 
 
+RUN = {
+    "run_id": "6f1c1d2e-0000-4000-8000-000000000001",
+    "created_at": "2026-11-16T12:00:00Z",
+    "model_name": "drop",
+    "model_type": "hgb",
+    "params": {"learning_rate": 0.1},
+    "metrics": {"test": {"pr_auc": 0.3}},
+    "data_fingerprint": "abc",
+    "artifact": "models/drop_model.joblib",
+}
+
+
+def test_insert_model_run_is_append_only_and_idempotent(pg):
+    assert loader.insert_model_run(pg, RUN) is True
+    assert loader.insert_model_run(pg, RUN) is False  # même run_id : pas de doublon
+    loader.insert_model_run(pg, {**RUN, "run_id": "6f1c1d2e-0000-4000-8000-000000000002"})
+    rows = pg.execute(
+        "SELECT model_type, metrics->'test'->>'pr_auc' FROM mart.model_runs ORDER BY run_id"
+    ).fetchall()
+    assert rows == [("hgb", "0.3"), ("hgb", "0.3")]
+
+
+def test_insert_model_run_rejects_incomplete(pg):
+    with pytest.raises(loader.LoaderError, match="data_fingerprint"):
+        loader.insert_model_run(pg, {k: v for k, v in RUN.items() if k != "data_fingerprint"})
+
+
 def test_describe_hides_password():
     url = "postgresql://user:s3cr3t@db.example:5433/tsuzuku"
     assert loader.describe(url) == "db.example:5433/tsuzuku"

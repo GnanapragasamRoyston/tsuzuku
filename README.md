@@ -6,7 +6,7 @@ Sous le capot : un pipeline Big Data sur 109 M d'interactions MyAnimeList (PySpa
 quotidienne (Airflow), un modèle de churn (« risque de drop », scikit-learn), une recommandation
 ALS (Spark MLlib), une API FastAPI et un front Next.js.
 
-🚧 **En construction** — phase 2 terminée (marts Spark → Postgres). Voir [docs/SPEC.md](docs/SPEC.md) pour le
+🚧 **En construction** — phase 3 terminée (modèle de drop). Voir [docs/SPEC.md](docs/SPEC.md) pour le
 cahier des charges et [docs/architecture.md](docs/architecture.md) pour l'architecture.
 
 ## Démarrage
@@ -20,6 +20,8 @@ make up        # Postgres 16 + pgvector
 make db-check  # vérifie l'extension et les schémas
 make data      # Kaggle → Parquet (staging/clean), filtre adulte, rapport qualité, échantillon
 make spark     # marts (courbes de drop, épisode critique, rétention) + catalogue → Postgres
+make train     # modèle de drop : features Spark, 3 modèles scikit-learn, métriques, figures, artefact
+make figures   # chiffres clés de toutes les phases → reports/key_figures.{json,md} (sans recalcul)
 make lint test # qualité
 make help      # toutes les commandes
 ```
@@ -67,4 +69,45 @@ Volumes produits : [reports/marts_summary.json](reports/marts_summary.json).
 
 ## Résultats
 
-TODO: mesurer (phases 3 et 4 — tous les chiffres viendront de `reports/`).
+Tous les chiffres viennent de fichiers générés dans `reports/`.
+
+### Modèle de drop (phase 3)
+
+Cible : un couple (utilisateur, anime) Completed ou Dropped est-il un drop ? Population : 71 M
+lignes, dont 5,91 % de drops. Les features sont calculées par Spark sur tout le jeu, puis
+scikit-learn s'entraîne sur 3 % des utilisateurs (9 576 utilisateurs, 2 114 716 lignes). Split par
+utilisateur 70 / 15 / 15 ; hyperparamètres, modèle final et seuil choisis sur la validation ; test
+évalué une seule fois (313 245 lignes, 5,60 % de drops).
+
+| Modèle (test) | PR-AUC | ROC-AUC | F1 drop | Précision | Rappel | Brier | ECE |
+|---|---|---|---|---|---|---|---|
+| `DummyClassifier` (plancher) | 0,056 | 0,500 | 0,106 | 0,056 | 1,000 | 0,0529 | 0,0012 |
+| `LogisticRegression` | 0,361 | 0,869 | 0,396 | 0,347 | 0,462 | 0,0437 | 0,0065 |
+| `HistGradientBoostingClassifier` (retenu) | 0,432 | 0,901 | 0,437 | 0,395 | 0,489 | 0,0404 | 0,0053 |
+
+F1, précision et rappel sont donnés au seuil choisi sur la validation (0,241 pour le modèle retenu).
+
+Calibration : sans pondération des classes ni correction, l'ECE du modèle retenu est de 0,0053 ;
+la calibration isotonique, disponible, n'a donc pas été activée.
+
+Variables les plus importantes (importance par permutation, en perte de PR-AUC sur le test) :
+
+| Variable | Importance |
+|---|---|
+| `user_drop_rate` (taux de drop historique de l'utilisateur, hors ligne prédite) | 0,301 |
+| `episodes` (nombre d'épisodes) | 0,215 |
+| `popularity` (rang de popularité) | 0,124 |
+| `start_year` (année) | 0,089 |
+
+Cette mesure indique quelles variables comptent, pas le sens de leur effet. Les variables corrélées
+entre elles (parts de genre) voient leur importance individuelle sous-estimée.
+
+- Métriques complètes : [reports/drop_metrics.json](reports/drop_metrics.json)
+- Figures : [roc.png](reports/figures/roc.png), [pr.png](reports/figures/pr.png),
+  [calibration.png](reports/figures/calibration.png), [importance.png](reports/figures/importance.png)
+- Chiffres clés de toutes les phases : [reports/key_figures.md](reports/key_figures.md)
+- Choix et limites : [ADR 004](docs/decisions/004-modele-de-drop.md)
+
+### Recommandation ALS (phase 4)
+
+TODO: mesurer.

@@ -1,0 +1,699 @@
+{
+  "generated_at": "2026-11-16T21:21:10Z",
+  "sources": {
+    "data_quality": {
+      "file": "reports/data_quality.json",
+      "generated_at": "2026-11-16T11:16:43Z"
+    },
+    "marts_summary": {
+      "file": "reports/marts_summary.json",
+      "generated_at": "2026-11-16T11:18:57Z"
+    },
+    "drop_metrics": {
+      "file": "reports/drop_metrics.json",
+      "generated_at": "2026-11-16T21:20:13Z"
+    }
+  },
+  "data": {
+    "interactions_raw": 109224747,
+    "interactions_clean": 107289122,
+    "users": 325770,
+    "anime_raw": 17562,
+    "anime_clean": 16214,
+    "adult_anime": 1348,
+    "adult_anime_by_genre_only": 3,
+    "adult_interactions_removed": 1935084,
+    "unknown_status_rows_removed": 540,
+    "duplicate_rows_removed": 1,
+    "ratings_raw": 57633278,
+    "ratings_clean": 56726861,
+    "status_counts": [
+      {
+        "status": "Completed",
+        "rows": 68089751
+      },
+      {
+        "status": "Plan to Watch",
+        "rows": 27938693
+      },
+      {
+        "status": "Currently Watching",
+        "rows": 5228658
+      },
+      {
+        "status": "Dropped",
+        "rows": 4266591
+      },
+      {
+        "status": "On Hold",
+        "rows": 3700514
+      },
+      {
+        "status": "unknown(0)",
+        "rows": 531
+      },
+      {
+        "status": "unknown(5)",
+        "rows": 6
+      },
+      {
+        "status": "unknown(33)",
+        "rows": 2
+      },
+      {
+        "status": "unknown(55)",
+        "rows": 1
+      }
+    ]
+  },
+  "marts": {
+    "drop_curve_rows": 97100,
+    "anime_with_drop_curve": 15665,
+    "anime_with_critical_episode": 3339,
+    "anime_with_point_of_no_return": 3306,
+    "genres_published": 41,
+    "studios_published": 220,
+    "genres_by_drop_rate": [
+      {
+        "genre": "Shoujo Ai",
+        "nb_anime": 77,
+        "drop_rate": 0.0851296503925649,
+        "completion_rate": 0.8031079219713207,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Martial Arts",
+        "nb_anime": 411,
+        "drop_rate": 0.07906129548608448,
+        "completion_rate": 0.7995770113694628,
+        "median_drop_progress": 0.15384615384615385
+      },
+      {
+        "genre": "Josei",
+        "nb_anime": 92,
+        "drop_rate": 0.07380773186329946,
+        "completion_rate": 0.8149196810354791,
+        "median_drop_progress": 0.15384615384615385
+      },
+      {
+        "genre": "Kids",
+        "nb_anime": 2651,
+        "drop_rate": 0.06899370235558411,
+        "completion_rate": 0.8647040069697409,
+        "median_drop_progress": 0.0
+      },
+      {
+        "genre": "Shoujo",
+        "nb_anime": 678,
+        "drop_rate": 0.06727657024409932,
+        "completion_rate": 0.8267041872215903,
+        "median_drop_progress": 0.12
+      },
+      {
+        "genre": "Seinen",
+        "nb_anime": 808,
+        "drop_rate": 0.06475578983746416,
+        "completion_rate": 0.8275040042620319,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Samurai",
+        "nb_anime": 200,
+        "drop_rate": 0.0642887623706074,
+        "completion_rate": 0.7998643920200686,
+        "median_drop_progress": 0.1
+      },
+      {
+        "genre": "Historical",
+        "nb_anime": 1101,
+        "drop_rate": 0.06417710235634891,
+        "completion_rate": 0.8091553871752464,
+        "median_drop_progress": 0.11538461538461539
+      },
+      {
+        "genre": "Demons",
+        "nb_anime": 414,
+        "drop_rate": 0.06270408992975822,
+        "completion_rate": 0.8149480587618049,
+        "median_drop_progress": 0.15384615384615385
+      },
+      {
+        "genre": "Ecchi",
+        "nb_anime": 759,
+        "drop_rate": 0.06223345129400377,
+        "completion_rate": 0.8532711107021203,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Action",
+        "nb_anime": 3716,
+        "drop_rate": 0.06102439868594578,
+        "completion_rate": 0.8332482718274944,
+        "median_drop_progress": 0.16
+      },
+      {
+        "genre": "Super Power",
+        "nb_anime": 614,
+        "drop_rate": 0.06081289283501015,
+        "completion_rate": 0.8254693710709554,
+        "median_drop_progress": 0.16279069767441862
+      },
+      {
+        "genre": "Magic",
+        "nb_anime": 1031,
+        "drop_rate": 0.06071549241969256,
+        "completion_rate": 0.830567757899194,
+        "median_drop_progress": 0.15384615384615385
+      },
+      {
+        "genre": "Space",
+        "nb_anime": 474,
+        "drop_rate": 0.0605697626564692,
+        "completion_rate": 0.8227364895750366,
+        "median_drop_progress": 0.11538461538461539
+      },
+      {
+        "genre": "Fantasy",
+        "nb_anime": 3090,
+        "drop_rate": 0.06044373980097062,
+        "completion_rate": 0.8319749286952014,
+        "median_drop_progress": 0.15384615384615385
+      },
+      {
+        "genre": "Shounen Ai",
+        "nb_anime": 96,
+        "drop_rate": 0.060360435109128315,
+        "completion_rate": 0.8615751650306652,
+        "median_drop_progress": 0.125
+      },
+      {
+        "genre": "Harem",
+        "nb_anime": 348,
+        "drop_rate": 0.059999524371972826,
+        "completion_rate": 0.8583075882333951,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Sci-Fi",
+        "nb_anime": 2484,
+        "drop_rate": 0.0599459072854396,
+        "completion_rate": 0.8392691649083148,
+        "median_drop_progress": 0.15384615384615385
+      },
+      {
+        "genre": "Sports",
+        "nb_anime": 692,
+        "drop_rate": 0.059855268510022416,
+        "completion_rate": 0.8342350091980675,
+        "median_drop_progress": 0.11764705882352941
+      },
+      {
+        "genre": "Mecha",
+        "nb_anime": 1071,
+        "drop_rate": 0.059356371860354175,
+        "completion_rate": 0.8490366772392178,
+        "median_drop_progress": 0.125
+      },
+      {
+        "genre": "Vampire",
+        "nb_anime": 129,
+        "drop_rate": 0.058666606772223816,
+        "completion_rate": 0.8410992781158307,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Game",
+        "nb_anime": 380,
+        "drop_rate": 0.05837173462146431,
+        "completion_rate": 0.8475989688962241,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Comedy",
+        "nb_anime": 5872,
+        "drop_rate": 0.05811512540681441,
+        "completion_rate": 0.8381175893863696,
+        "median_drop_progress": 0.15384615384615385
+      },
+      {
+        "genre": "School",
+        "nb_anime": 1523,
+        "drop_rate": 0.05806389781306431,
+        "completion_rate": 0.8422371338231088,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Slice of Life",
+        "nb_anime": 1854,
+        "drop_rate": 0.057054253173243065,
+        "completion_rate": 0.8329413359594612,
+        "median_drop_progress": 0.15384615384615385
+      },
+      {
+        "genre": "Horror",
+        "nb_anime": 421,
+        "drop_rate": 0.05694690104793661,
+        "completion_rate": 0.8523910778481697,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Adventure",
+        "nb_anime": 2876,
+        "drop_rate": 0.05673615586550725,
+        "completion_rate": 0.8371373263604561,
+        "median_drop_progress": 0.13333333333333333
+      },
+      {
+        "genre": "Shounen",
+        "nb_anime": 1957,
+        "drop_rate": 0.056372601107627575,
+        "completion_rate": 0.8238499355585982,
+        "median_drop_progress": 0.1448087431693989
+      },
+      {
+        "genre": "Music",
+        "nb_anime": 2205,
+        "drop_rate": 0.05612175172705966,
+        "completion_rate": 0.8543776542981751,
+        "median_drop_progress": 0.08333333333333333
+      },
+      {
+        "genre": "Parody",
+        "nb_anime": 646,
+        "drop_rate": 0.05577313457319199,
+        "completion_rate": 0.8390969527140253,
+        "median_drop_progress": 0.12569832402234637
+      },
+      {
+        "genre": "Mystery",
+        "nb_anime": 694,
+        "drop_rate": 0.055493342325868056,
+        "completion_rate": 0.8338889219808545,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Romance",
+        "nb_anime": 1799,
+        "drop_rate": 0.055101201422203996,
+        "completion_rate": 0.854331806440192,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Police",
+        "nb_anime": 239,
+        "drop_rate": 0.05363660703346105,
+        "completion_rate": 0.8428530243059953,
+        "median_drop_progress": 0.15384615384615385
+      },
+      {
+        "genre": "Supernatural",
+        "nb_anime": 1354,
+        "drop_rate": 0.0531891109438504,
+        "completion_rate": 0.8498376551689807,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Drama",
+        "nb_anime": 2517,
+        "drop_rate": 0.05009752106596102,
+        "completion_rate": 0.8489298379747401,
+        "median_drop_progress": 0.15384615384615385
+      },
+      {
+        "genre": "Psychological",
+        "nb_anime": 330,
+        "drop_rate": 0.04967436957203861,
+        "completion_rate": 0.8423669915991167,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Military",
+        "nb_anime": 550,
+        "drop_rate": 0.047573167555108195,
+        "completion_rate": 0.8511916008956564,
+        "median_drop_progress": 0.15384615384615385
+      },
+      {
+        "genre": "Dementia",
+        "nb_anime": 508,
+        "drop_rate": 0.04649367683673528,
+        "completion_rate": 0.8540896406306535,
+        "median_drop_progress": 0.16666666666666666
+      },
+      {
+        "genre": "Thriller",
+        "nb_anime": 124,
+        "drop_rate": 0.03871814896313783,
+        "completion_rate": 0.8524305264400541,
+        "median_drop_progress": 0.17391304347826086
+      },
+      {
+        "genre": "Cars",
+        "nb_anime": 133,
+        "drop_rate": 0.03399362219122583,
+        "completion_rate": 0.8957760125778115,
+        "median_drop_progress": 0.038461538461538464
+      },
+      {
+        "genre": "Yaoi",
+        "nb_anime": 29,
+        "drop_rate": 0.020787227929585886,
+        "completion_rate": 0.9438074424452894,
+        "median_drop_progress": 0.25
+      }
+    ],
+    "showcase": [
+      {
+        "title": "Death Note",
+        "episodes": 37,
+        "critical_episode": 25,
+        "point_of_no_return": 26,
+        "initial_drop_risk": 0.03251360506839563,
+        "drop_rate": 0.03852235227083877
+      },
+      {
+        "title": "Naruto",
+        "episodes": 220,
+        "critical_episode": 135,
+        "point_of_no_return": 138,
+        "initial_drop_risk": 0.08605072463768115,
+        "drop_rate": 0.10371432559674124
+      },
+      {
+        "title": "Steins;Gate",
+        "episodes": 24,
+        "critical_episode": 1,
+        "point_of_no_return": 9,
+        "initial_drop_risk": 0.022531400685105858,
+        "drop_rate": 0.02716573049973942
+      },
+      {
+        "title": "Shingeki no Kyojin",
+        "episodes": 25,
+        "critical_episode": 1,
+        "point_of_no_return": 14,
+        "initial_drop_risk": 0.02170826349269813,
+        "drop_rate": 0.025026692073092858
+      },
+      {
+        "title": "Sword Art Online",
+        "episodes": 25,
+        "critical_episode": 3,
+        "point_of_no_return": 15,
+        "initial_drop_risk": 0.048017426442732665,
+        "drop_rate": 0.054371174862673975
+      },
+      {
+        "title": "Fullmetal Alchemist: Brotherhood",
+        "episodes": 64,
+        "critical_episode": 1,
+        "point_of_no_return": 22,
+        "initial_drop_risk": 0.01943919031027045,
+        "drop_rate": 0.023734950904597655
+      }
+    ]
+  },
+  "drop_model": {
+    "run_id": "3e8b164f-1a69-4423-bf5d-df30210f0f99",
+    "final_model": "hgb",
+    "calibration": "none",
+    "sample": {
+      "rows": 2114716,
+      "users": 9576
+    },
+    "splits": [
+      {
+        "split": "train",
+        "rows": 1485922,
+        "users": 6702,
+        "prevalence": 0.05720084903514451
+      },
+      {
+        "split": "val",
+        "rows": 315549,
+        "users": 1437,
+        "prevalence": 0.06482986794443969
+      },
+      {
+        "split": "test",
+        "rows": 313245,
+        "users": 1437,
+        "prevalence": 0.05603281776245431
+      }
+    ],
+    "models_on_test": [
+      {
+        "model": "dummy",
+        "pr_auc": 0.05603281776245431,
+        "roc_auc": 0.5,
+        "f1": 0.10611946299392075,
+        "precision": 0.05603281776245431,
+        "recall": 1.0,
+        "brier": 0.05289450539310786,
+        "ece": 0.0011680312726902037,
+        "threshold": 0.05720084903514451
+      },
+      {
+        "model": "logreg",
+        "pr_auc": 0.36141601336898077,
+        "roc_auc": 0.8692297686712019,
+        "f1": 0.39614801779342035,
+        "precision": 0.3468881088947864,
+        "recall": 0.4617137648131267,
+        "brier": 0.043749449082765506,
+        "ece": 0.006460496840486312,
+        "threshold": 0.16118458581176667
+      },
+      {
+        "model": "hgb",
+        "pr_auc": 0.43218248510789353,
+        "roc_auc": 0.9010120243779349,
+        "f1": 0.43690851735015773,
+        "precision": 0.39469571612428755,
+        "recall": 0.4892319963536919,
+        "brier": 0.04041871098900332,
+        "ece": 0.0053043723121071135,
+        "threshold": 0.24055477660509145
+      }
+    ],
+    "confusion_final_test": {
+      "tn": 282524,
+      "fp": 13169,
+      "fn": 8965,
+      "tp": 8587
+    },
+    "top_features": [
+      {
+        "feature": "user_drop_rate",
+        "importance": 0.30059162436987724,
+        "std": 0.0014400674553002278
+      },
+      {
+        "feature": "episodes",
+        "importance": 0.21549105706390104,
+        "std": 0.00221603634762068
+      },
+      {
+        "feature": "popularity",
+        "importance": 0.12415907665480037,
+        "std": 0.002018491732265053
+      },
+      {
+        "feature": "start_year",
+        "importance": 0.08878553760920796,
+        "std": 0.0005278785499673071
+      },
+      {
+        "feature": "duration_min",
+        "importance": 0.012404617823745056,
+        "std": 0.0004225266973704862
+      },
+      {
+        "feature": "genre_affinity",
+        "importance": 0.008353107794494875,
+        "std": 0.0005790319718160875
+      },
+      {
+        "feature": "main_studio",
+        "importance": 0.008109955350491771,
+        "std": 0.0006064626900886786
+      },
+      {
+        "feature": "format",
+        "importance": 0.006257552969158054,
+        "std": 0.0006178132799920705
+      },
+      {
+        "feature": "source",
+        "importance": 0.00602063158578533,
+        "std": 0.00030335778380308806
+      },
+      {
+        "feature": "genre_ecchi",
+        "importance": 0.003552889717185892,
+        "std": 0.0004601627122985367
+      }
+    ],
+    "calibration_bins_test": [
+      {
+        "mean_pred": 0.0005220930159884211,
+        "observed": 6.384676775738229e-05,
+        "n": 31325
+      },
+      {
+        "mean_pred": 0.0010934285058368967,
+        "observed": 0.00041501723917762736,
+        "n": 31324
+      },
+      {
+        "mean_pred": 0.002337333589183703,
+        "observed": 0.001819632881085395,
+        "n": 31325
+      },
+      {
+        "mean_pred": 0.005236304176551827,
+        "observed": 0.004277870003830928,
+        "n": 31324
+      },
+      {
+        "mean_pred": 0.009996635036031928,
+        "observed": 0.007661856723279275,
+        "n": 31324
+      },
+      {
+        "mean_pred": 0.018795528261503238,
+        "observed": 0.015163607342378291,
+        "n": 31325
+      },
+      {
+        "mean_pred": 0.03462530888293503,
+        "observed": 0.03048780487804878,
+        "n": 31324
+      },
+      {
+        "mean_pred": 0.06358103934217976,
+        "observed": 0.05564245810055866,
+        "n": 31325
+      },
+      {
+        "mean_pred": 0.1255807066138798,
+        "observed": 0.11291661345932831,
+        "n": 31324
+      },
+      {
+        "mean_pred": 0.35159936837923605,
+        "observed": 0.3318754988028731,
+        "n": 31325
+      }
+    ]
+  },
+  "exploration": [
+    {
+      "file": "reports/exploration_2026-11-16.json",
+      "note": "Mesures ponctuelles faites avec des scripts d'exploration (non rejoués par make). Valeurs recopiées telles quelles depuis la sortie des scripts, le 2026-11-16, sur data/parquet/clean. Elles ont motivé des décisions documentées dans les ADR cités.",
+      "measurements": [
+        {
+          "id": "phase2_drop_profile",
+          "phase": 2,
+          "source": "script d'exploration phase 2 (profil des drops, lignes Completed/Dropped jointes au catalogue) ; voir ADR 003",
+          "values": {
+            "drops_at_episode_0": 885298,
+            "drops_on_anime_with_unknown_episodes": 51714,
+            "drops_with_watched_ge_episodes": 46276,
+            "completed_with_watched_lt_episodes": 332795,
+            "anime_with_at_least_n_drops": {
+              "10": 12426,
+              "30": 6116,
+              "50": 4613,
+              "100": 3436,
+              "500": 1849
+            },
+            "anime_with_50_drops_and_3_episodes": 3798
+          }
+        },
+        {
+          "id": "phase2_point_of_no_return_definitions",
+          "phase": 2,
+          "source": "scratchpad ponr_options.py sur les 3 339 animes publiés dans mart.critical_episode ; voir ADR 003",
+          "values": {
+            "anime": 3339,
+            "median_initial_drop_risk": 0.0804462083020487,
+            "definitions": [
+              {
+                "definition": "absolue, complétion >= 0.9",
+                "found": 3305,
+                "at_episode_1": 2022,
+                "median_position_in_series": 0.08,
+                "median_episode": 1
+              },
+              {
+                "definition": "absolue, complétion >= 0.97",
+                "found": 3305,
+                "at_episode_1": 553,
+                "median_position_in_series": 0.33,
+                "median_episode": 5
+              },
+              {
+                "definition": "absolue, complétion >= 0.98",
+                "found": 3302,
+                "at_episode_1": 337,
+                "median_position_in_series": 0.42,
+                "median_episode": 6
+              },
+              {
+                "definition": "absolue, complétion >= 0.99",
+                "found": 3293,
+                "at_episode_1": 117,
+                "median_position_in_series": 0.58,
+                "median_episode": 8
+              },
+              {
+                "definition": "relative, risque <= 0.5 x départ",
+                "found": 3311,
+                "at_episode_1": 0,
+                "median_position_in_series": 0.27,
+                "median_episode": 4
+              },
+              {
+                "definition": "relative, risque <= 0.25 x départ (retenue)",
+                "found": 3306,
+                "at_episode_1": 0,
+                "median_position_in_series": 0.46,
+                "median_episode": 6
+              },
+              {
+                "definition": "relative, risque <= 0.2 x départ",
+                "found": 3301,
+                "at_episode_1": 0,
+                "median_position_in_series": 0.5,
+                "median_episode": 7
+              }
+            ]
+          }
+        },
+        {
+          "id": "phase3_population_profile",
+          "phase": 3,
+          "source": "scratchpad phase3_profile.py sur clean/animelist ; voir ADR 004",
+          "values": {
+            "completed_plus_dropped_rows": 71053711,
+            "dropped_rows": 4198605,
+            "drop_share": 0.0591,
+            "users_with_completed_or_dropped": 320335,
+            "users_with_at_least_one_drop": 227706,
+            "list_size_cd_quantiles": {
+              "p10": 20,
+              "p50": 142,
+              "p90": 496,
+              "p99": 1217
+            },
+            "dropped_rows_unrated": 2272587,
+            "completed_rows_unrated": 10128245,
+            "distinct_genres": 41,
+            "distinct_studios": 676
+          }
+        }
+      ]
+    }
+  ]
+}
