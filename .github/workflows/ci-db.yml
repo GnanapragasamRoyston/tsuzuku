@@ -1,0 +1,32 @@
+name: ci-db
+
+# Vérifie que docker-compose démarre Postgres + pgvector et que le script d'init crée bien
+# l'extension et les schémas. Mot de passe jetable, propre au runner.
+on:
+  push:
+    branches: [main]
+    paths: ["docker-compose.yml", "infra/**", "Makefile", ".github/workflows/ci-db.yml"]
+  pull_request:
+    paths: ["docker-compose.yml", "infra/**", "Makefile", ".github/workflows/ci-db.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  db:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Créer .env de CI
+        run: cp .env.example .env
+      - name: Démarrer Postgres
+        run: make up
+      - name: Vérifier pgvector et schémas
+        run: |
+          out=$(make -s db-check)
+          echo "$out"
+          for expected in vector app catalog mart; do
+            grep -qx "$expected" <<< "$out" || { echo "manquant : $expected"; exit 1; }
+          done
+      - if: always()
+        run: docker compose down -v

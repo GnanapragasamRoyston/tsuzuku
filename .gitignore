@@ -1,0 +1,31 @@
+# Secrets
+.env
+kaggle.json
+
+# Données et artefacts (volumineux, régénérables)
+data/*
+!data/.gitkeep
+models/*
+!models/.gitkeep
+*.parquet
+*.joblib
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

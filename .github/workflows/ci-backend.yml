@@ -1,0 +1,32 @@
+name: ci-backend
+
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**", "ruff.toml", ".github/workflows/ci-backend.yml"]
+  pull_request:
+    paths: ["backend/**", "ruff.toml", ".github/workflows/ci-backend.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --python 3.11 --locked
+      - name: Lint
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Tests
+        run: uv run pytest
+      - name: Audit des dépendances
+        run: uv export --no-hashes --format requirements-txt -q | uv run pip-audit -r /dev/stdin
+      - name: Analyse de sécurité (bandit)
+        run: uv run bandit -q -r app

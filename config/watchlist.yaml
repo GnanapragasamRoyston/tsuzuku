@@ -1,0 +1,5 @@
+# Animes suivis chaque jour par le DAG jikan_daily_ingest (phase 6), en plus de la saison en cours.
+# Règle : ne jamais deviner un identifiant MAL, le vérifier via l'API Jikan et noter le titre.
+anime: []
+#  - mal_id: <vérifié via GET /anime/{id}>
+#    title: "..."

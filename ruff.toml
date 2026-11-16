@@ -1,0 +1,14 @@
+# Config ruff partagée par pipeline/ et backend/ (ruff remonte l'arborescence pour la trouver).
+line-length = 100
+target-version = "py311"
+
+[lint]
+# E/F : erreurs de base · I : tri des imports · B : bugs probables · UP : syntaxe moderne · S : sécurité
+select = ["E", "F", "I", "B", "UP", "S"]
+
+[lint.per-file-ignores]
+# assert est normal dans les tests pytest.
+"**/tests/**" = ["S101"]
+
+[lint.isort]
+known-first-party = ["tsuzuku_pipeline", "app"]

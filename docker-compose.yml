@@ -1,0 +1,25 @@
+# Phase 0 : uniquement Postgres + pgvector. Airflow (phase 6), backend et frontend s'ajouteront ici.
+services:
+  db:
+    # Image officielle pgvector : Postgres 16 avec l'extension déjà compilée.
+    image: pgvector/pgvector:pg16
+    container_name: tsuzuku-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?définir POSTGRES_USER dans .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?définir POSTGRES_PASSWORD dans .env}
+      POSTGRES_DB: ${POSTGRES_DB:?définir POSTGRES_DB dans .env}
+    ports:
+      # Lié à 127.0.0.1 : la base n'est pas exposée sur le réseau local.
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Scripts exécutés une seule fois, à la création du volume.
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

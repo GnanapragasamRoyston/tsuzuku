@@ -1,0 +1,22 @@
+# Configuration centrale du pipeline Tsuzuku.
+# Toute valeur "magique" (seuil, taille d'échantillon, seed) vit ici, jamais en dur dans le code :
+# ça rend les expériences reproductibles et les choix explicables.
+
+project:
+  seed: 42
+
+paths:
+  raw: data/raw
+  parquet: data/parquet
+  samples: data/samples
+  models: models
+  reports: reports
+
+spark:
+  # Ajuster selon la RAM de la machine (phase 1+).
+  driver_memory: 6g
+
+# Sections complétées dans les phases suivantes :
+# drop_model:       (phase 3) taille d'échantillon, seuils
+# als:              (phase 4) seuils d'activité, grille rank/regParam, note par défaut d'onboarding
+# critical_episode: (phase 2) seuil du point de non-retour

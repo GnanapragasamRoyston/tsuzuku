@@ -1,0 +1,6 @@
+# Fins de ligne LF partout : les scripts shell, le Makefile et les fichiers SQL montés dans Docker
+# cassent avec des CRLF Windows.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pbix binary
