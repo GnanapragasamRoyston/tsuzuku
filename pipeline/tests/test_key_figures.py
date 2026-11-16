@@ -66,13 +66,41 @@ DM = {
 }
 
 
-def _project(tmp_path, settings, with_drop=True):
+def _at_k(v):
+    return {k: {"precision": v, "recall": v, "ndcg": v, "coverage": 0.1} for k in ("5", "10")}
+
+
+RM = {
+    "generated_at": "2026-11-16T03:00:00Z",
+    "run_id": "r2",
+    "final_model": "als_implicit",
+    "data": {
+        "rows_before": 100, "rows_after": 90, "users_after": 9, "anime_after": 4,
+        "filter_rounds": 2, "catalog_size": 4,
+        "splits": {"train": {"rows": 70, "users": 7, "masked": 0}},
+    },
+    "protocol": {"relevant_min_score": 8},
+    "grid": [{"kind": "als_implicit", "rank": 16, "reg_param": 0.1, "val_ndcg": 0.2,
+              "fit_seconds": 3.0}],
+    "selection": {"als_implicit": {"rank": 16, "reg_param": 0.1}},
+    "test": {
+        m: {"users_ranked": 5, "rmse": None, "at_k": _at_k(v)}
+        for m, v in (("popularity", 0.1), ("als_implicit", 0.3))
+    },
+    "showcase": {"liked": ["Death Note"], "recommended": ["Code Geass"],
+                 "popularity_top10": ["Naruto"]},
+}  # fmt: skip
+
+
+def _project(tmp_path, settings, with_drop=True, with_reco=True):
     reports = tmp_path / "reports"
     reports.mkdir()
     (reports / "data_quality.json").write_text(json.dumps(DQ))
     (reports / "marts_summary.json").write_text(json.dumps(MS))
     if with_drop:
         (reports / "drop_metrics.json").write_text(json.dumps(DM))
+    if with_reco:
+        (reports / "reco_metrics.json").write_text(json.dumps(RM))
     (reports / "exploration_2026-11-16.json").write_text(
         json.dumps({"measurements": [{"id": "x", "phase": 2, "source": "s", "values": {}}]})
     )
@@ -141,7 +169,20 @@ def test_real_settings_showcase_titles_are_strings():
 
 
 def test_missing_phase_report_is_skipped_not_invented(tmp_path, settings):
-    _project(tmp_path, settings, with_drop=False)
+    _project(tmp_path, settings, with_drop=False, with_reco=False)
     fig = key_figures.run(settings)
-    assert "drop_model" not in fig
+    assert "drop_model" not in fig and "reco" not in fig
     assert "drop_metrics" not in fig["sources"]
+
+
+def test_reco_section_is_flattened_for_charts(tmp_path, settings):
+    reports = _project(tmp_path, settings)
+    fig = key_figures.run(settings)
+    reco = fig["reco"]
+    assert reco["final_model"] == "als_implicit"
+    # Une ligne par (modèle, K) : prêt pour un graphique.
+    assert {"model": "als_implicit", "k": 10, "precision": 0.3, "recall": 0.3, "ndcg": 0.3,
+            "coverage": 0.1} in reco["models_on_test"]  # fmt: skip
+    assert reco["showcase"]["recommended"] == ["Code Geass"]
+    assert fig["sources"]["reco_metrics"]["generated_at"] == RM["generated_at"]
+    assert "Recommandation ALS" in (reports / "key_figures.md").read_text(encoding="utf-8")

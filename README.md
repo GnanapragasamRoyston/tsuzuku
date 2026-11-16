@@ -6,7 +6,7 @@ Sous le capot : un pipeline Big Data sur 109 M d'interactions MyAnimeList (PySpa
 quotidienne (Airflow), un modèle de churn (« risque de drop », scikit-learn), une recommandation
 ALS (Spark MLlib), une API FastAPI et un front Next.js.
 
-🚧 **En construction** — phase 3 terminée (modèle de drop). Voir [docs/SPEC.md](docs/SPEC.md) pour le
+🚧 **En construction** — phase 4 terminée (recommandation ALS). Voir [docs/SPEC.md](docs/SPEC.md) pour le
 cahier des charges et [docs/architecture.md](docs/architecture.md) pour l'architecture.
 
 ## Démarrage
@@ -21,6 +21,7 @@ make db-check  # vérifie l'extension et les schémas
 make data      # Kaggle → Parquet (staging/clean), filtre adulte, rapport qualité, échantillon
 make spark     # marts (courbes de drop, épisode critique, rétention) + catalogue → Postgres
 make train     # modèle de drop : features Spark, 3 modèles scikit-learn, métriques, figures, artefact
+make reco      # recommandation : popularité vs ALS explicite/implicite (Spark MLlib), fold-in, facteurs exportés
 make figures   # chiffres clés de toutes les phases → reports/key_figures.{json,md} (sans recalcul)
 make lint test # qualité
 make help      # toutes les commandes
@@ -110,4 +111,46 @@ entre elles (parts de genre) voient leur importance individuelle sous-estimée.
 
 ### Recommandation ALS (phase 4)
 
-TODO: mesurer.
+Données : 56 272 898 notes de 264 532 utilisateurs sur 10 859 animes, après un filtre d'activité
+itératif (utilisateurs ≥ 20 notes, animes ≥ 50 notes). Split par utilisateur 80 / 10 / 10. Les
+utilisateurs de validation et de test ne sont **jamais vus par l'ALS** : leur vecteur est calculé
+par *fold-in* (moindres carrés en NumPy) sur 80 % de leurs notes, et on cherche à retrouver les
+20 % masquées. C'est le chemin de production pour un nouvel utilisateur. Un anime masqué est
+pertinent si sa note est ≥ 8. Trois modèles : popularité (nombre de notes ≥ 8 dans le train), ALS
+explicite, ALS implicite (note − 5 comme signal). Hyperparamètres et modèle final choisis sur la
+NDCG@10 de validation ; test évalué une seule fois (26 446 utilisateurs classés).
+
+| Modèle (test, K = 10) | Précision@10 | Rappel@10 | NDCG@10 | Couverture@10 |
+|---|---|---|---|---|
+| Popularité (baseline) | 0,164 | 0,091 | 0,193 | 0,006 |
+| ALS explicite (rank 128, regParam 0,05) | 0,173 | 0,115 | 0,212 | 0,445 |
+| ALS implicite (rank 128, regParam 0,05) (retenu) | 0,418 | 0,260 | 0,493 | 0,213 |
+
+Couverture : part du catalogue recommandée au moins une fois.
+
+RMSE sur les 1 129 026 notes masquées du test (prédictions bornées à 1-10) : 1,096 pour l'ALS
+explicite, contre 1,503 pour la moyenne de l'anime. L'ALS implicite ne prédit pas de note.
+
+Onboarding : le modèle ne reçoit que *n* animes aimés, sans note (note par défaut : 8). Mêmes
+utilisateurs de test, mêmes cibles. NDCG@10 :
+
+| Animes aimés donnés | Utilisateurs | Popularité | ALS explicite | ALS implicite |
+|---|---|---|---|---|
+| 3 | 26 547 | 0,193 | 0,135 | 0,175 |
+| 5 | 26 512 | 0,193 | 0,171 | 0,214 |
+| 10 | 26 236 | 0,194 | 0,200 | 0,281 |
+| 20 | 23 806 | 0,203 | 0,210 | 0,363 |
+
+L'ALS explicite prédit mieux les notes que la moyenne de l'anime, mais classe à peine mieux que
+la popularité : une bonne RMSE ne fait pas une bonne liste. L'ALS implicite, lui, bat nettement
+la popularité, à condition d'avoir assez de signal : avec 3 titres il fait moins bien qu'elle, à
+partir de 5 il passe devant. Limite : le meilleur `rank` (128) est au bord de la grille, un rank
+plus grand n'a pas été exploré.
+
+- Métriques complètes : [reports/reco_metrics.json](reports/reco_metrics.json)
+- Figures : [reco_grid.png](reports/figures/reco_grid.png),
+  [reco_ndcg_at_k.png](reports/figures/reco_ndcg_at_k.png),
+  [reco_recall_at_k.png](reports/figures/reco_recall_at_k.png),
+  [reco_onboarding.png](reports/figures/reco_onboarding.png)
+- Chiffres clés de toutes les phases : [reports/key_figures.md](reports/key_figures.md)
+- Choix et limites : [ADR 005](docs/decisions/005-recommandation-als.md)

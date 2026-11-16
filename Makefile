@@ -61,14 +61,17 @@ spark: ## [phase 2] Transformations Spark -> marts Postgres (catalogue + drop + 
 train: ## [phase 3] Modèle de drop : features Spark, 3 modèles sklearn, métriques, artefact
 	cd pipeline && uv run python -m tsuzuku_pipeline.train_cli $(ARGS)
 
+# Étapes : prepare (Spark : filtre, split, masquage) → fit (grille ALS, fold-in, métriques,
+# facteurs) → register (mart.model_runs). Même logique de fraîcheur que `make train`.
+reco: ## [phase 4] Reco ALS : baseline popularité vs ALS explicite/implicite, fold-in, facteurs
+	cd pipeline && uv run python -m tsuzuku_pipeline.reco_cli $(ARGS)
+
 # --- Chiffres clés ------------------------------------------------------------
 # Regroupe les chiffres des rapports générés (aucun calcul, aucune saisie à la main) pour export.
 figures: ## Chiffres clés de toutes les phases -> reports/key_figures.{json,md}
 	cd pipeline && uv run python -m tsuzuku_pipeline.key_figures
 
 # --- Phases suivantes (pas encore implémentées) ----------------------------
-reco: ## [phase 4] Entraînement ALS
-	@echo "Pas encore implémenté (phase 4)"; exit 1
 api: ## [phase 5] Lance l'API FastAPI en local
 	cd backend && uv run uvicorn app.main:app --reload
 web: ## [phase 8] Lance le front Next.js

@@ -23,6 +23,7 @@ REPORT_FILES = {
     "data_quality": "data_quality.json",
     "marts_summary": "marts_summary.json",
     "drop_metrics": "drop_metrics.json",
+    "reco_metrics": "reco_metrics.json",
 }
 
 
@@ -123,6 +124,44 @@ def _drop_model_section(dm: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _reco_section(rm: dict[str, Any]) -> dict[str, Any]:
+    d = rm["data"]
+    return {
+        "run_id": rm["run_id"],
+        "final_model": rm["final_model"],
+        "ratings_before_filter": d["rows_before"],
+        "ratings_after_filter": d["rows_after"],
+        "users_after_filter": d["users_after"],
+        "anime_after_filter": d["anime_after"],
+        "catalog_size": d["catalog_size"],
+        "relevant_min_score": rm["protocol"]["relevant_min_score"],
+        "splits": [{"split": k, **v} for k, v in d["splits"].items()],
+        # Format « long » (une ligne par modèle et par K) : directement traçable.
+        "models_on_test": [
+            {"model": model, "k": int(k), **metrics}
+            for model, res in rm["test"].items()
+            for k, metrics in res["at_k"].items()
+        ],
+        "rmse_test": [{"model": m, "rmse": v} for m, v in rm.get("rmse_test", {}).items()],
+        # Régime onboarding : NDCG@k selon le nombre d'animes aimés donnés (format long).
+        "onboarding_test": [
+            {
+                "n_liked": int(n),
+                "users": block["users"],
+                "model": model,
+                "k": int(k),
+                "ndcg": metrics["ndcg"],
+                "recall": metrics["recall"],
+            }
+            for n, block in rm.get("onboarding_test", {}).items()
+            for model, res in block["models"].items()
+            for k, metrics in res["at_k"].items()
+        ],  # fmt: skip
+        "grid": rm["grid"],
+        "showcase": rm.get("showcase", {}),
+    }
+
+
 def collect(settings: dict[str, Any]) -> dict[str, Any]:
     reports = resolve_path(settings, "reports")
     loaded = {name: _load_json(reports / f) for name, f in REPORT_FILES.items()}
@@ -153,6 +192,8 @@ def collect(settings: dict[str, Any]) -> dict[str, Any]:
         )
     if loaded["drop_metrics"]:
         figures["drop_model"] = _drop_model_section(loaded["drop_metrics"])
+    if loaded["reco_metrics"]:
+        figures["reco"] = _reco_section(loaded["reco_metrics"])
     figures["exploration"] = [
         {"file": f"reports/{p.name}", **json.loads(p.read_text(encoding="utf-8"))}
         for p in sorted(reports.glob("exploration_*.json"))
@@ -185,7 +226,8 @@ def render_markdown(fig: dict[str, Any]) -> str:
            "Sources :"]  # fmt: skip
     out += [f"- `{s['file']}` (généré le {s['generated_at']})" for s in fig["sources"].values()]
     for key, title in (("data", "Données (phase 1)"), ("marts", "Marts (phase 2)"),
-                       ("drop_model", "Modèle de drop (phase 3)")):  # fmt: skip
+                       ("drop_model", "Modèle de drop (phase 3)"),
+                       ("reco", "Recommandation ALS (phase 4)")):  # fmt: skip
         if key not in fig:
             continue
         out += ["", f"## {title}", ""]

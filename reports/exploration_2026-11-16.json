@@ -48,6 +48,26 @@
         "distinct_genres": 41,
         "distinct_studios": 676
       }
+    },
+    {
+      "id": "reco_ratings_profile",
+      "phase": 4,
+      "source": "scratchpad explore_ratings.py sur clean/rating_complete (Spark, approxQuantile erreur relative 0,001) ; voir ADR 005",
+      "values": {
+        "rows": 56726861,
+        "score_mean": 7.5295,
+        "score_hist": {"1": 302225, "2": 379049, "3": 661522, "4": 1397785, "5": 3313693,
+                       "6": 6674997, "7": 13122180, "8": 14514054, "9": 9712193, "10": 6649163},
+        "ratings_per_user_quantiles": {"p10": 11, "p25": 42, "p50": 112, "p75": 235, "p90": 422, "p99": 1069},
+        "ratings_per_anime_quantiles": {"p10": 11, "p25": 35, "p50": 230, "p75": 1943, "p90": 9329, "p99": 51591},
+        "users_with_at_least": {"5": 293103, "10": 281663, "20": 264537, "50": 222761},
+        "anime_with_at_least": {"10": 14224, "20": 12945, "50": 10861, "100": 9322},
+        "one_pass_filter": {
+          "u10_i20": {"rows": 56586602, "users": 281663, "anime": 12945},
+          "u20_i50": {"rows": 56273090, "users": 264537, "anime": 10861},
+          "u20_i100": {"rows": 56163704, "users": 264537, "anime": 9322}
+        }
+      }
     }
   ]
 }

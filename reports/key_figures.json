@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-16T21:21:10Z",
+  "generated_at": "2026-11-16T22:58:16Z",
   "sources": {
     "data_quality": {
       "file": "reports/data_quality.json",
@@ -12,6 +12,10 @@
     "drop_metrics": {
       "file": "reports/drop_metrics.json",
       "generated_at": "2026-11-16T21:20:13Z"
+    },
+    "reco_metrics": {
+      "file": "reports/reco_metrics.json",
+      "generated_at": "2026-11-16T22:58:02Z"
     }
   },
   "data": {
@@ -587,6 +591,748 @@
       }
     ]
   },
+  "reco": {
+    "run_id": "1263a415-e570-4b02-9a74-1d330ba0fb77",
+    "final_model": "als_implicit",
+    "ratings_before_filter": 56726861,
+    "ratings_after_filter": 56272898,
+    "users_after_filter": 264532,
+    "anime_after_filter": 10859,
+    "catalog_size": 10859,
+    "relevant_min_score": 8,
+    "splits": [
+      {
+        "split": "test",
+        "rows": 5646050,
+        "users": 26562,
+        "masked": 1129026
+      },
+      {
+        "split": "val",
+        "rows": 5649392,
+        "users": 26501,
+        "masked": 1127948
+      },
+      {
+        "split": "train",
+        "rows": 44977456,
+        "users": 211469,
+        "masked": 0
+      }
+    ],
+    "models_on_test": [
+      {
+        "model": "popularity",
+        "k": 5,
+        "precision": 0.19310292671856957,
+        "recall": 0.055560237257926054,
+        "ndcg": 0.2113132141732421,
+        "coverage": 0.004236117506216042
+      },
+      {
+        "model": "popularity",
+        "k": 10,
+        "precision": 0.16354080012098582,
+        "recall": 0.09116063610246458,
+        "ndcg": 0.19297199163575016,
+        "coverage": 0.00644626577032876
+      },
+      {
+        "model": "popularity",
+        "k": 20,
+        "precision": 0.12821220600469363,
+        "recall": 0.13761559756636818,
+        "ndcg": 0.18208230081661209,
+        "coverage": 0.011695367897596464
+      },
+      {
+        "model": "als_explicit",
+        "k": 5,
+        "precision": 0.21282613627765853,
+        "recall": 0.07492866178079965,
+        "ndcg": 0.2321410359056517,
+        "coverage": 0.3358504466341284
+      },
+      {
+        "model": "als_explicit",
+        "k": 10,
+        "precision": 0.17332299780683932,
+        "recall": 0.11532004437129469,
+        "ndcg": 0.21189703364460002,
+        "coverage": 0.4454369647297173
+      },
+      {
+        "model": "als_explicit",
+        "k": 20,
+        "precision": 0.13744800726008208,
+        "recall": 0.17158431672166008,
+        "ndcg": 0.20756717583145934,
+        "coverage": 0.5567731835343954
+      },
+      {
+        "model": "als_implicit",
+        "k": 5,
+        "precision": 0.49877486198290816,
+        "recall": 0.1677832672095343,
+        "ndcg": 0.5345347404871782,
+        "coverage": 0.18086379961322405
+      },
+      {
+        "model": "als_implicit",
+        "k": 10,
+        "precision": 0.41795734704682,
+        "recall": 0.26017599991623774,
+        "ndcg": 0.49331434032964416,
+        "coverage": 0.21337139699788193
+      },
+      {
+        "model": "als_implicit",
+        "k": 20,
+        "precision": 0.32937306208878697,
+        "recall": 0.3777713904673072,
+        "ndcg": 0.4765570382193411,
+        "coverage": 0.252509439174878
+      }
+    ],
+    "rmse_test": [
+      {
+        "model": "item_mean",
+        "rmse": 1.5026178247845527
+      },
+      {
+        "model": "als_explicit",
+        "rmse": 1.0964415497002753
+      }
+    ],
+    "onboarding_test": [
+      {
+        "n_liked": 3,
+        "users": 26547,
+        "model": "popularity",
+        "k": 5,
+        "ndcg": 0.2113691615426287,
+        "recall": 0.05557494740811349
+      },
+      {
+        "n_liked": 3,
+        "users": 26547,
+        "model": "popularity",
+        "k": 10,
+        "ndcg": 0.1930230829758708,
+        "recall": 0.09118477182819995
+      },
+      {
+        "n_liked": 3,
+        "users": 26547,
+        "model": "popularity",
+        "k": 20,
+        "ndcg": 0.1821244178891423,
+        "recall": 0.1376331212693435
+      },
+      {
+        "n_liked": 3,
+        "users": 26547,
+        "model": "als_explicit",
+        "k": 5,
+        "ndcg": 0.16076210805684774,
+        "recall": 0.04886273159537023
+      },
+      {
+        "n_liked": 3,
+        "users": 26547,
+        "model": "als_explicit",
+        "k": 10,
+        "ndcg": 0.13525351129968682,
+        "recall": 0.0679359918485784
+      },
+      {
+        "n_liked": 3,
+        "users": 26547,
+        "model": "als_explicit",
+        "k": 20,
+        "ndcg": 0.12588721645184003,
+        "recall": 0.0955582416720569
+      },
+      {
+        "n_liked": 3,
+        "users": 26547,
+        "model": "als_implicit",
+        "k": 5,
+        "ndcg": 0.19859684252140394,
+        "recall": 0.06128090151841267
+      },
+      {
+        "n_liked": 3,
+        "users": 26547,
+        "model": "als_implicit",
+        "k": 10,
+        "ndcg": 0.17462085380346504,
+        "recall": 0.09177702690737854
+      },
+      {
+        "n_liked": 3,
+        "users": 26547,
+        "model": "als_implicit",
+        "k": 20,
+        "ndcg": 0.16794061870725588,
+        "recall": 0.13586767607618105
+      },
+      {
+        "n_liked": 5,
+        "users": 26512,
+        "model": "popularity",
+        "k": 5,
+        "ndcg": 0.21151750192927662,
+        "recall": 0.05556318749614266
+      },
+      {
+        "n_liked": 5,
+        "users": 26512,
+        "model": "popularity",
+        "k": 10,
+        "ndcg": 0.1931152974929872,
+        "recall": 0.09111269966807164
+      },
+      {
+        "n_liked": 5,
+        "users": 26512,
+        "model": "popularity",
+        "k": 20,
+        "ndcg": 0.18218306129322218,
+        "recall": 0.13753244844552784
+      },
+      {
+        "n_liked": 5,
+        "users": 26512,
+        "model": "als_explicit",
+        "k": 5,
+        "ndcg": 0.19896552316269409,
+        "recall": 0.06359675731112724
+      },
+      {
+        "n_liked": 5,
+        "users": 26512,
+        "model": "als_explicit",
+        "k": 10,
+        "ndcg": 0.17064343695317105,
+        "recall": 0.0896455941421628
+      },
+      {
+        "n_liked": 5,
+        "users": 26512,
+        "model": "als_explicit",
+        "k": 20,
+        "ndcg": 0.16046356992447466,
+        "recall": 0.12607595309192288
+      },
+      {
+        "n_liked": 5,
+        "users": 26512,
+        "model": "als_implicit",
+        "k": 5,
+        "ndcg": 0.24300641449374288,
+        "recall": 0.07788473988635795
+      },
+      {
+        "n_liked": 5,
+        "users": 26512,
+        "model": "als_implicit",
+        "k": 10,
+        "ndcg": 0.21427156295932234,
+        "recall": 0.11576568045239559
+      },
+      {
+        "n_liked": 5,
+        "users": 26512,
+        "model": "als_implicit",
+        "k": 20,
+        "ndcg": 0.2062942858872966,
+        "recall": 0.1692614864557108
+      },
+      {
+        "n_liked": 10,
+        "users": 26236,
+        "model": "popularity",
+        "k": 5,
+        "ndcg": 0.21276033985966122,
+        "recall": 0.05531967512193351
+      },
+      {
+        "n_liked": 10,
+        "users": 26236,
+        "model": "popularity",
+        "k": 10,
+        "ndcg": 0.19395803642698886,
+        "recall": 0.09068344891573465
+      },
+      {
+        "n_liked": 10,
+        "users": 26236,
+        "model": "popularity",
+        "k": 20,
+        "ndcg": 0.1827429642668353,
+        "recall": 0.13706611443263114
+      },
+      {
+        "n_liked": 10,
+        "users": 26236,
+        "model": "als_explicit",
+        "k": 5,
+        "ndcg": 0.22099871623462797,
+        "recall": 0.07496231135590484
+      },
+      {
+        "n_liked": 10,
+        "users": 26236,
+        "model": "als_explicit",
+        "k": 10,
+        "ndcg": 0.2004617561333737,
+        "recall": 0.11376779928231144
+      },
+      {
+        "n_liked": 10,
+        "users": 26236,
+        "model": "als_explicit",
+        "k": 20,
+        "ndcg": 0.19549511001682193,
+        "recall": 0.1643859062153171
+      },
+      {
+        "n_liked": 10,
+        "users": 26236,
+        "model": "als_implicit",
+        "k": 5,
+        "ndcg": 0.3160839883222893,
+        "recall": 0.10253382507263295
+      },
+      {
+        "n_liked": 10,
+        "users": 26236,
+        "model": "als_implicit",
+        "k": 10,
+        "ndcg": 0.2807313517429606,
+        "recall": 0.15403977930015578
+      },
+      {
+        "n_liked": 10,
+        "users": 26236,
+        "model": "als_implicit",
+        "k": 20,
+        "ndcg": 0.27000145083871746,
+        "recall": 0.22281955516016688
+      },
+      {
+        "n_liked": 20,
+        "users": 23806,
+        "model": "popularity",
+        "k": 5,
+        "ndcg": 0.22490672922058794,
+        "recall": 0.0529766074090437
+      },
+      {
+        "n_liked": 20,
+        "users": 23806,
+        "model": "popularity",
+        "k": 10,
+        "ndcg": 0.20275781916765478,
+        "recall": 0.08753107434569384
+      },
+      {
+        "n_liked": 20,
+        "users": 23806,
+        "model": "popularity",
+        "k": 20,
+        "ndcg": 0.18844129598703693,
+        "recall": 0.13351615448660933
+      },
+      {
+        "n_liked": 20,
+        "users": 23806,
+        "model": "als_explicit",
+        "k": 5,
+        "ndcg": 0.2283876285233563,
+        "recall": 0.06814798903576322
+      },
+      {
+        "n_liked": 20,
+        "users": 23806,
+        "model": "als_explicit",
+        "k": 10,
+        "ndcg": 0.21043393197323249,
+        "recall": 0.11054560236041443
+      },
+      {
+        "n_liked": 20,
+        "users": 23806,
+        "model": "als_explicit",
+        "k": 20,
+        "ndcg": 0.2090895460995876,
+        "recall": 0.1721345323160093
+      },
+      {
+        "n_liked": 20,
+        "users": 23806,
+        "model": "als_implicit",
+        "k": 5,
+        "ndcg": 0.4120081881216596,
+        "recall": 0.11972634903123783
+      },
+      {
+        "n_liked": 20,
+        "users": 23806,
+        "model": "als_implicit",
+        "k": 10,
+        "ndcg": 0.3627742019675097,
+        "recall": 0.18213728595857168
+      },
+      {
+        "n_liked": 20,
+        "users": 23806,
+        "model": "als_implicit",
+        "k": 20,
+        "ndcg": 0.34301812786092883,
+        "recall": 0.2653750927068436
+      }
+    ],
+    "grid": [
+      {
+        "kind": "als_explicit",
+        "rank": 16,
+        "reg_param": 0.01,
+        "val_ndcg": 0.006132320130183426,
+        "fit_seconds": 7.4
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 16,
+        "reg_param": 0.03,
+        "val_ndcg": 0.039252255158829706,
+        "fit_seconds": 5.2
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 16,
+        "reg_param": 0.05,
+        "val_ndcg": 0.06535201283774555,
+        "fit_seconds": 4.8
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 16,
+        "reg_param": 0.1,
+        "val_ndcg": 0.08068696948524341,
+        "fit_seconds": 4.7
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 16,
+        "reg_param": 0.2,
+        "val_ndcg": 0.04778910222279923,
+        "fit_seconds": 4.8
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 32,
+        "reg_param": 0.01,
+        "val_ndcg": 0.015998916897814113,
+        "fit_seconds": 9.3
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 32,
+        "reg_param": 0.03,
+        "val_ndcg": 0.06811679095459024,
+        "fit_seconds": 8.7
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 32,
+        "reg_param": 0.05,
+        "val_ndcg": 0.10051806348458524,
+        "fit_seconds": 10.3
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 32,
+        "reg_param": 0.1,
+        "val_ndcg": 0.09757620408043904,
+        "fit_seconds": 9.9
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 32,
+        "reg_param": 0.2,
+        "val_ndcg": 0.04902575265338219,
+        "fit_seconds": 9.9
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 64,
+        "reg_param": 0.01,
+        "val_ndcg": 0.027824255271421575,
+        "fit_seconds": 25.7
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 64,
+        "reg_param": 0.03,
+        "val_ndcg": 0.09982547078011579,
+        "fit_seconds": 26.3
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 64,
+        "reg_param": 0.05,
+        "val_ndcg": 0.1359564552469502,
+        "fit_seconds": 26.0
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 64,
+        "reg_param": 0.1,
+        "val_ndcg": 0.10521986875612961,
+        "fit_seconds": 26.2
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 64,
+        "reg_param": 0.2,
+        "val_ndcg": 0.04891744141557957,
+        "fit_seconds": 26.3
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 128,
+        "reg_param": 0.01,
+        "val_ndcg": 0.05429138056382102,
+        "fit_seconds": 85.9
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 128,
+        "reg_param": 0.03,
+        "val_ndcg": 0.14000113372007908,
+        "fit_seconds": 85.4
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 128,
+        "reg_param": 0.05,
+        "val_ndcg": 0.17298599183185095,
+        "fit_seconds": 85.5
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 128,
+        "reg_param": 0.1,
+        "val_ndcg": 0.11049408977347476,
+        "fit_seconds": 85.3
+      },
+      {
+        "kind": "als_explicit",
+        "rank": 128,
+        "reg_param": 0.2,
+        "val_ndcg": 0.04893039760837397,
+        "fit_seconds": 85.9
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 16,
+        "reg_param": 0.01,
+        "val_ndcg": 0.3696716642998001,
+        "fit_seconds": 5.8
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 16,
+        "reg_param": 0.03,
+        "val_ndcg": 0.36951045330188537,
+        "fit_seconds": 5.3
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 16,
+        "reg_param": 0.05,
+        "val_ndcg": 0.3697992614222563,
+        "fit_seconds": 5.4
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 16,
+        "reg_param": 0.1,
+        "val_ndcg": 0.3674595422301778,
+        "fit_seconds": 5.1
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 16,
+        "reg_param": 0.2,
+        "val_ndcg": 0.36326026019201246,
+        "fit_seconds": 5.4
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 32,
+        "reg_param": 0.01,
+        "val_ndcg": 0.4068120399982109,
+        "fit_seconds": 9.3
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 32,
+        "reg_param": 0.03,
+        "val_ndcg": 0.40649497425923964,
+        "fit_seconds": 9.4
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 32,
+        "reg_param": 0.05,
+        "val_ndcg": 0.40581431859225386,
+        "fit_seconds": 9.5
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 32,
+        "reg_param": 0.1,
+        "val_ndcg": 0.4050125962120333,
+        "fit_seconds": 9.7
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 32,
+        "reg_param": 0.2,
+        "val_ndcg": 0.39837357829236325,
+        "fit_seconds": 9.5
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 64,
+        "reg_param": 0.01,
+        "val_ndcg": 0.44628563608465466,
+        "fit_seconds": 23.5
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 64,
+        "reg_param": 0.03,
+        "val_ndcg": 0.4462004505616657,
+        "fit_seconds": 24.4
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 64,
+        "reg_param": 0.05,
+        "val_ndcg": 0.4452956554737291,
+        "fit_seconds": 24.1
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 64,
+        "reg_param": 0.1,
+        "val_ndcg": 0.4430658741722418,
+        "fit_seconds": 24.7
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 64,
+        "reg_param": 0.2,
+        "val_ndcg": 0.42621243732047187,
+        "fit_seconds": 24.6
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 128,
+        "reg_param": 0.01,
+        "val_ndcg": 0.48294322349014784,
+        "fit_seconds": 82.1
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 128,
+        "reg_param": 0.03,
+        "val_ndcg": 0.48482892665096095,
+        "fit_seconds": 82.6
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 128,
+        "reg_param": 0.05,
+        "val_ndcg": 0.4852231994082302,
+        "fit_seconds": 81.5
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 128,
+        "reg_param": 0.1,
+        "val_ndcg": 0.47977326078830446,
+        "fit_seconds": 81.8
+      },
+      {
+        "kind": "als_implicit",
+        "rank": 128,
+        "reg_param": 0.2,
+        "val_ndcg": 0.4509181965583297,
+        "fit_seconds": 81.9
+      }
+    ],
+    "showcase": {
+      "liked": [
+        "Naruto",
+        "Death Note",
+        "Fullmetal Alchemist: Brotherhood",
+        "Steins;Gate",
+        "Sword Art Online",
+        "Shingeki no Kyojin"
+      ],
+      "liked_ids": [
+        20,
+        1535,
+        5114,
+        9253,
+        11757,
+        16498
+      ],
+      "default_score": 8,
+      "recommended": [
+        "Fullmetal Alchemist",
+        "One Punch Man",
+        "Angel Beats!",
+        "Code Geass: Hangyaku no Lelouch",
+        "Tokyo Ghoul",
+        "Code Geass: Hangyaku no Lelouch R2",
+        "No Game No Life",
+        "Shingeki no Kyojin Season 2",
+        "Sword Art Online II",
+        "Hunter x Hunter (2011)"
+      ],
+      "recommended_ids": [
+        121,
+        30276,
+        6547,
+        1575,
+        22319,
+        2904,
+        19815,
+        25777,
+        21881,
+        11061
+      ],
+      "popularity_top10": [
+        "Code Geass: Hangyaku no Lelouch",
+        "One Punch Man",
+        "Sen to Chihiro no Kamikakushi",
+        "Kimi no Na wa.",
+        "Code Geass: Hangyaku no Lelouch R2",
+        "Toradora!",
+        "Angel Beats!",
+        "No Game No Life",
+        "Koe no Katachi",
+        "Boku no Hero Academia"
+      ],
+      "shared_with_popularity": 5
+    }
+  },
   "exploration": [
     {
       "file": "reports/exploration_2026-11-16.json",
@@ -691,6 +1437,72 @@
             "completed_rows_unrated": 10128245,
             "distinct_genres": 41,
             "distinct_studios": 676
+          }
+        },
+        {
+          "id": "reco_ratings_profile",
+          "phase": 4,
+          "source": "scratchpad explore_ratings.py sur clean/rating_complete (Spark, approxQuantile erreur relative 0,001) ; voir ADR 005",
+          "values": {
+            "rows": 56726861,
+            "score_mean": 7.5295,
+            "score_hist": {
+              "1": 302225,
+              "2": 379049,
+              "3": 661522,
+              "4": 1397785,
+              "5": 3313693,
+              "6": 6674997,
+              "7": 13122180,
+              "8": 14514054,
+              "9": 9712193,
+              "10": 6649163
+            },
+            "ratings_per_user_quantiles": {
+              "p10": 11,
+              "p25": 42,
+              "p50": 112,
+              "p75": 235,
+              "p90": 422,
+              "p99": 1069
+            },
+            "ratings_per_anime_quantiles": {
+              "p10": 11,
+              "p25": 35,
+              "p50": 230,
+              "p75": 1943,
+              "p90": 9329,
+              "p99": 51591
+            },
+            "users_with_at_least": {
+              "5": 293103,
+              "10": 281663,
+              "20": 264537,
+              "50": 222761
+            },
+            "anime_with_at_least": {
+              "10": 14224,
+              "20": 12945,
+              "50": 10861,
+              "100": 9322
+            },
+            "one_pass_filter": {
+              "u10_i20": {
+                "rows": 56586602,
+                "users": 281663,
+                "anime": 12945
+              },
+              "u20_i50": {
+                "rows": 56273090,
+                "users": 264537,
+                "anime": 10861
+              },
+              "u20_i100": {
+                "rows": 56163704,
+                "users": 264537,
+                "anime": 9322
+              }
+            }
           }
         }
       ]

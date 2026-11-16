@@ -180,3 +180,63 @@ bootstrap par utilisateur sur la PR-AUC test.
    nombre d'épisodes (0,215), le rang de popularité (0,124) et l'année (0,089). La suivante tombe à
    0,012. Je n'en conclus pas le sens de l'effet : la permutation mesure une importance, pas une
    direction, et elle sous-estime les variables corrélées entre elles.
+
+## Phase 4 — Recommandation ALS (2026-11-17)
+**Ce qui a été construit :** `make reco` filtre les notes avec Spark, compare une baseline de
+popularité, un ALS explicite et un ALS implicite (Spark MLlib), évalue par fold-in NumPy des
+utilisateurs jamais vus, puis exporte les facteurs des animes (Parquet + fiche JSON) pour l'API.
+
+**Concepts clés :**
+- **ALS et factorisation matricielle** : on résume chaque utilisateur et chaque anime par un
+  vecteur de `rank` nombres (ici 128) ; le score d'un couple est leur produit scalaire. ALS
+  (« moindres carrés alternés ») fixe les vecteurs des animes, résout ceux des utilisateurs, puis
+  l'inverse, et recommence. Chaque demi-étape est un problème de moindres carrés avec une solution
+  exacte, facile à paralléliser dans Spark.
+- **Explicite vs implicite, et confiance** : en explicite, le modèle prédit la note et n'apprend
+  que sur les notes observées. En implicite, il prédit « va-t-il aimer ? » (1 ou 0) sur **tout**
+  le catalogue, et la note sert de *confiance* : ici note − 5, donc un 10 pèse plus qu'un 6, et
+  une note sous 5 est un « non » dont on est sûr. Un anime non vu est un « non » peu sûr.
+- **Fold-in / démarrage à froid** : un nouvel utilisateur n'a pas de vecteur. Mais à vecteurs
+  d'animes fixés, le sien se calcule en résolvant un seul système linéaire (une demi-étape d'ALS
+  pour lui seul), en NumPy, sans Spark. Un test de parité vérifie que ce calcul retrouve les
+  vecteurs de Spark : les conventions (régularisation λ·n) sont faciles à rater en silence.
+- **NDCG@K, précision@K, rappel@K, couverture** : précision@K = part des K recommandations qui
+  sont aimées ; rappel@K = part des animes aimés retrouvés dans le top K ; NDCG@K fait pareil mais
+  un bon titre en 1re place compte plus qu'en 10e. La couverture est la part du catalogue
+  recommandée au moins une fois : la popularité ne couvre que 0,006 du catalogue à K = 10.
+- **Split par utilisateur et masquage** : 80 % des utilisateurs entraînent l'ALS ; les autres ne
+  sont jamais vus. Pour eux, on montre 80 % de leurs notes au fold-in et on cache 20 %, à
+  retrouver. On mesure ainsi le vrai chemin de production. Sans dates, le masquage est aléatoire.
+- **Une bonne RMSE ne fait pas un bon classement** : la RMSE ne juge que la note prédite sur des
+  animes que l'utilisateur a *choisi* de voir. Recommander, c'est classer tout le catalogue,
+  surtout des animes non vus. L'ALS explicite a une RMSE de 1,096 contre 1,503 pour la moyenne de
+  l'anime, mais une NDCG@10 de 0,212 contre 0,193 pour la popularité : presque rien.
+- **Filtre itératif** : retirer les animes peu notés peut faire passer un utilisateur sous son
+  seuil, et inversement. On répète jusqu'à stabilité (3 passes ici).
+
+**Pourquoi ce choix :** voir [ADR 005](decisions/005-recommandation-als.md). Split par note
+écarté : l'ALS connaîtrait déjà l'utilisateur, ce qui n'arrive jamais dans l'appli. Sélection sur
+la RMSE écartée : elle ne mesure pas la qualité d'une liste. Explicite ou implicite : on n'a pas
+tranché sur le papier, on a comparé les deux sur la NDCG@10 de validation. Modèle Spark dans
+l'API écarté (JVM dans l'image) : on exporte les facteurs en Parquet et on refait le fold-in en
+NumPy. Grille sur tout le train écartée (40 entraînements) : 25 % des utilisateurs, puis
+réentraînement des deux meilleurs. Limites assumées : meilleur `rank` (128) au bord de la grille,
+pas d'intervalles de confiance.
+
+**3 questions d'entretien possibles :**
+1. *Pourquoi l'ALS implicite alors que tu as de vraies notes ?*
+   Parce que je l'ai mesuré. Sur le test, NDCG@10 de 0,493 pour l'implicite, 0,212 pour
+   l'explicite et 0,193 pour la popularité. L'explicite prédit bien les notes (RMSE 1,096 contre
+   1,503 pour la moyenne de l'anime) mais n'apprend que sur ce que les gens ont choisi de voir.
+   L'implicite utilise aussi le fait qu'un anime n'a pas été vu, et garde la note comme confiance.
+2. *Comment recommandes-tu à un utilisateur qui vient de s'inscrire ?*
+   Par fold-in : avec les vecteurs des 10 859 animes fixés, je calcule son vecteur par moindres
+   carrés régularisés à partir de ses titres aimés (note par défaut 8), en NumPy dans l'API. Je
+   l'ai évalué dans ce régime : avec 3 titres, l'ALS (0,175) fait moins bien que la popularité
+   (0,193) ; avec 5 il passe devant (0,214), avec 10 il atteint 0,281. D'où la proposition : au
+   moins 5 titres à l'onboarding, popularité en dessous.
+3. *Comment sais-tu que ton évaluation n'est pas trop optimiste ?*
+   Les 26 562 utilisateurs de test ne sont jamais vus par l'ALS : ils passent par le même fold-in
+   que la production. Les hyperparamètres et le choix du modèle se font sur la validation, le test
+   est évalué une seule fois. Limites que j'assume : pas de dates, donc masquage aléatoire ; et
+   le meilleur rank (128) est au bord de la grille, donc l'optimum n'est pas encadré.

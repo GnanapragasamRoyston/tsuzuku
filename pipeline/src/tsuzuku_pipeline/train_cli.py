@@ -95,7 +95,7 @@ def _build_features(spark: SparkSession, settings: dict[str, Any]) -> None:
 # --- fit (scikit-learn) ------------------------------------------------------------------------
 
 
-def data_fingerprint(settings: dict[str, Any]) -> str:
+def data_fingerprint(settings: dict[str, Any], section: str = "drop_model") -> str:
     """Empreinte des données brutes (manifest sha256 des CSV) + de la config du modèle."""
     manifest = resolve_path(settings, "raw") / "manifest.json"
     if manifest.is_file():
@@ -105,7 +105,7 @@ def data_fingerprint(settings: dict[str, Any]) -> str:
         logger.warning("%s absent : empreinte de données basée sur la config seule", manifest)
         raw = b"no-manifest"
     config = fingerprint(
-        {"drop_model": require_section(settings, "drop_model"), "seed": settings["project"]["seed"]}
+        {section: require_section(settings, section), "seed": settings["project"]["seed"]}
     )
     return hashlib.sha256(raw + config.encode()).hexdigest()
 

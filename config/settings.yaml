@@ -94,5 +94,38 @@ key_figures:
     - "Sword Art Online"
     - "Fullmetal Alchemist: Brotherhood"
 
-# Sections complétées dans les phases suivantes :
-# als:              (phase 4) seuils d'activité, grille rank/regParam, note par défaut d'onboarding
+reco:
+  # Seuils d'activité, appliqués en itérant jusqu'à stabilité. Mesuré sur clean le 2026-11-16
+  # (reports/exploration_2026-11-16.json, reco_ratings_profile) : médiane 112 notes/utilisateur,
+  # 230 notes/anime ; une passe à (20, 50) garde 56,27 M notes sur 56,73 M, 264 537 utilisateurs
+  # et 10 861 animes.
+  min_user_ratings: 20
+  min_item_ratings: 50
+  # Split PAR UTILISATEUR ; val/test ne sont jamais vus par l'ALS (évalués via le fold-in).
+  val_fraction: 0.1
+  test_fraction: 0.1
+  # Part des notes de chaque utilisateur val/test masquée (à retrouver).
+  mask_fraction: 0.2
+  # Note masquée ≥ ce seuil = « aimé » (pertinent). Moyenne mesurée : 7,53 ; ≥ 8 = 54 % des notes.
+  relevant_min_score: 8
+  # Choix d'onboarding sans note (SPEC § 6.2) : 8, la note la plus fréquente (14,5 M notes).
+  onboarding_default_score: 8
+  # ALS implicite : note − 5 → une note ≤ 5 (10,7 % des notes) n'est pas une préférence positive.
+  implicit_neutral_score: 5
+  implicit_alpha: 1.0
+  # Baseline RMSE : moyenne de l'anime tirée vers la moyenne globale (m notes fictives).
+  baseline_shrinkage: 10
+  # Grille sur une part des utilisateurs du train (temps de calcul), évaluée sur N utilisateurs
+  # de validation ; les meilleurs de chaque variante sont réentraînés sur tout le train.
+  grid_user_fraction: 0.25
+  grid_eval_users: 5000
+  # 1er run (rank 16-64, reg 0,05-0,2) : meilleur point au bord (rank 64, reg 0,05) pour les deux
+  # variantes → grille élargie pour encadrer l'optimum (relevé par la revue de code).
+  ranks: [16, 32, 64, 128]
+  reg_params: [0.01, 0.03, 0.05, 0.1, 0.2]
+  max_iter: 10
+  num_blocks: 20
+  k_values: [5, 10, 20]
+  selection_k: 10
+  # Régime d'usage réel : évaluation avec seulement n animes aimés donnés (onboarding).
+  onboarding_n_liked: [3, 5, 10, 20]
