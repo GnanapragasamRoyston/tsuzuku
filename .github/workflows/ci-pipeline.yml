@@ -18,6 +18,11 @@ jobs:
         working-directory: pipeline
     steps:
       - uses: actions/checkout@v4
+      # PySpark 3.5 a besoin d'une JVM : les tests Spark démarrent une session locale.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true

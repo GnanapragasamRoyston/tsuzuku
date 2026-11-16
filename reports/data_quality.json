@@ -1,0 +1,115 @@
+{
+  "generated_at": "2026-11-16T10:30:46Z",
+  "dataset": "hernan4444/anime-recommendation-database-2020",
+  "license": "CC0-1.0",
+  "watching_status": {
+    "1": "Currently Watching",
+    "2": "Completed",
+    "3": "On Hold",
+    "4": "Dropped",
+    "6": "Plan to Watch"
+  },
+  "tables": {
+    "anime": {
+      "rows": 17562,
+      "duplicate_anime_ids": 0,
+      "adult_total": 1348,
+      "adult_by_genre_only": 3,
+      "unknown_rating": 688,
+      "empty_genres": 63,
+      "null_counts": {
+        "mal_score": 5141,
+        "english_name": 10565,
+        "japanese_name": 48,
+        "type": 37,
+        "episodes": 516,
+        "aired": 309,
+        "premiered": 12817,
+        "source": 3567,
+        "duration": 555,
+        "rating": 688,
+        "ranked": 1762,
+        "score_10": 437,
+        "score_9": 3167,
+        "score_8": 1371,
+        "score_7": 503,
+        "score_6": 511,
+        "score_5": 584,
+        "score_4": 977,
+        "score_3": 1307,
+        "score_2": 1597,
+        "score_1": 459,
+        "duration_min": 555,
+        "start_year": 309,
+        "premiered_season": 12817
+      }
+    },
+    "synopsis": {
+      "rows": 16214,
+      "missing_synopsis": 8
+    },
+    "animelist": {
+      "rows": 109224747,
+      "null_keys": 0,
+      "duplicate_pairs": 1,
+      "distinct_users": 325770,
+      "distinct_anime": 17562,
+      "score_out_of_range": 0,
+      "score_zero": 46827035,
+      "score_null": 0,
+      "negative_watched_episodes": 0,
+      "unknown_status_rows": 540,
+      "status_counts": {
+        "Completed": 68089751,
+        "Plan to Watch": 27938693,
+        "Currently Watching": 5228658,
+        "Dropped": 4266591,
+        "On Hold": 3700514,
+        "unknown(0)": 531,
+        "unknown(5)": 6,
+        "unknown(33)": 2,
+        "unknown(55)": 1
+      },
+      "watched_gt_episodes": 197231
+    },
+    "rating_complete": {
+      "rows": 57633278,
+      "null_keys": 0,
+      "duplicate_pairs": 0,
+      "distinct_users": 310059,
+      "distinct_anime": 16872,
+      "score_out_of_range": 0,
+      "score_zero": 0,
+      "score_null": 0
+    }
+  },
+  "filters": {
+    "anime": {
+      "rows_before": 17562,
+      "rows_after": 16214
+    },
+    "animelist": {
+      "rows_before": 109224747,
+      "removed_null_keys": 0,
+      "removed_unknown_status": 540,
+      "removed_duplicates": 1,
+      "removed_adult": 1935084,
+      "removed_orphan": 0,
+      "orphan_anime_ids": 0,
+      "rows_after": 107289122
+    },
+    "rating_complete": {
+      "rows_before": 57633278,
+      "removed_null_keys": 0,
+      "removed_unknown_status": 0,
+      "removed_duplicates": 0,
+      "removed_adult": 906417,
+      "removed_orphan": 0,
+      "orphan_anime_ids": 0,
+      "rows_after": 56726861
+    }
+  },
+  "consistency": {
+    "rating_complete_pairs_missing_from_animelist": 0
+  }
+}

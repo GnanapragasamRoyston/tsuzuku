@@ -4,7 +4,12 @@ version = "0.1.0"
 description = "Pipeline Data/ML de Tsuzuku (Spark, Airflow, entraînement)"
 requires-python = ">=3.11,<3.12"
 dependencies = [
+    "kaggle>=2.2.5",
+    # SPEC : PySpark 3.5 (Java 17). On bloque la mineure pour ne pas changer d'API par surprise.
+    "pyspark>=3.5,<3.6",
     "pyyaml>=6.0",
+    # kaggle 2.2.5 importe `six` sans le déclarer dans ses dépendances : on l'ajoute nous-mêmes.
+    "six>=1.17.0",
 ]
 
 [dependency-groups]

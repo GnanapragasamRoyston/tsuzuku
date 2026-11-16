@@ -43,9 +43,13 @@ audit: ## Audit de sécurité des dépendances (pip-audit) + bandit sur le backe
 	@for p in $(PY_PROJECTS); do (cd $$p && uv export --no-hashes --format requirements-txt -q | uv run pip-audit -r /dev/stdin) || exit 1; done
 	cd backend && uv run bandit -q -r app
 
-# --- Phases suivantes (pas encore implémentées) ----------------------------
+# --- Données (phase 1) ----------------------------------------------------
+# Idempotent : les étapes déjà faites sont sautées. Refaire tout : make data ARGS=--force
+# Une seule étape : make data ARGS="--step quality --force"
 data: ## [phase 1] Téléchargement Kaggle, Parquet, filtre adulte, rapport qualité
-	@echo "Pas encore implémenté (phase 1)"; exit 1
+	cd pipeline && uv run python -m tsuzuku_pipeline.data_cli $(ARGS)
+
+# --- Phases suivantes (pas encore implémentées) ----------------------------
 spark: ## [phase 2] Transformations Spark -> marts Postgres
 	@echo "Pas encore implémenté (phase 2)"; exit 1
 train: ## [phase 3] Entraînement du modèle de drop

@@ -15,6 +15,27 @@ paths:
 spark:
   # Ajuster selon la RAM de la machine (phase 1+).
   driver_memory: 6g
+  # Partitions de shuffle : 200 par défaut, trop pour du local[*] ; ~2-3x le nombre de cœurs.
+  shuffle_partitions: 48
+
+data:
+  # Slug vérifié via l'API Kaggle le 2026-11-16 (kaggle datasets list -s ...). Licence lue dans les
+  # métadonnées du dataset au même moment : CC0-1.0.
+  kaggle_dataset: hernan4444/anime-recommendation-database-2020
+  license: CC0-1.0
+  # Uniquement les CSV utiles : le dataset contient aussi un dossier html/ (17 562 zips) inutile ici.
+  files:
+    - watching_status.csv
+    - anime.csv
+    - anime_with_synopsis.csv
+    - rating_complete.csv
+    - animelist.csv
+  # Échantillon de dev : part des utilisateurs gardés (toutes leurs lignes), tirée avec project.seed.
+  sample_user_fraction: 0.02
+  # Contenus adultes exclus partout (SPEC § 2.1).
+  adult_filter:
+    rating_prefixes: ["Rx"]
+    genres: ["Hentai"]
 
 # Sections complétées dans les phases suivantes :
 # drop_model:       (phase 3) taille d'échantillon, seuils
