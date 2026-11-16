@@ -1,6 +1,6 @@
 # Rapport qualité des données
 
-Généré le 2026-11-16T10:30:46Z depuis `reports/data_quality.json`.
+Généré le 2026-11-16T11:16:43Z depuis `reports/data_quality.json`.
 Source : Kaggle `hernan4444/anime-recommendation-database-2020` · licence CC0-1.0.
 
 ## Table `anime` (staging)

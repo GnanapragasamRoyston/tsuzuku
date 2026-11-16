@@ -9,6 +9,7 @@ paths:
   raw: data/raw
   parquet: data/parquet
   samples: data/samples
+  marts: data/marts
   models: models
   reports: reports
 
@@ -37,7 +38,22 @@ data:
     rating_prefixes: ["Rx"]
     genres: ["Hentai"]
 
+critical_episode:
+  # Point de non-retour : 1er épisode e où le risque de lâcher (pour qui a atteint e) tombe sous
+  # ce ratio × le risque au 1er épisode. 0.25 = « risque divisé par 4 ». Choisi par Royston le
+  # 2026-11-16 après mesure : le seuil absolu initial (complétion ≥ 0.9) tombait à l'épisode 1
+  # pour 2 022 animes sur 3 339 (ADR 003).
+  no_return_risk_ratio: 0.25
+  # En dessous, l'épisode critique serait du bruit. Mesuré sur clean : 4 613 animes ont >= 50
+  # drops, dont 3 798 avec >= 3 épisodes.
+  min_drops: 50
+  min_episodes: 3
+
+retention:
+  # Un genre/studio n'est publié que s'il a assez de volume pour que ses taux aient un sens.
+  min_interactions: 1000  # lignes Completed + Dropped
+  min_anime: 5
+
 # Sections complétées dans les phases suivantes :
 # drop_model:       (phase 3) taille d'échantillon, seuils
 # als:              (phase 4) seuils d'activité, grille rank/regParam, note par défaut d'onboarding
-# critical_episode: (phase 2) seuil du point de non-retour

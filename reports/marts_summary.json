@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-11-16T11:18:57Z",
+  "drop_curve": {
+    "rows": 97100,
+    "anime": 15665
+  },
+  "critical_episode": {
+    "anime": 3339,
+    "with_point_of_no_return": 3306
+  },
+  "retention_by_genre": {
+    "rows": 41
+  },
+  "retention_by_studio": {
+    "rows": 220
+  },
+  "checks": {
+    "curves_not_ending_at_1": 0,
+    "rates_out_of_range": 0
+  }
+}

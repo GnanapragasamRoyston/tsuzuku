@@ -80,3 +80,48 @@ n'apporterait rien : seuls les marts agrégés y iront (phase 2).
    Parce que les données le demandent : le rapport montre 3 animes classés Hentai sans rating Rx.
    Et les animes orphelins (absents du catalogue) sont exclus aussi, puisqu'on ne peut pas prouver
    qu'ils sont tout public.
+
+## Phase 2 — Marts Spark → Postgres (2026-11-16)
+**Ce qui a été construit :** `make spark` calcule avec Spark, sur 107 M interactions, la courbe de
+drop de chaque anime, son épisode critique, son point de non-retour et la rétention par genre et
+studio, puis charge ces marts et le catalogue anime dans Postgres (COPY, transactions, upsert).
+
+**Concepts clés :**
+- **Analyse de survie** : on suit des « individus » (spectateurs) jusqu'à un événement (le drop).
+  Le *risque* à l'épisode *e* est la probabilité de lâcher pour quelqu'un qui a atteint *e*. Les
+  spectateurs encore en cours sont *censurés à droite* : on ne connaît pas encore leur issue.
+- **Biais de déclaration** : sur MAL, les gens marquent bien plus souvent « Completed » que
+  « Dropped ». Un seuil absolu (« 90 % finissent ») était franchi dès l'épisode 1 partout ; une
+  mesure *relative* (risque divisé par 4 par rapport au départ) compare l'anime à lui-même et
+  neutralise ce biais. Leçon : un seuil choisi sur le papier se valide sur les données.
+- **Agréger avant d'exploser** : on résume d'abord par anime (16 000 lignes), puis on éclate les
+  genres. Une médiane, elle, ne s'additionne pas : elle exige les lignes individuelles
+  (`percentile_approx`, approximation contrôlée).
+- **COPY et transactions** : COPY envoie toutes les lignes en un flux (bien plus rapide que des
+  INSERT). Le remplacement d'un mart (TRUNCATE + INSERT) tient dans une transaction : un lecteur
+  voit l'ancienne ou la nouvelle version, jamais une table vide.
+- **Upsert et ids stables** : `INSERT … ON CONFLICT DO UPDATE` met à jour une œuvre sans changer son
+  `id`, auquel les listes des utilisateurs pointeront.
+- **Verrous Postgres** : TRUNCATE attend la fin des lectures en cours. Une transaction de lecture
+  restée ouverte a bloqué la suite de tests pendant 10 min ; d'où `lock_timeout` (échec clair après
+  30 s) et des connexions de test en autocommit.
+
+**Pourquoi ce choix :** voir [ADR 003](decisions/003-marts-drop-et-chargement-postgres.md). JDBC
+Spark écarté (driver Java à télécharger, peu testable), `toPandas()` aussi (types numpy, dépendances
+en plus) : `toLocalIterator()` + COPY suffit pour des marts de quelques centaines de milliers de
+lignes. Kaplan-Meier complet gardé comme piste.
+
+**3 questions d'entretien possibles :**
+1. *Comment définis-tu l'épisode critique, et pourquoi exclure l'épisode 0 ?*
+   C'est l'épisode ≥ 1 qui concentre le plus de drops, publié seulement avec assez de volume
+   (≥ 50 drops, ≥ 3 épisodes). L'épisode 0, ce sont des gens qui n'ont jamais commencé : il
+   gagnerait pour beaucoup d'animes sans rien dire du contenu. Il reste visible dans la courbe.
+2. *Comment as-tu validé que tes indicateurs avaient du sens ?*
+   Contrôles automatiques (chaque courbe finit à 1, taux dans [0, 1]) et contrôle à la main sur des
+   séries connues : Death Note a son épisode critique au 25 et son point de non-retour au 26 ;
+   Naruto au 135, au début des fillers. Et c'est en mesurant la distribution que j'ai vu que la
+   première définition du point de non-retour ne discriminait rien.
+3. *Pourquoi ne pas tout calculer en SQL dans Postgres ?*
+   Postgres n'est pas fait pour scanner 107 M lignes à chaque calcul ; Spark parallélise sur tous
+   les cœurs et lit du Parquet colonnaire. Postgres sert les *résultats* (quelques centaines de
+   milliers de lignes) à l'API et à Power BI, avec index et contraintes.

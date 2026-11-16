@@ -5,8 +5,10 @@ description = "Pipeline Data/ML de Tsuzuku (Spark, Airflow, entraînement)"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "kaggle>=2.2.5",
+    "psycopg[binary]>=3.2",
     # SPEC : PySpark 3.5 (Java 17). On bloque la mineure pour ne pas changer d'API par surprise.
     "pyspark>=3.5,<3.6",
+    "python-dotenv>=1.0",
     "pyyaml>=6.0",
     # kaggle 2.2.5 importe `six` sans le déclarer dans ses dépendances : on l'ajoute nous-mêmes.
     "six>=1.17.0",
@@ -28,3 +30,8 @@ packages = ["src/tsuzuku_pipeline"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "db: a besoin de Postgres (make up) ; sauté en local s'il est absent, obligatoire en CI (REQUIRE_DB=1)",
+]
+# Un marqueur mal orthographié doit faire échouer, pas passer en silence.
+addopts = "--strict-markers"

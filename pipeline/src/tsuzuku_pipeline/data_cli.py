@@ -15,7 +15,7 @@ que ses entrées. Refaire clean rend donc automatiquement quality et sample pér
 import argparse
 import json
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -38,6 +38,7 @@ from tsuzuku_pipeline.spark.to_parquet import (
     read_synopsis,
     read_watching_status,
 )
+from tsuzuku_pipeline.steps import Step, write_parquet
 
 logger = logging.getLogger("tsuzuku_pipeline.data")
 
@@ -51,53 +52,6 @@ RAW_FILES = {
     "animelist": "animelist.csv",
     "rating_complete": "rating_complete.csv",
 }
-
-
-# --- Fraîcheur des sorties -------------------------------------------------------------------
-
-
-def _marker(path: Path) -> Path:
-    # Pour un dossier Parquet, _SUCCESS est écrit par Spark en toute fin d'écriture : son absence
-    # signale une sortie partielle (job interrompu). Pour un fichier, c'est le fichier lui-même.
-    return path / "_SUCCESS" if path.suffix == "" else path
-
-
-def _is_fresh(outputs: Iterable[Path], inputs: Iterable[Path]) -> bool:
-    markers = [_marker(p) for p in outputs]
-    if not all(m.is_file() for m in markers):
-        return False
-    sources = [_marker(p) for p in inputs if _marker(p).is_file()]
-    if not sources:
-        return True
-    return min(m.stat().st_mtime_ns for m in markers) >= max(s.stat().st_mtime_ns for s in sources)
-
-
-def _write(df: DataFrame, path: Path) -> None:
-    df.write.mode("overwrite").parquet(str(path))
-    logger.info("Écrit %s", path)
-
-
-# --- Étapes ----------------------------------------------------------------------------------
-
-
-class Step:
-    """Une étape : ses entrées, ses sorties, et la fonction qui les produit."""
-
-    def __init__(
-        self,
-        name: str,
-        inputs: Callable[[dict], list[Path]],
-        outputs: Callable[[dict], list[Path]],
-        build: Callable[[SparkSession, dict], None],
-    ) -> None:
-        self.name, self.inputs, self.outputs, self.build = name, inputs, outputs, build
-
-    def run(self, spark: SparkSession, settings: dict[str, Any], force: bool) -> None:
-        if not force and _is_fresh(self.outputs(settings), self.inputs(settings)):
-            logger.info("Étape %s : à jour, ignorée (--force pour refaire)", self.name)
-            return
-        logger.info("=== Étape %s ===", self.name)
-        self.build(spark, settings)
 
 
 def _layer(settings: dict[str, Any], layer: str) -> Path:
@@ -114,7 +68,7 @@ def _build_staging(spark: SparkSession, settings: dict[str, Any]) -> None:
         "rating_complete": lambda p: read_interactions(spark, p, with_status=False),
     }
     for name, read in readers.items():
-        _write(read(raw / RAW_FILES[name]), out / name)
+        write_parquet(read(raw / RAW_FILES[name]), out / name)
 
 
 def _valid_statuses(spark: SparkSession, settings: dict[str, Any]) -> dict[int, str]:
@@ -133,11 +87,11 @@ def _build_clean(spark: SparkSession, settings: dict[str, Any]) -> None:
 
     allowed = flag_adult(read("anime"), rules).where(~F.col("is_adult")).drop("is_adult")
     statuses = list(_valid_statuses(spark, settings))
-    _write(allowed, out / "anime")
-    _write(filter_by_catalog(read("synopsis"), allowed), out / "synopsis")
-    _write(read("watching_status").dropna(subset=["status"]), out / "watching_status")
-    _write(clean_interactions(read("animelist"), allowed, statuses), out / "animelist")
-    _write(clean_interactions(read("rating_complete"), allowed), out / "rating_complete")
+    write_parquet(allowed, out / "anime")
+    write_parquet(filter_by_catalog(read("synopsis"), allowed), out / "synopsis")
+    write_parquet(read("watching_status").dropna(subset=["status"]), out / "watching_status")
+    write_parquet(clean_interactions(read("animelist"), allowed, statuses), out / "animelist")
+    write_parquet(clean_interactions(read("rating_complete"), allowed), out / "rating_complete")
 
 
 def build_quality_report(spark: SparkSession, settings: dict[str, Any]) -> dict[str, Any]:
@@ -199,11 +153,22 @@ def _build_sample(spark: SparkSession, settings: dict[str, Any]) -> None:
     seed = settings["project"]["seed"]
     clean, out = _layer(settings, "clean"), resolve_path(settings, "samples")
     for name in INTERACTION_TABLES:
-        _write(sample_users(spark.read.parquet(str(clean / name)), fraction, seed), out / name)
+        write_parquet(
+            sample_users(spark.read.parquet(str(clean / name)), fraction, seed), out / name
+        )
 
 
 def _tables(settings: dict, layer: str, names: Iterable[str]) -> list[Path]:
     return [_layer(settings, layer) / n for n in names]
+
+
+def stamp_dir(settings: dict[str, Any]) -> Path:
+    """data/.stamps : empreintes de la config utilisée par chaque étape (voir steps.py)."""
+    return resolve_path(settings, "parquet").parent / ".stamps"
+
+
+def _adult_rules(settings: dict[str, Any]) -> Any:
+    return require_section(settings, "data")["adult_filter"]
 
 
 ALL_TABLES = (*CATALOG_TABLES, *INTERACTION_TABLES)
@@ -219,18 +184,28 @@ SPARK_STEPS = {
         inputs=lambda s: _tables(s, "staging", ALL_TABLES),
         outputs=lambda s: _tables(s, "clean", ALL_TABLES),
         build=_build_clean,
+        # Changer les règles du filtre adulte doit refaire clean (puis, par fraîcheur, la suite).
+        config=_adult_rules,
+        stamp_dir=stamp_dir,
     ),
     "quality": Step(
         "quality",
         inputs=lambda s: _tables(s, "staging", ALL_TABLES) + _tables(s, "clean", ALL_TABLES),
         outputs=lambda s: [resolve_path(s, "reports") / "data_quality.json"],
         build=_build_quality,
+        config=_adult_rules,
+        stamp_dir=stamp_dir,
     ),
     "sample": Step(
         "sample",
         inputs=lambda s: _tables(s, "clean", INTERACTION_TABLES),
         outputs=lambda s: [resolve_path(s, "samples") / n for n in INTERACTION_TABLES],
         build=_build_sample,
+        config=lambda s: {
+            "fraction": require_section(s, "data")["sample_user_fraction"],
+            "seed": s["project"]["seed"],
+        },
+        stamp_dir=stamp_dir,
     ),
 }
 

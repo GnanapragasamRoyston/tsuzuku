@@ -49,9 +49,13 @@ audit: ## Audit de sécurité des dépendances (pip-audit) + bandit sur le backe
 data: ## [phase 1] Téléchargement Kaggle, Parquet, filtre adulte, rapport qualité
 	cd pipeline && uv run python -m tsuzuku_pipeline.data_cli $(ARGS)
 
+# --- Marts (phase 2) --------------------------------------------------------
+# Nécessite `make data` puis `make up`. Les marts sont recalculés seulement s'ils sont périmés ;
+# le chargement Postgres est rejoué à chaque fois (idempotent).
+spark: ## [phase 2] Transformations Spark -> marts Postgres (catalogue + drop + rétention)
+	cd pipeline && uv run python -m tsuzuku_pipeline.spark_cli $(ARGS)
+
 # --- Phases suivantes (pas encore implémentées) ----------------------------
-spark: ## [phase 2] Transformations Spark -> marts Postgres
-	@echo "Pas encore implémenté (phase 2)"; exit 1
 train: ## [phase 3] Entraînement du modèle de drop
 	@echo "Pas encore implémenté (phase 3)"; exit 1
 reco: ## [phase 4] Entraînement ALS

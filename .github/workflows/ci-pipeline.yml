@@ -16,6 +16,23 @@ jobs:
     defaults:
       run:
         working-directory: pipeline
+    # Postgres pour les tests marqués `db` (loader, make spark de bout en bout).
+    # Mot de passe jetable, propre au runner ; aucun secret réel.
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: tsuzuku
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: tsuzuku
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tsuzuku -d tsuzuku"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://tsuzuku:ci-only@localhost:5433/tsuzuku
+      # En CI, un test `db` qui ne trouve pas Postgres échoue au lieu d'être sauté.
+      REQUIRE_DB: "1"
     steps:
       - uses: actions/checkout@v4
       # PySpark 3.5 a besoin d'une JVM : les tests Spark démarrent une session locale.
@@ -30,6 +47,8 @@ jobs:
       - name: Lint
         run: uv run ruff check . && uv run ruff format --check .
       - name: Tests
+        # Garde-fou : un blocage (verrou, JVM) ne doit pas consommer 6 h de CI.
+        timeout-minutes: 15
         run: uv run pytest
       - name: Audit des dépendances
         run: uv export --no-hashes --format requirements-txt -q | uv run pip-audit -r /dev/stdin
