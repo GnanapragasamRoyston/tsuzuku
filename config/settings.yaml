@@ -175,6 +175,16 @@ api:
   # /trending sert le snapshot du DAG jikan_daily_ingest (phase 6) s'il a au plus ce nombre de
   # jours ; sinon (DAG ou Jikan en panne), appel direct à Jikan en repli.
   trending_max_age_days: 2
+  # Onboarding (SPEC § 8) : au moins 10 œuvres aimées, au-dessus de la règle des 5 de l'ALS.
+  # Validé par Royston le 2026-11-20 (ADR 008).
+  onboarding_min_choices: 10
+  # Nombre maximal d'œuvres dans la liste d'un compte (borne le calcul des recos et du risque
+  # de drop, qui lisent toute la liste). Large : les gros profils MAL dépassent le millier.
+  list_max_entries: 5000
+  # Longueur maximale d'une critique dans une liste (caractères).
+  review_max_length: 2000
+  # Taille maximale d'une page de GET /me/list.
+  list_page_max: 100
   jikan:
     # API publique sans clé (SPEC § 2.2). Limite documentée : 3 requêtes/s, 60/min.
     base_url: https://api.jikan.moe/v4
@@ -188,3 +198,18 @@ api:
     # Après un échec (retries épuisés), pas de nouvel essai avant ce délai : sans ça, chaque
     # requête relancerait toute la séquence de retries pendant une panne de Jikan.
     failure_backoff_s: 120
+  # Comptes (phase 7, ADR 008).
+  auth:
+    # Durée de vie d'une session (jeton dans un cookie httpOnly), en heures : 7 jours.
+    token_ttl_hours: 168
+    # Longueur plutôt que règles de composition (recommandation NIST SP 800-63B). Le maximum
+    # borne le coût du hachage argon2 d'une entrée envoyée par un inconnu.
+    password_min_length: 10
+    password_max_length: 128
+    # Fenêtre glissante, comptée par IP et par email : ralentit le test de mots de passe.
+    login_limit:
+      max_attempts: 5
+      window_s: 300
+    register_limit:
+      max_attempts: 5
+      window_s: 3600

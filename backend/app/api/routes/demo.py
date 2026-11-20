@@ -20,7 +20,7 @@ router = APIRouter(prefix="/demo", tags=["démo"])
 def _check_list_size(n: int, rules: ApiRules) -> None:
     if n > rules.max_list_items:
         detail = f"liste trop longue : {n} éléments (max {rules.max_list_items})"
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail)
 
 
 @router.post("/recommendations", response_model=RecoResponse)

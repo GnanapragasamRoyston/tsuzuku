@@ -14,6 +14,8 @@ import pandas as pd
 import psycopg
 import pytest
 import sklearn
+from alembic import command
+from alembic.config import Config
 from fastapi.testclient import TestClient
 from psycopg import sql
 from sklearn.compose import ColumnTransformer
@@ -35,8 +37,19 @@ from app.core.config import REPO_ROOT, Settings, load_rules
 from app.main import create_app
 
 TEST_DB = f"tsuzuku_api_test_{os.getpid()}"
+BACKEND_DIR = REPO_ROOT / "backend"
+# Secret propre aux tests (jamais utilisé ailleurs) ; 64 caractères comme celui de make api-keys.
+TEST_JWT_SECRET = "test-only-" + "x" * 54
 SCHEMA_DIR = REPO_ROOT / "pipeline" / "src" / "tsuzuku_pipeline" / "db"
 GENRES = ["Action", "Drama"]
+
+
+def alembic_config(url: str) -> Config:
+    cfg = Config(str(BACKEND_DIR / "alembic.ini"))
+    cfg.attributes["database_url"] = url
+    # Sans ça, fileConfig reconfigurerait les loggers et casserait caplog dans les tests suivants.
+    cfg.attributes["configure_logger"] = False
+    return cfg
 
 
 def _base_url() -> str:
@@ -65,6 +78,8 @@ def pg_url():
     with psycopg.connect(url, autocommit=True) as conn:
         for f in ("schema_catalog.sql", "schema_mart.sql"):
             conn.execute((SCHEMA_DIR / f).read_text(encoding="utf-8"))
+    # Schéma app : créé par les VRAIES migrations, comme en dev et en production.
+    command.upgrade(alembic_config(url), "head")
     yield url
     with psycopg.connect(base, autocommit=True, connect_timeout=3) as admin:
         admin.execute(sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(name))
@@ -222,12 +237,17 @@ def make_client(pg_url, catalog, models_dir, jikan):
     """Fabrique de client : chaque test peut changer les modèles, Jikan ou la base."""
     clients = []
 
-    def factory(models=None, transport=None, database_url=None):
+    def factory(models=None, transport=None, database_url=None, jwt_secret=TEST_JWT_SECRET,
+                rules=None, **rule_changes):  # fmt: skip
         settings = Settings(database_url=database_url or pg_url, models_dir=models or models_dir,
-                            settings_file=REPO_ROOT / "config" / "settings.yaml")  # fmt: skip
-        app = create_app(settings, load_rules(settings.settings_file),
-                         jikan_transport=httpx.MockTransport(transport or jikan))  # fmt: skip
-        client = TestClient(app)
+                            settings_file=REPO_ROOT / "config" / "settings.yaml",
+                            jwt_secret=jwt_secret, cookie_secure=True)  # fmt: skip
+        rules = rules or load_rules(settings.settings_file)
+        if rule_changes:
+            rules = rules.model_copy(update=rule_changes)
+        app = create_app(settings, rules, jikan_transport=httpx.MockTransport(transport or jikan))
+        # HTTPS : le cookie de session est `Secure`, le client ne le renverrait pas en http.
+        client = TestClient(app, base_url="https://testserver")
         client.__enter__()  # déclenche le lifespan (chargement des modèles)
         clients.append(client)
         return client
@@ -240,3 +260,29 @@ def make_client(pg_url, catalog, models_dir, jikan):
 @pytest.fixture
 def client(make_client):
     return make_client()
+
+
+# --- Comptes (phase 7) -----------------------------------------------------------------------
+PASSWORD = "un-mot-de-passe-solide"  # noqa: S105  (compte de test)
+
+
+@pytest.fixture
+def clean_users(pg_url):
+    """Chaque test de compte part de zéro (les listes et choix suivent par cascade)."""
+    with psycopg.connect(pg_url, autocommit=True) as conn:
+        conn.execute("TRUNCATE app.users RESTART IDENTITY CASCADE")
+
+
+def register(client, pseudo="royston", email=None, password=PASSWORD):
+    """Inscrit un compte : le client garde le cookie de session (connecté)."""
+    email = email or f"{pseudo}@example.com"
+    return client.post("/auth/register",
+                       json={"email": email, "pseudo": pseudo, "password": password})  # fmt: skip
+
+
+@pytest.fixture
+def user_client(make_client, clean_users):
+    """Client connecté avec un compte tout neuf."""
+    client = make_client()
+    assert register(client).status_code == 201
+    return client

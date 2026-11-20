@@ -23,6 +23,9 @@ WORKDIR /app/backend
 # Même chemin qu'à l'étape 1 : les scripts du venv (uvicorn) pointent vers ce Python.
 COPY --from=build /app/backend/.venv /app/backend/.venv
 COPY config/settings.yaml /app/config/settings.yaml
+# Migrations du schéma app (service api-migrate : `alembic upgrade head`).
+COPY backend/alembic.ini ./alembic.ini
+COPY backend/migrations ./migrations
 ENV PATH=/app/backend/.venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     MODELS_DIR=/models \

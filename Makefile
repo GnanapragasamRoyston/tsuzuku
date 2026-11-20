@@ -4,7 +4,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help setup up down db-check lint format test audit \
-        data spark train figures reco api api-up api-down web migrate \
+        data spark train figures reco api api-keys api-up api-down web migrate \
         airflow-keys airflow-up airflow-down airflow-test airflow-trigger
 
 # packages/tsuzuku-ml : code ML partagé par le pipeline et l'API (ADR 006).
@@ -79,8 +79,18 @@ figures: ## Chiffres clés de toutes les phases -> reports/key_figures.{json,md}
 api: ## [phase 5] Lance l'API en local (rechargement auto)
 	cd backend && uv run uvicorn app.main:create_app --factory --reload
 
-api-up: ## [phase 5] Construit et lance l'API dans Docker (http://localhost:8000/docs)
+api-keys: ## [phase 7] Ajoute à .env le secret des sessions (JWT_SECRET), sans l'afficher
+	python3 infra/api/gen_keys.py .env
+
+api-up: ## [phase 5] Applique les migrations et lance l'API dans Docker (http://localhost:8000/docs)
+	@grep -q "^JWT_SECRET=." .env || { echo "JWT_SECRET absent de .env : lance make api-keys"; exit 1; }
 	docker compose --profile api up -d --build --wait api
+
+# --- Comptes (phase 7) -------------------------------------------------------
+# Schéma app (comptes, listes) géré par Alembic ; catalog et mart restent au pipeline (ADR 008).
+# Prérequis : catalogue chargé (make spark) : les tables app ont des FK vers catalog.media.
+migrate: ## [phase 7] Applique les migrations Alembic du schéma app (base du .env)
+	cd backend && uv run alembic upgrade head
 
 api-down: ## Arrête le conteneur de l'API
 	docker compose --profile api stop api
@@ -117,5 +127,3 @@ airflow-trigger: ## [phase 6] Déclenche un DAG (DAG=jikan_daily_ingest ou anili
 # --- Phases suivantes (pas encore implémentées) ----------------------------
 web: ## [phase 8] Lance le front Next.js
 	@echo "Pas encore implémenté (phase 8)"; exit 1
-migrate: ## [phase 7] Migrations Alembic
-	@echo "Pas encore implémenté (phase 7)"; exit 1

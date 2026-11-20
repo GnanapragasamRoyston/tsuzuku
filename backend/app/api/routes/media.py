@@ -25,7 +25,7 @@ def search_media(
     query = q.strip()
     if len(query) < 2:
         # « q=  » passerait min_length puis deviendrait vide : tout le catalogue correspondrait.
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY,
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT,
                             "la recherche doit contenir au moins 2 caractères")  # fmt: skip
     limit = min(limit or rules.search_limit_default, rules.search_limit_max)
     items = catalog_service.search(session, query, kind, limit)

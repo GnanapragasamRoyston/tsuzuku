@@ -364,3 +364,55 @@ phase 10, même utilisateur Postgres pour Airflow et Tsuzuku en dev.
    (`config/settings.yaml`). Le client réessaie sur 429 et 5xx avec une attente croissante, suit
    `Retry-After` et attend la remise à zéro du quota annoncée par `X-RateLimit-Reset`. Les 100 pages
    AniList ont pris 3,5 minutes à la 1re exécution, contrôles qualité au vert.
+
+## Phase 7 — Comptes et listes (2026-11-21)
+**Ce qui a été construit :** inscription, connexion et déconnexion (argon2id, JWT en cookie
+`httpOnly`), ma liste (`/me/list`), onboarding, recos et risque de drop calculés depuis la base,
+export et suppression RGPD, migrations Alembic du schéma `app`, limitation de débit.
+
+**Concepts clés :**
+- **Hachage de mot de passe (argon2id)** : on ne stocke jamais le mot de passe, seulement une
+  empreinte lente à calculer et salée (un aléa différent par compte). Même avec la base volée,
+  tester des milliards de mots de passe coûte trop cher, et deux comptes au même mot de passe
+  ont des empreintes différentes.
+- **JWT et cookie `httpOnly`** : un JWT est un petit jeton signé (ici : id du compte, version,
+  expiration). Le serveur vérifie la signature sans rien stocker. Dans un cookie `httpOnly`, le
+  JavaScript de la page ne peut pas le lire : un script injecté ne peut pas le voler. `Secure` :
+  envoyé seulement en HTTPS. `SameSite=Lax` : pas envoyé avec un POST venant d'un autre site.
+- **Révocation par `token_version`** : un JWT reste valide jusqu'à son expiration. Pour qu'une
+  déconnexion l'invalide vraiment, il porte la version du compte ; la déconnexion l'incrémente
+  et tous les jetons émis avant sont refusés.
+- **CSRF** : une attaque où un autre site fait envoyer une requête par ton navigateur, avec ton
+  cookie. `SameSite=Lax`, CORS limité à l'origine du front et des corps JSON la bloquent.
+- **Énumération de comptes** : si « email inconnu » et « mauvais mot de passe » répondent
+  différemment (message ou durée), un attaquant apprend qui est inscrit. Même message, et une
+  vérification argon2 factice quand l'email n'existe pas, pour la même durée.
+- **Migrations Alembic** : chaque changement de schéma est un script versionné, appliqué dans
+  l'ordre (`upgrade`) et réversible (`downgrade`). Un test vérifie que les modèles SQLAlchemy et
+  les migrations décrivent la même chose.
+- **IDOR et isolation** : chaque requête de liste filtre sur l'id du jeton, jamais sur un id
+  envoyé par le client. Des tests vérifient qu'un compte ne lit ni ne modifie la liste d'un autre.
+
+**Pourquoi ce choix :** voir [ADR 008](decisions/008-comptes-et-listes.md). Jeton dans
+`localStorage` écarté : lisible par n'importe quel script de la page. Table de sessions écartée :
+une lecture de plus par requête pour un besoin couvert par `token_version`. Alembic sur tout le
+schéma écarté : `catalog` et `mart` sont rechargés par le pipeline, deux propriétaires pour une
+table, c'est deux façons de la casser. Règles de composition des mots de passe écartées au profit
+de la longueur (NIST). Limites assumées : limitation de débit en mémoire (une seule instance, à
+revoir en phase 11), déconnexion qui ferme toutes les sessions du compte.
+
+**3 questions d'entretien possibles :**
+1. *Pourquoi un cookie `httpOnly` plutôt que le `localStorage` ?*
+   Tout script exécuté dans la page lit le `localStorage` : une faille XSS suffit à voler la
+   session. Un cookie `httpOnly` est envoyé par le navigateur mais invisible du JavaScript. Le
+   prix est le risque CSRF, couvert par `SameSite=Lax` et un CORS restreint.
+2. *Comment invalides-tu un JWT à la déconnexion, alors qu'il est sans état ?*
+   Le jeton contient la `token_version` du compte. À chaque requête, je compare avec la valeur en
+   base (une lecture par clé primaire, que je fais déjà pour charger le compte). La déconnexion
+   incrémente la version : tous les anciens jetons sont refusés. Un test copie un jeton avant la
+   déconnexion et vérifie qu'il ne marche plus.
+3. *Comment gères-tu la conformité RGPD ?*
+   Export JSON de toutes les données fournies (profil, liste, critiques, onboarding), sans les
+   données de sécurité. Suppression du compte avec mot de passe redemandé, et cascade en base :
+   un test vérifie qu'il ne reste aucune ligne. Aucun email ni mot de passe dans les journaux
+   (testé), pas de traceur tiers, et une page de confidentialité (`docs/privacy.md`).

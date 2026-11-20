@@ -4,6 +4,7 @@ Règle validée (ADR 006) : sous `min_liked_for_als` animes aimés connus du mod
 popularité — mesuré en phase 4, l'ALS fait moins bien qu'elle avec 3 titres.
 """
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
@@ -69,9 +70,19 @@ def _because(model: FoldInModel, rec_ids: np.ndarray, liked_ids: list[int]) -> l
 
 
 def recommend_for(
-    engine: RecoEngine, session: Session, liked: list[LikedItem], k: int
+    engine: RecoEngine,
+    session: Session,
+    liked: list[LikedItem],
+    k: int,
+    exclude_media_ids: Iterable[int] = (),
 ) -> dict[str, Any]:
-    media = catalog_service.media_by_ids(session, [item.media_id for item in liked])
+    """`exclude_media_ids` : œuvres à ne jamais recommander sans qu'elles pèsent sur le profil
+    (liste d'un compte : déjà vues, prévues ou abandonnées, sans note)."""
+    excluded = set(exclude_media_ids)
+    media = catalog_service.media_by_ids(session, [*(i.media_id for i in liked), *excluded])
+    excluded_mals = {
+        m.mal_id for mid, m in media.items() if mid in excluded and m.kind == "anime" and m.mal_id
+    }
     mal_of = {mid: m.mal_id for mid, m in media.items() if m.kind == "anime" and m.mal_id}
     choices = [mal_of[i.media_id] for i in liked if i.media_id in mal_of and i.score is None]
     scores = {mal_of[i.media_id]: i.score for i in liked if i.media_id in mal_of and i.score}
@@ -83,7 +94,7 @@ def recommend_for(
         {i.media_id for i in liked if i.media_id not in mal_of}
         | {mid for mid, mal in mal_of.items() if mal in unknown_mals}
     )
-    seen = set(ids.tolist())
+    seen = set(ids.tolist()) | excluded_mals
     # La règle des 5 ne compte que les titres AIMÉS (note ≥ seuil) : c'est ce qui a été mesuré
     # en phase 4. Des titres mal notés sont transmis au fold-in (préférence négative) mais ne
     # rendent pas le profil plus fiable.

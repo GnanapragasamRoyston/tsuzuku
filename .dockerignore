@@ -4,6 +4,8 @@
 !backend/app
 !backend/pyproject.toml
 !backend/uv.lock
+!backend/alembic.ini
+!backend/migrations
 !packages/tsuzuku-ml/pyproject.toml
 !packages/tsuzuku-ml/src
 !config/settings.yaml

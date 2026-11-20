@@ -6,7 +6,7 @@ Sous le capot : un pipeline Big Data sur 109 M d'interactions MyAnimeList (PySpa
 quotidienne (Airflow), un modèle de churn (« risque de drop », scikit-learn), une recommandation
 ALS (Spark MLlib), une API FastAPI et un front Next.js.
 
-🚧 **En construction** — phase 6 terminée (Airflow). Voir [docs/SPEC.md](docs/SPEC.md) pour le
+🚧 **En construction** — phase 7 terminée (comptes et listes). Voir [docs/SPEC.md](docs/SPEC.md) pour le
 cahier des charges et [docs/architecture.md](docs/architecture.md) pour l'architecture.
 
 ## Démarrage
@@ -22,8 +22,10 @@ make data      # Kaggle → Parquet (staging/clean), filtre adulte, rapport qual
 make spark     # marts (courbes de drop, épisode critique, rétention) + catalogue → Postgres
 make train     # modèle de drop : features Spark, 3 modèles scikit-learn, métriques, figures, artefact
 make reco      # recommandation : popularité vs ALS explicite/implicite (Spark MLlib), fold-in, facteurs exportés
+make api-keys  # secret des sessions (JWT_SECRET) ajouté à .env (jamais affiché)
+make migrate   # migrations Alembic du schéma app (comptes, listes)
 make api       # API FastAPI en local, rechargement auto (http://localhost:8000/docs)
-make api-up    # API dans Docker (profil compose « api »)
+make api-up    # API dans Docker (profil compose « api », migrations appliquées avant)
 make airflow-keys  # secrets d'Airflow ajoutés à .env (jamais affichés)
 make airflow-up    # Airflow dans Docker (http://localhost:8080)
 make airflow-trigger DAG=anilist_catalog_sync  # lance un DAG tout de suite
@@ -75,15 +77,17 @@ Limites : les spectateurs encore en cours sont ignorés (censure à droite) ; MA
 drops par rapport aux Completed, d'où la définition relative du point de non-retour.
 Volumes produits : [reports/marts_summary.json](reports/marts_summary.json).
 
-## API (phase 5)
+## API (phases 5 et 7)
 
-API FastAPI qui sert le catalogue, la saison en cours, les recommandations et le risque de drop.
-**Mode démo** : le profil de l'utilisateur est passé dans la requête ; les comptes arrivent en
-phase 7.
+API FastAPI qui sert le catalogue, la saison en cours, les comptes et les listes, les
+recommandations et le risque de drop. Le **mode démo** (profil passé dans la requête) reste
+disponible sans compte.
 
-Lancement : `make up` (base), puis `make api-up` (API dans Docker) ou `make api` (en local). Il
-faut les artefacts de `make train` et `make reco` dans `models/`. Documentation interactive
-(Swagger) : http://localhost:8000/docs
+Lancement : `make up` (base), `make spark` (catalogue, requis par les migrations),
+`make api-keys` (une fois), puis `make api-up` (API dans Docker, migrations comprises) ou
+`make migrate && make api` (en local). Il faut les artefacts de
+`make train` et `make reco` dans `models/`. Documentation interactive (Swagger) :
+http://localhost:8000/docs
 
 | Méthode | Route | Rôle |
 |---|---|---|
@@ -112,6 +116,25 @@ La réponse indique la stratégie suivie (`als` ou `popularity`) et pourquoi. R�
 3 titres l'ALS fait moins bien qu'elle ([ADR 006](docs/decisions/006-api-data.md)). Un manga, un
 manhwa ou un anime plus récent que les données d'entraînement reçoit `insufficient_data` au lieu
 d'un risque de drop chiffré.
+
+### Comptes et listes (phase 7)
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| POST | `/auth/register`, `/auth/login`, `/auth/logout` | inscription, connexion (cookie de session), déconnexion de toutes les sessions |
+| GET / DELETE | `/me` | profil ; suppression du compte et de ses données (mot de passe demandé) |
+| GET | `/me/export` | export RGPD en JSON (profil, liste, onboarding) |
+| GET | `/me/list?status=&limit=&offset=` | ma liste, par statut, paginée |
+| PUT / DELETE | `/me/list/{media_id}` | ajouter ou modifier une œuvre (statut, progression, « lâché à l'épisode X », note, critique, dates) ; la retirer |
+| POST | `/me/onboarding` | au moins 10 œuvres aimées |
+| GET | `/me/recommendations?kind=anime` | recos depuis l'onboarding et la liste (manga/manhwa : phase 10) |
+| GET | `/me/drop-risk/{media_id}` | risque de drop depuis ma liste |
+
+Sécurité ([ADR 008](docs/decisions/008-comptes-et-listes.md)) : mots de passe hachés en argon2id,
+session JWT dans un cookie `httpOnly` + `Secure` + `SameSite=Lax`, révoquée à la déconnexion,
+connexion limitée après 5 échecs, aucun email ni mot de passe dans les journaux. Les tables du
+schéma `app` sont créées par des migrations Alembic ; `catalog` et `mart` restent au pipeline.
+Données et droits : [docs/privacy.md](docs/privacy.md).
 
 ## Ingestion (phase 6)
 

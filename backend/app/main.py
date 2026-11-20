@@ -1,4 +1,5 @@
-"""Point d'entrée de l'API Tsuzuku (phase 5 : catalogue, tendances, démo reco et risque de drop).
+"""Point d'entrée de l'API Tsuzuku : catalogue, tendances, démo (phase 5), comptes et listes
+(phase 7).
 
 Lancement : `uvicorn app.main:create_app --factory` (make api, ou le conteneur Docker).
 Fabrique plutôt qu'objet global : les tests créent une app avec leurs propres réglages, sans
@@ -11,12 +12,15 @@ from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 from tsuzuku_ml.artifacts import check_reco_parity, load_drop_model, load_reco_model
 
-from app.api.routes import demo, health, media, trending
+from app.api.deps import AuthState
+from app.api.routes import auth, demo, health, me, media, trending
 from app.clients.jikan import JikanClient
 from app.core.config import ApiRules, Settings, get_settings, load_rules
 from app.db.session import make_engine, make_sessionmaker
@@ -51,11 +55,34 @@ def _load_models(
     return reco, drop
 
 
+MIN_SECRET_LENGTH = 32
+
+
+def _auth_state(settings: Settings, rules: ApiRules) -> AuthState | None:
+    """Comptes activés seulement avec un secret assez long. Sinon l'API démarre quand même
+    (catalogue, démo) et les routes de compte répondent 503."""
+    secret = settings.jwt_secret.get_secret_value() if settings.jwt_secret else ""
+    if len(secret) < MIN_SECRET_LENGTH:
+        logger.error("Comptes désactivés : JWT_SECRET absent ou trop court (make api-keys)")
+        return None
+    if not settings.cookie_secure:
+        logger.warning("COOKIE_SECURE=false : cookie de session envoyé en http (local uniquement)")
+    return AuthState.build(secret, rules.auth, settings.cookie_secure)
+
+
 async def _database_unavailable(request: Request, exc: OperationalError) -> JSONResponse:
     # Base coupée ou injoignable : 503 (réessayer plus tard), pas 500. Seul le NOM de l'erreur
     # est journalisé : son message peut contenir l'URL de connexion.
     logger.error("Base de données indisponible (%s)", type(exc.orig).__name__)
     return JSONResponse({"detail": "Base de données indisponible"}, status_code=503)
+
+
+async def _invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
+    # Par défaut, FastAPI renvoie dans le 422 la valeur saisie (`input`) : un mot de passe trop
+    # long ou mal placé repartirait dans la réponse, et finirait dans tout outil qui enregistre
+    # les réponses (proxy, APM, suivi d'erreurs du front). On ne garde que l'endroit et le motif.
+    errors = [{k: e[k] for k in ("type", "loc", "msg") if k in e} for e in exc.errors()]
+    return JSONResponse({"detail": jsonable_encoder(errors)}, status_code=422)
 
 
 def create_app(
@@ -78,24 +105,34 @@ def create_app(
         app.state.sessionmaker = make_sessionmaker(engine)
         app.state.reco, app.state.drop = _load_models(settings, rules)
         app.state.jikan = JikanClient(rules.jikan, transport=jikan_transport)
+        app.state.auth = _auth_state(settings, rules)
         yield
         app.state.jikan.close()
         engine.dispose()
 
     app = FastAPI(
         title="Tsuzuku API",
-        version="0.5.0",
-        description="Catalogue, saison en cours, recommandations et risque de drop (mode démo).",
+        version="0.7.0",
+        description="Catalogue, saison en cours, comptes et listes, recommandations et risque "
+        "de drop.",
         lifespan=lifespan,
     )
-    # CORS restreint au front (SPEC § 7) : jamais « * ».
+    # CORS restreint au front (SPEC § 7) : jamais « * ». Avec allow_credentials, « * » ferait
+    # renvoyer l'origine de N'IMPORTE QUEL site, qui pourrait alors lire /me/export avec la
+    # session de l'utilisateur : refusé au démarrage plutôt que de compter sur la config.
+    if any(o.strip() == "*" for o in settings.cors_origins):
+        raise ValueError("CORS_ORIGINS ne doit pas contenir « * » (cookies de session)")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_methods=["GET", "POST"],
+        # Le cookie de session doit accompagner les appels du front (autre origine en dev).
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["Content-Type"],
     )
     app.add_exception_handler(OperationalError, _database_unavailable)
-    for router in (health.router, media.router, trending.router, demo.router):
+    app.add_exception_handler(RequestValidationError, _invalid_request)
+    for router in (health.router, media.router, trending.router, demo.router, auth.router,
+                   me.router):  # fmt: skip
         app.include_router(router)
     return app

@@ -61,17 +61,34 @@ services:
       timeout: 5s
       retries: 10
 
+  # Migrations Alembic du schéma app (phase 7), lancées une fois avant l'API, avec la même image.
+  api-migrate:
+    profiles: ["api"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: tsuzuku-api
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+
   api:
     # Profil : `make up` ne démarre que la base ; l'API se lance avec `make api-up`.
     profiles: ["api"]
     build:
       context: .
       dockerfile: backend/Dockerfile
+    image: tsuzuku-api
     container_name: tsuzuku-api
     environment:
       # Réseau interne de compose : la base s'appelle « db » et écoute sur 5432.
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       CORS_ORIGINS: '["http://localhost:3000"]'
+      # Facultatif pour `make up` (profil inactif) ; vérifié par make api-up.
+      JWT_SECRET: ${JWT_SECRET:-}
     volumes:
       # Artefacts produits par make train / make reco, en lecture seule.
       - ./models:/models:ro
@@ -80,6 +97,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      # L'API ne démarre qu'avec un schéma app à jour.
+      api-migrate:
+        condition: service_completed_successfully
 
   # Crée la base de métadonnées d'Airflow si elle manque (le script d'init de Postgres ne tourne
   # qu'à la création du volume : il ne suffit pas pour une base déjà existante).

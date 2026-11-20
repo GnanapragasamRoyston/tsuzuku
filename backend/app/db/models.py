@@ -1,6 +1,8 @@
 """Tables catalog et mart, en LECTURE (créées par pipeline/src/tsuzuku_pipeline/db/*.sql).
 
 Ces classes décrivent les colonnes que l'API lit ; elles ne servent jamais à créer les tables.
+Les tables du schéma app (comptes, listes) sont dans app/db/app_models.py : elles appartiennent
+à l'API et sont créées par les migrations Alembic.
 """
 
 import datetime as dt

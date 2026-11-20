@@ -48,7 +48,9 @@ flowchart LR
 ## Schémas Postgres
 
 - **catalog** : œuvres, genres, tags, embeddings, stats quotidiennes Jikan
-- **app** : comptes et listes des utilisateurs Tsuzuku
+- **app** : comptes, listes et choix d'onboarding des utilisateurs Tsuzuku (tables `users`,
+  `list_entry`, `onboarding_choice`), créés et modifiés **uniquement** par les migrations Alembic
+  de l'API ; `catalog` et `mart` appartiennent au pipeline ([ADR 008](decisions/008-comptes-et-listes.md))
 - **mart** : agrégats analytiques produits par Spark (courbes de drop, rétention, runs de modèles)
 
 Détail des tables : [SPEC.md § 5](SPEC.md).
