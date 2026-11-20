@@ -1,0 +1,32 @@
+name: ci-airflow
+
+on:
+  push:
+    branches: [main]
+    paths: ["pipeline/dags/**", "pipeline/src/**", "pipeline/pyproject.toml", "infra/airflow/**",
+            "pipeline/tests/test_dags.py", ".github/workflows/ci-airflow.yml"]
+  pull_request:
+    paths: ["pipeline/dags/**", "pipeline/src/**", "pipeline/pyproject.toml", "infra/airflow/**",
+            "pipeline/tests/test_dags.py", ".github/workflows/ci-airflow.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  dags:
+    # L'image Airflow se construit, et les DAG s'y chargent sans erreur avec la bonne forme
+    # (pipeline installé SANS PySpark : une importation indirecte de Spark ferait échouer ce job).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build de l'image
+        run: docker build -f infra/airflow/Dockerfile -t tsuzuku-airflow:ci .
+      - name: Chargement des DAG
+        timeout-minutes: 10
+        run: |
+          docker run --rm \
+            -e AIRFLOW__CORE__LOAD_EXAMPLES=false \
+            -v "$PWD/pipeline/dags:/opt/airflow/dags:ro" \
+            -v "$PWD/pipeline/tests/test_dags.py:/opt/tsuzuku/dagtests/test_dags.py:ro" \
+            tsuzuku-airflow:ci bash -c \
+            "airflow db migrate >/dev/null && pip install -q pytest && python -m pytest -q -p no:cacheprovider /opt/tsuzuku/dagtests"

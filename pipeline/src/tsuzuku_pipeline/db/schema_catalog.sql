@@ -59,3 +59,52 @@ CREATE TABLE IF NOT EXISTS catalog.media_genre (
 );
 -- La PK couvre « genres d'une œuvre » ; cet index couvre « œuvres d'un genre ».
 CREATE INDEX IF NOT EXISTS media_genre_genre_id_idx ON catalog.media_genre (genre_id);
+
+-- Tags AniList (phase 6) : plus fins que les genres (« Time Travel », « Tragedy »…). Serviront aux
+-- recos basées sur le contenu (phase 10). rank = pertinence du tag pour l'œuvre (0-100, AniList).
+CREATE TABLE IF NOT EXISTS catalog.tag (
+    id   integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name text NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS catalog.media_tag (
+    media_id bigint  NOT NULL REFERENCES catalog.media (id) ON DELETE CASCADE,
+    tag_id   integer NOT NULL REFERENCES catalog.tag (id) ON DELETE CASCADE,
+    rank     smallint CHECK (rank BETWEEN 0 AND 100),
+    PRIMARY KEY (media_id, tag_id)
+);
+CREATE INDEX IF NOT EXISTS media_tag_tag_id_idx ON catalog.media_tag (tag_id);
+
+-- Statistiques quotidiennes (DAG jikan_daily_ingest, phase 6) : une ligne par œuvre et par jour.
+-- Clé (date, œuvre) : relancer le DAG le même jour met la ligne à jour au lieu de la doubler.
+CREATE TABLE IF NOT EXISTS catalog.media_daily_stats (
+    snapshot_date date    NOT NULL,
+    media_id      bigint  NOT NULL REFERENCES catalog.media (id) ON DELETE CASCADE,
+    score         real    CHECK (score BETWEEN 0 AND 10),
+    members       integer CHECK (members >= 0),
+    watching      integer CHECK (watching >= 0),
+    completed     integer CHECK (completed >= 0),
+    on_hold       integer CHECK (on_hold >= 0),
+    dropped       integer CHECK (dropped >= 0),
+    plan_to_watch integer CHECK (plan_to_watch >= 0),
+    source        text    NOT NULL,  -- ex. 'jikan' (statistiques MyAnimeList)
+    fetched_at    timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (snapshot_date, media_id)
+);
+-- « Historique d'une œuvre » (courbes Power BI) : la PK couvre « toutes les œuvres d'un jour ».
+CREATE INDEX IF NOT EXISTS media_daily_stats_media_idx
+    ON catalog.media_daily_stats (media_id, snapshot_date);
+
+-- in_season : l'anime faisait partie de la saison en cours (/seasons/now) ce jour-là, par opposition
+-- aux animes de la watchlist. /trending filtre dessus, comme son repli en direct sur Jikan.
+-- Ajout conditionnel (colonne arrivée après la 1re version de la table), sans verrou inutile.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'catalog' AND table_name = 'media_daily_stats'
+          AND column_name = 'in_season'
+    ) THEN
+        ALTER TABLE catalog.media_daily_stats ADD COLUMN in_season boolean NOT NULL DEFAULT true;
+    END IF;
+END $$;

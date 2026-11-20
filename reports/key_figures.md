@@ -1,6 +1,6 @@
 # Chiffres clés — Tsuzuku
 
-Généré le 2026-11-20T14:30:59Z par `make figures`.
+Généré le 2026-11-20T15:23:44Z par `make figures`.
 Sources :
 - `reports/data_quality.json` (généré le 2026-11-16T11:16:43Z)
 - `reports/marts_summary.json` (généré le 2026-11-16T11:18:57Z)
@@ -316,3 +316,5 @@ Sources :
 - **api_docker_image** (phase 5) — docker image ls tsuzuku-api après make api-up ; voir ADR 006 — `reports/exploration_2026-11-20.json`
 - **api_jikan_worst_case** (phase 5) — curl /trending sur l'API Docker alors que api.jikan.moe ne répondait pas (aussi injoignable depuis Windows) ; voir ADR 006 — `reports/exploration_2026-11-20.json`
 - **api_real_data_smoke** (phase 5) — scratchpad smoke_api.py (TestClient sur la base de dev et les vrais modèles, runs 1263a415 reco et 3e8b164f drop) ; voir ADR 006 — `reports/exploration_2026-11-20.json`
+- **anilist_first_runs** (phase 6) — reports/ingestion/anilist_2026-11-16.json puis anilist_2026-11-20.json (DAG anilist_catalog_sync dans Airflow, le 2026-11-20 : exécution planifiée, relance sur le même intervalle, puis 3e exécution après la revue de code : romans exclus, date = jour réel) + requêtes SQL sur catalog ; voir ADR 007 — `reports/exploration_2026-11-20.json`
+- **jikan_first_run** (phase 6) — DAG jikan_daily_ingest dans Airflow le 2026-11-20 (airflow tasks states-for-dag-run) : tâche collect en échec à ses 2 premiers essais (Jikan injoignable : timeout, aussi hors WSL), statut up_for_retry ; curl api.jikan.moe toujours en échec à 15:2x UTC ; voir ADR 007 — `reports/exploration_2026-11-20.json`

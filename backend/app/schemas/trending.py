@@ -1,5 +1,7 @@
 """Schémas de /trending (saison en cours, source Jikan)."""
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -17,6 +19,9 @@ class TrendingItem(BaseModel):
 
 class TrendingResponse(BaseModel):
     source: str = "Jikan (MyAnimeList)"
+    # « database » : snapshot du DAG jikan_daily_ingest ; « live » : appel direct à Jikan (repli).
+    origin: Literal["database", "live"]
+    # Date du snapshot (base) ou heure de récupération (appel direct).
     fetched_at: str
     # Vrai si Jikan était indisponible et qu'on sert la dernière réponse connue.
     stale: bool = False

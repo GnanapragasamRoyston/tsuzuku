@@ -4,7 +4,8 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help setup up down db-check lint format test audit \
-        data spark train figures reco api api-up api-down web migrate
+        data spark train figures reco api api-up api-down web migrate \
+        airflow-keys airflow-up airflow-down airflow-test airflow-trigger
 
 # packages/tsuzuku-ml : code ML partagé par le pipeline et l'API (ADR 006).
 PY_PROJECTS := packages/tsuzuku-ml pipeline backend
@@ -83,6 +84,35 @@ api-up: ## [phase 5] Construit et lance l'API dans Docker (http://localhost:8000
 
 api-down: ## Arrête le conteneur de l'API
 	docker compose --profile api stop api
+
+# --- Airflow (phase 6) -------------------------------------------------------
+# Interface : http://localhost:8080 (identifiants dans .env : AIRFLOW_ADMIN_USER / _PASSWORD).
+AIRFLOW := docker compose --profile airflow
+AIRFLOW_VARS := AIRFLOW_UID AIRFLOW_FERNET_KEY AIRFLOW_SECRET_KEY AIRFLOW_ADMIN_PASSWORD
+
+airflow-keys: ## [phase 6] Ajoute à .env les secrets d'Airflow manquants (sans les afficher)
+	python3 infra/airflow/gen_keys.py .env
+
+airflow-up: ## [phase 6] Construit et lance Airflow (webserver + scheduler) dans Docker
+	@for v in $(AIRFLOW_VARS); do grep -q "^$$v=." .env || { echo "$$v absent de .env : lance make airflow-keys"; exit 1; }; done
+	mkdir -p data/raw/jikan data/raw/anilist reports/ingestion
+	$(AIRFLOW) up -d --build --wait airflow-webserver airflow-scheduler
+
+airflow-down: ## Arrête Airflow (la base et l'API ne sont pas touchées)
+	$(AIRFLOW) stop airflow-webserver airflow-scheduler
+
+# Base SQLite jetable et sans vérification de connexion : le test ne dépend ni de Postgres ni de la
+# base « airflow » (comme en CI).
+airflow-test: ## [phase 6] Vérifie dans l'image que les DAG se chargent sans erreur
+	$(AIRFLOW) run --rm --no-deps -e CONNECTION_CHECK_MAX_COUNT=0 \
+		-e AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////tmp/airflow.db \
+		-v ./pipeline/tests/test_dags.py:/opt/tsuzuku/dagtests/test_dags.py:ro \
+		airflow-scheduler bash -c "airflow db migrate >/dev/null && pip install -q pytest \
+		&& python -m pytest -q -p no:cacheprovider /opt/tsuzuku/dagtests"
+
+# Déclencher un DAG tout de suite : make airflow-trigger DAG=anilist_catalog_sync
+airflow-trigger: ## [phase 6] Déclenche un DAG (DAG=jikan_daily_ingest ou anilist_catalog_sync)
+	$(AIRFLOW) exec airflow-scheduler airflow dags trigger $(DAG)
 
 # --- Phases suivantes (pas encore implémentées) ----------------------------
 web: ## [phase 8] Lance le front Next.js

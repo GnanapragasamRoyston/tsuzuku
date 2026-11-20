@@ -33,6 +33,7 @@ class ApiRules(BaseModel):
     max_list_items: int = Field(ge=1)
     search_limit_default: int = Field(ge=1)
     search_limit_max: int = Field(ge=1)
+    trending_max_age_days: int = Field(ge=0)
     jikan: JikanSettings
 
 

@@ -8,23 +8,10 @@ qu'elles soient réutilisées par erreur comme features (fuite, ADR 002).
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
-# Ordre = ordre des colonnes du COPY dans le loader. Les colonnes de catalog.media absentes ici
-# (anilist_id, chapters, airing_status, cover_url) viendront de Jikan/AniList (phases 6 et 10).
-MEDIA_COLUMNS = (
-    "kind",
-    "mal_id",
-    "title",
-    "title_alt",
-    "synopsis",
-    "episodes",
-    "format",
-    "duration_min",
-    "start_year",
-    "creators",
-    "source",
-    "age_rating",
-    "popularity",
-)
+# Ordre = ordre des colonnes du COPY dans le loader, où la liste est définie (le loader est aussi
+# importé sans PySpark par l'ingestion). Les colonnes de catalog.media absentes ici (anilist_id,
+# chapters, airing_status, cover_url) viennent de Jikan et AniList (phase 6).
+from tsuzuku_pipeline.db.loader import MEDIA_COLUMNS  # noqa: F401  (ré-exporté)
 
 
 def media_rows(anime: DataFrame, synopsis: DataFrame) -> DataFrame:

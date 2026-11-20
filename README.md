@@ -6,7 +6,7 @@ Sous le capot : un pipeline Big Data sur 109 M d'interactions MyAnimeList (PySpa
 quotidienne (Airflow), un modèle de churn (« risque de drop », scikit-learn), une recommandation
 ALS (Spark MLlib), une API FastAPI et un front Next.js.
 
-🚧 **En construction** — phase 5 terminée (API data). Voir [docs/SPEC.md](docs/SPEC.md) pour le
+🚧 **En construction** — phase 6 terminée (Airflow). Voir [docs/SPEC.md](docs/SPEC.md) pour le
 cahier des charges et [docs/architecture.md](docs/architecture.md) pour l'architecture.
 
 ## Démarrage
@@ -24,6 +24,9 @@ make train     # modèle de drop : features Spark, 3 modèles scikit-learn, mét
 make reco      # recommandation : popularité vs ALS explicite/implicite (Spark MLlib), fold-in, facteurs exportés
 make api       # API FastAPI en local, rechargement auto (http://localhost:8000/docs)
 make api-up    # API dans Docker (profil compose « api »)
+make airflow-keys  # secrets d'Airflow ajoutés à .env (jamais affichés)
+make airflow-up    # Airflow dans Docker (http://localhost:8080)
+make airflow-trigger DAG=anilist_catalog_sync  # lance un DAG tout de suite
 make figures   # chiffres clés de toutes les phases → reports/key_figures.{json,md} (sans recalcul)
 make lint test # qualité
 make help      # toutes les commandes
@@ -38,14 +41,15 @@ make help      # toutes les commandes
 | `packages/` | code ML partagé pipeline ↔ API (`tsuzuku-ml` : fold-in, features de drop, artefacts) |
 | `frontend/` | Next.js (phase 8) |
 | `config/` | `settings.yaml` (seeds, seuils, chemins), `watchlist.yaml` |
-| `infra/` | scripts d'init Postgres |
+| `infra/` | scripts d'init Postgres, image Airflow |
 | `docs/` | spec, architecture, décisions (ADR), journal d'apprentissage |
 
 ## Données
 
 Dataset « Anime Recommendation Database 2020 » (Kaggle `hernan4444/anime-recommendation-database-2020`,
-licence **CC0-1.0**), collecté sur MyAnimeList début 2020. Données fraîches via l'API Jikan et l'API
-GraphQL AniList (phase 6).
+licence **CC0-1.0**), collecté sur MyAnimeList début 2020. Données fraîches via l'API Jikan
+(statistiques quotidiennes de la saison en cours) et l'API GraphQL AniList (catalogue manga, manhwa
+et manhua), ingérées par Airflow (phase 6, voir [Ingestion](#ingestion-phase-6)).
 
 - Dictionnaire, couches et règles de nettoyage : [docs/data.md](docs/data.md)
 - Volumes et qualité, générés par `make data` : [reports/data_quality.md](reports/data_quality.md)
@@ -87,7 +91,7 @@ faut les artefacts de `make train` et `make reco` dans `models/`. Documentation 
 | GET | `/health/ready` | disponibilité : 503 si la base ou un modèle manque |
 | GET | `/media/search?q=…` | recherche par titre (filtre `kind` facultatif) |
 | GET | `/media/{media_id}` | fiche d'une œuvre : genres, épisode critique, courbe de drop |
-| GET | `/trending` | saison en cours (Jikan), reliée au catalogue quand l'anime y figure |
+| GET | `/trending` | saison en cours (snapshot Jikan du jour en base, depuis la phase 6), reliée au catalogue |
 | POST | `/demo/recommendations` | recommandations à partir de titres aimés |
 | POST | `/demo/drop-risk` | risque de drop d'une œuvre à partir de la liste de l'utilisateur |
 
@@ -108,6 +112,45 @@ La réponse indique la stratégie suivie (`als` ou `popularity`) et pourquoi. R�
 3 titres l'ALS fait moins bien qu'elle ([ADR 006](docs/decisions/006-api-data.md)). Un manga, un
 manhwa ou un anime plus récent que les données d'entraînement reçoit `insufficient_data` au lieu
 d'un risque de drop chiffré.
+
+## Ingestion (phase 6)
+
+Deux DAG Airflow (2.11, dans Docker) gardent le catalogue à jour. Le code métier vit dans
+`pipeline/src/tsuzuku_pipeline/ingestion/` et se teste sans Airflow ; les DAG ne font
+qu'enchaîner les tâches.
+
+Lancement : `make up` (base), `make airflow-keys` (une seule fois : clés et mot de passe admin
+aléatoires écrits dans `.env`, jamais affichés), puis `make airflow-up`. Interface :
+http://localhost:8080, identifiants `AIRFLOW_ADMIN_USER` / `AIRFLOW_ADMIN_PASSWORD` dans `.env`.
+Lancer un DAG sans attendre son planning : `make airflow-trigger DAG=anilist_catalog_sync`.
+
+| DAG | Planning | Tâches | Sortie |
+|---|---|---|---|
+| `jikan_daily_ingest` | tous les jours, 06:00 UTC | `collect` → `fetch_stats` → `load` → `quality_check` | stats MAL de la saison en cours + watchlist → `catalog.media_daily_stats` |
+| `anilist_catalog_sync` | le lundi, 05:00 UTC | `fetch_pages` → `load` → `quality_check` | 5 000 titres les plus populaires (manga, manhwa, manhua) → `catalog.media`, genres, tags |
+
+Principes : réponses brutes écrites d'abord dans `data/raw/<source>/<date>/` (une tâche se relance
+seule, sans rappeler l'API) ; upserts idempotents (relancer ne crée aucun doublon) ; limites de
+débit respectées (1 requête/s pour Jikan, 2,1 s entre deux appels AniList, retries avec
+`Retry-After`) ; contrôle qualité et rapport JSON à chaque exécution (`reports/ingestion/`) ; les
+colonnes du dataset 2020 utilisées par le modèle de drop ne sont jamais modifiées.
+
+**AniList, exécuté pour de vrai** (source : `reports/exploration_2026-11-20.json`, mesure
+`anilist_first_runs`) : 5 000 titres récupérés en 100 pages (3,5 minutes pour la récupération à
+la 1re exécution). Catalogue final : 3 715 mangas, 1 103 manhwas et 182 manhuas, avec 344 tags
+(36 233 liens œuvre-tag). Une relance sur le même intervalle a donné 0 insertion et 5 000 mises à
+jour : l'upsert est bien idempotent.
+
+**Jikan** était injoignable pendant toute la phase (aussi hors de la machine) : lors de sa 1re
+exécution, la tâche `collect` a échoué à ses 2 premiers essais par timeout (mesure
+`jikan_first_run`). Le DAG est testé avec des réponses simulées ; sa
+1re exécution réelle reste à faire au retour de Jikan.
+
+`/trending` lit désormais le snapshot du DAG en base (`catalog.media_daily_stats`, animes de la
+saison). L'appel direct à Jikan ne sert plus qu'en repli, si le snapshot manque ou a plus de
+2 jours (`api.trending_max_age_days`).
+
+Choix et limites : [ADR 007](docs/decisions/007-airflow-ingestion.md).
 
 ## Résultats
 

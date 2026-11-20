@@ -1,5 +1,6 @@
 """Chargement de la configuration centrale (config/settings.yaml)."""
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -9,7 +10,10 @@ import yaml
 # plutôt que de laisser un KeyError obscur surgir au milieu d'un job Spark de 20 minutes.
 REQUIRED_SECTIONS = ("project", "paths")
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+# Racine du dépôt : déduite de l'emplacement du code en développement. Dans l'image Airflow, le
+# paquet est installé dans site-packages : TSUZUKU_ROOT indique où sont montés config/, data/ et
+# reports/ (phase 6).
+REPO_ROOT = Path(os.environ.get("TSUZUKU_ROOT") or Path(__file__).resolve().parents[3])
 DEFAULT_SETTINGS_PATH = REPO_ROOT / "config" / "settings.yaml"
 
 

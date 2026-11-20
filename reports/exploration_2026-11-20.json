@@ -44,6 +44,34 @@
         "death_note_drop_probability_with_5_completed": 0.0178,
         "drop_threshold": 0.2406
       }
+    },
+    {
+      "id": "anilist_first_runs",
+      "phase": 6,
+      "source": "reports/ingestion/anilist_2026-11-16.json puis anilist_2026-11-20.json (DAG anilist_catalog_sync dans Airflow, le 2026-11-20 : exécution planifiée, relance sur le même intervalle, puis 3e exécution après la revue de code : romans exclus, date = jour réel) + requêtes SQL sur catalog ; voir ADR 007",
+      "values": {
+        "run_1": {"pages": 100, "fetched": 5000, "inserted": 5000, "updated": 0, "duplicates": 0, "mal_id_cleared": 0, "skipped": 0, "all_checks_ok": true},
+        "run_2_same_interval": {"inserted": 0, "updated": 5000, "all_checks_ok": true},
+        "catalog_by_kind_run_1": {"manga": 3753, "manhwa": 1075, "manhua": 172},
+        "novels_removed_after_review": 148,
+        "run_3_without_novels": {"fetched": 5000, "inserted": 148, "updated": 4852, "skipped": 0, "rank_cleared": 0, "all_checks_ok": true},
+        "catalog_by_kind": {"manga": 3715, "manhwa": 1103, "manhua": 182},
+        "fetch_task_minutes_run_1": 3.5,
+        "rate_limit_header_x_ratelimit_limit": 30,
+        "tags_used_after_run_3": 344,
+        "media_tag_links_after_run_3": 36233,
+        "catalog_rows_by_source": {"mal_kaggle_2020": 16214, "anilist": 5000}
+      }
+    },
+    {
+      "id": "jikan_first_run",
+      "phase": 6,
+      "source": "DAG jikan_daily_ingest dans Airflow le 2026-11-20 (airflow tasks states-for-dag-run) : tâche collect en échec à ses 2 premiers essais (Jikan injoignable : timeout, aussi hors WSL), statut up_for_retry ; curl api.jikan.moe toujours en échec à 15:2x UTC ; voir ADR 007",
+      "values": {
+        "collect_attempts_failed": 2,
+        "cause": "jikan_unreachable_timeout",
+        "dag_verified_with_simulated_responses_only": true
+      }
     }
   ]
 }

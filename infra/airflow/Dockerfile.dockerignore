@@ -1,0 +1,7 @@
+# Liste BLANCHE propre à l'image Airflow (BuildKit lit <Dockerfile>.dockerignore en priorité) :
+# le contexte est la racine du dépôt, qui contient data/ (plusieurs Go).
+*
+!pipeline/pyproject.toml
+!pipeline/src
+**/__pycache__
+**/.venv

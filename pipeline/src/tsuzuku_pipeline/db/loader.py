@@ -22,9 +22,27 @@ from psycopg.conninfo import conninfo_to_dict
 from psycopg.types.json import Jsonb
 
 from tsuzuku_pipeline.config import REPO_ROOT
-from tsuzuku_pipeline.spark.build_catalog import MEDIA_COLUMNS
 
 logger = logging.getLogger(__name__)
+
+# Colonnes du catalogue anime chargées depuis le dataset (ordre = ordre du COPY, et des colonnes
+# produites par spark/build_catalog.py). Définies ICI et non dans le module Spark : ce loader est
+# aussi importé par l'ingestion, qui tourne dans l'image Airflow sans PySpark.
+MEDIA_COLUMNS = (
+    "kind",
+    "mal_id",
+    "title",
+    "title_alt",
+    "synopsis",
+    "episodes",
+    "format",
+    "duration_min",
+    "start_year",
+    "creators",
+    "source",
+    "age_rating",
+    "popularity",
+)
 
 SCHEMA_FILES = (
     Path(__file__).with_name("schema_catalog.sql"),

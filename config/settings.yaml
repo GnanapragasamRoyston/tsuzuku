@@ -130,6 +130,36 @@ reco:
   # Régime d'usage réel : évaluation avec seulement n animes aimés donnés (onboarding).
   onboarding_n_liked: [3, 5, 10, 20]
 
+ingestion:
+  # Réponses brutes (data/raw/<source>/<date>/) et rapports de contrôle (reports/ingestion/).
+  # Atterrissage brut d'abord : une exécution se rejoue sans rappeler l'API.
+  reports_subdir: ingestion
+  jikan:
+    base_url: https://api.jikan.moe/v4
+    # SPEC § 2.2 : limite 3 req/s et 60/min ; on vise 1 req/s.
+    min_interval_s: 1.0
+    timeout_s: 15
+    max_retries: 4
+    # Une saison compte ~70-100 animes, 25 par page.
+    max_season_pages: 6
+    # « Un échec isolé ne fait pas tomber le DAG » (SPEC § 9) ; au-delà de cette part d'animes en
+    # échec, la tâche échoue (problème systémique, pas isolé).
+    max_failure_share: 0.2
+  anilist:
+    url: https://graphql.anilist.co
+    # Limite lue dans les en-têtes le 2026-11-20 : X-RateLimit-Limit = 30 (requêtes/min). Le client
+    # suit aussi X-RateLimit-Remaining / Retry-After ; 2,1 s entre deux appels reste sous 30/min.
+    min_interval_s: 2.1
+    timeout_s: 30
+    max_retries: 4
+    per_page: 50
+    # 100 pages × 50 = les 5 000 titres les plus populaires (validé par Royston le 2026-11-20).
+    max_pages: 100
+    # Tags gardés : pertinence AniList ≥ ce rang (0-100) et jamais les tags adultes.
+    tag_min_rank: 60
+    # Contrôle qualité : au moins cette part des titres attendus (per_page × max_pages).
+    min_share_of_expected: 0.9
+
 api:
   # Sous ce nombre d'animes aimés connus du modèle, l'API sert la popularité au lieu de l'ALS.
   # Mesuré en phase 4 (reports/reco_metrics.json, onboarding_test, NDCG@10 test) : avec 3 titres
@@ -142,6 +172,9 @@ api:
   max_list_items: 500
   search_limit_default: 20
   search_limit_max: 50
+  # /trending sert le snapshot du DAG jikan_daily_ingest (phase 6) s'il a au plus ce nombre de
+  # jours ; sinon (DAG ou Jikan en panne), appel direct à Jikan en repli.
+  trending_max_age_days: 2
   jikan:
     # API publique sans clé (SPEC § 2.2). Limite documentée : 3 requêtes/s, 60/min.
     base_url: https://api.jikan.moe/v4

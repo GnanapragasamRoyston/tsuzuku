@@ -3,7 +3,9 @@
 Ces classes décrivent les colonnes que l'API lit ; elles ne servent jamais à créer les tables.
 """
 
-from sqlalchemy import BigInteger, Float, ForeignKey, Integer, String, Text
+import datetime as dt
+
+from sqlalchemy import BigInteger, Boolean, Date, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -51,6 +53,25 @@ class MediaGenre(Base):
 
     media_id: Mapped[int] = mapped_column(ForeignKey("catalog.media.id"), primary_key=True)
     genre_id: Mapped[int] = mapped_column(ForeignKey("catalog.genre.id"), primary_key=True)
+
+
+class MediaDailyStats(Base):
+    """Snapshot quotidien d'une œuvre (DAG jikan_daily_ingest, phase 6)."""
+
+    __tablename__ = "media_daily_stats"
+    __table_args__ = {"schema": "catalog"}
+
+    snapshot_date: Mapped[dt.date] = mapped_column(Date, primary_key=True)
+    media_id: Mapped[int] = mapped_column(ForeignKey("catalog.media.id"), primary_key=True)
+    score: Mapped[float | None] = mapped_column(Float)
+    members: Mapped[int | None] = mapped_column(Integer)
+    watching: Mapped[int | None] = mapped_column(Integer)
+    completed: Mapped[int | None] = mapped_column(Integer)
+    on_hold: Mapped[int | None] = mapped_column(Integer)
+    dropped: Mapped[int | None] = mapped_column(Integer)
+    plan_to_watch: Mapped[int | None] = mapped_column(Integer)
+    source: Mapped[str] = mapped_column(Text)
+    in_season: Mapped[bool] = mapped_column(Boolean)
 
 
 class DropCurve(Base):

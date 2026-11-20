@@ -13,7 +13,7 @@ flowchart LR
         D[Modèle de drop<br/>scikit-learn]
         R[Recommandation ALS<br/>Spark MLlib]
         M[Marts analytiques]
-        AF[Airflow<br/>ingestion quotidienne]
+        AF[Airflow<br/>Jikan quotidien, AniList hebdo]
         E[Embeddings<br/>sentence-transformers]
     end
 
@@ -38,6 +38,7 @@ flowchart LR
     C --> E --> C
     ART --> API
     C --> API
+    J -. repli /trending .-> API
     AP <--> API
     MA --> API
     API <--> WEB <--> U
@@ -51,3 +52,21 @@ flowchart LR
 - **mart** : agrégats analytiques produits par Spark (courbes de drop, rétention, runs de modèles)
 
 Détail des tables : [SPEC.md § 5](SPEC.md).
+
+Les métadonnées d'Airflow (runs, états des tâches) vivent dans une base séparée, `airflow`, sur
+le même serveur Postgres.
+
+## Ingestion (phase 6)
+
+- **`jikan_daily_ingest`** (tous les jours, 06:00 UTC) : saison en cours + watchlist (API Jikan)
+  → `catalog.media` (nouveaux animes) et `catalog.media_daily_stats` (une ligne par anime et par
+  jour, colonne `in_season`).
+- **`anilist_catalog_sync`** (le lundi, 05:00 UTC) : titres les plus populaires d'AniList →
+  `catalog.media` (manga, manhwa, manhua), `catalog.media_genre`, `catalog.media_tag`.
+- Chaque tâche écrit d'abord la réponse brute dans `data/raw/<source>/<date>/`, puis charge par
+  upsert ; un rapport de contrôle va dans `reports/ingestion/`.
+- **`/trending`** lit le dernier snapshot de `catalog.media_daily_stats` (saison seulement) ;
+  appel direct à Jikan seulement en repli (snapshot absent ou trop ancien).
+- L'embedding des nouvelles œuvres (flèche `catalog → Embeddings`) arrive en phase 10.
+
+Choix et limites : [ADR 007](decisions/007-airflow-ingestion.md).

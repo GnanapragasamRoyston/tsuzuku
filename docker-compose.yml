@@ -1,5 +1,44 @@
-# Postgres + pgvector (toujours), API (profil « api », make api-up). Airflow (phase 6) et le
-# frontend s'ajouteront ici.
+# Postgres + pgvector (toujours), API (profil « api », make api-up), Airflow (profil « airflow »,
+# make airflow-up). Le frontend s'ajoutera ici.
+
+# Réglages communs aux services Airflow (ancre YAML réutilisée plus bas).
+x-airflow-common: &airflow-common
+  profiles: ["airflow"]
+  build:
+    context: .
+    dockerfile: infra/airflow/Dockerfile
+  image: tsuzuku-airflow
+  # UID de l'hôte : les fichiers écrits dans data/raw et reports/ t'appartiennent (pas à root).
+  user: "${AIRFLOW_UID:-50000}:0"
+  # Clés et mot de passe : `${VAR:-}` et non `${VAR:?}`, car compose évalue tout le fichier même
+  # pour un profil inactif (sinon `make up` exigerait les clés d'Airflow). `make airflow-up`
+  # vérifie qu'elles sont définies avant de démarrer.
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    # Métadonnées d'Airflow : base « airflow » sur le même serveur Postgres (créée par airflow-db).
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/airflow
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-}
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:-}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    # Les DAG démarrent actifs : « les 2 DAG tournent » (SPEC § 10) sans action manuelle.
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    AIRFLOW__WEBSERVER__WARN_DEPLOYMENT_EXPOSURE: "false"
+    # Base de Tsuzuku pour le code d'ingestion, et racine où config/, data/raw, reports/ sont montés.
+    DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    TSUZUKU_ROOT: /opt/tsuzuku
+  volumes:
+    - ./pipeline/dags:/opt/airflow/dags:ro
+    - ./config:/opt/tsuzuku/config:ro
+    # Écriture limitée au strict nécessaire : un bug d'ingestion ne peut toucher ni les CSV
+    # Kaggle (data/raw) ni les rapports de métriques qui alimentent le README (reports/).
+    - ./data/raw/jikan:/opt/tsuzuku/data/raw/jikan
+    - ./data/raw/anilist:/opt/tsuzuku/data/raw/anilist
+    - ./reports/ingestion:/opt/tsuzuku/reports/ingestion
+    - airflow-logs:/opt/airflow/logs
+  depends_on: &airflow-depends
+    airflow-db:
+      condition: service_completed_successfully
+
 services:
   db:
     # Image officielle pgvector : Postgres 16 avec l'extension déjà compilée.
@@ -42,5 +81,66 @@ services:
       db:
         condition: service_healthy
 
+  # Crée la base de métadonnées d'Airflow si elle manque (le script d'init de Postgres ne tourne
+  # qu'à la création du volume : il ne suffit pas pour une base déjà existante).
+  airflow-db:
+    profiles: ["airflow"]
+    image: pgvector/pgvector:pg16
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        psql -tAc "SELECT 1 FROM pg_database WHERE datname = 'airflow'" | grep -q 1
+        || psql -c "CREATE DATABASE airflow"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  airflow-init:
+    <<: *airflow-common
+    # Migration du schéma d'Airflow et création du compte admin (identifiants dans .env).
+    command: version
+    environment:
+      <<: *airflow-env
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-admin}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-}
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      <<: *airflow-depends
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname \"$${HOSTNAME}\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      <<: *airflow-depends
+      airflow-init:
+        condition: service_completed_successfully
+
 volumes:
   pgdata:
+  airflow-logs:

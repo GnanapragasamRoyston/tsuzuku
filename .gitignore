@@ -7,6 +7,9 @@ data/*
 !data/.gitkeep
 models/*
 !models/.gitkeep
+# Rapports d'exécution des DAG (un par jour) : générés, régénérables, trop nombreux pour git.
+# Les chiffres de la 1re exécution sont recopiés dans reports/exploration_2026-11-20.json.
+reports/ingestion/
 *.parquet
 *.joblib
 

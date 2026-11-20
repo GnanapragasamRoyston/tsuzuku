@@ -298,3 +298,69 @@ flottant diffère entre machines.
    mesuré le pire cas : 47,2 s avant le 503 avec un timeout de 10 s et 3 retries, d'où le passage
    à 5 s et 2 retries (18,2 s). Ensuite, pendant 120 s, elle ne réessaie pas et répond tout de
    suite : une panne de Jikan ne bloque pas le reste de l'API.
+
+## Phase 6 — Airflow : ingestion Jikan et AniList (2026-11-20)
+**Ce qui a été construit :** deux DAG Airflow 2.11 dans docker-compose : `jikan_daily_ingest`
+(stats quotidiennes de la saison) et `anilist_catalog_sync` (5 000 mangas, manhwas et manhuas
+chaque lundi), une image Airflow sans PySpark testée en CI, et `/trending` qui lit la base.
+
+**Concepts clés :**
+- **DAG et tâches** : un DAG (graphe orienté sans cycle) décrit des tâches et leur ordre ; le
+  scheduler d'Airflow les lance selon un planning, les réessaie en cas d'échec et garde
+  l'historique de chaque exécution. Mes DAG sont minces : ils enchaînent des fonctions Python
+  testées sans Airflow.
+- **Idempotence et upsert** : une opération est idempotente si la rejouer donne le même résultat.
+  Un upsert (`INSERT … ON CONFLICT … DO UPDATE`) insère la ligne si sa clé est nouvelle, sinon la
+  met à jour. Clé (date, œuvre) pour les stats, `anilist_id` pour le catalogue : relancer un DAG
+  ne crée aucun doublon.
+- **Atterrissage brut et relance d'une tâche** : chaque tâche écrit sa sortie dans un fichier daté
+  (`data/raw/<source>/<date>/`) que la suivante relit. Si `load` échoue, je relance `load` seul :
+  pas besoin de rappeler l'API. L'écriture est atomique (fichier temporaire puis renommage) : on ne
+  lit jamais un fichier à moitié écrit.
+- **Date logique et timetable** : chaque run d'Airflow a une date logique, qui sert à nommer ses
+  fichiers et ses lignes. Avec le cron « classique » d'Airflow 2, c'est le début de l'intervalle :
+  un run manuel est daté de la veille. Avec `CronTriggerTimetable`, c'est l'heure de déclenchement :
+  un run est daté du jour où il tourne.
+- **Respect des limites de débit** : un client commun espace les appels (1 s pour Jikan, 2,1 s pour
+  AniList), réessaie sur 429, 5xx et erreurs réseau avec une attente qui double (backoff
+  exponentiel), suit `Retry-After` si l'API le donne, et attend la remise à zéro quand
+  `X-RateLimit-Remaining` tombe à 0, avant de provoquer un 429.
+- **Contrôle qualité et « échec isolé »** : la dernière tâche vérifie en base (lignes présentes,
+  pas de compteur négatif, pas de contenu adulte, tous les titres gardés chargés) et écrit un
+  rapport JSON ; si un contrôle échoue, la tâche échoue. Un anime dont les stats échouent garde
+  une ligne avec score et membres ; au-delà de 20 % d'échecs, ce n'est plus isolé : la tâche
+  s'arrête.
+- **Image sans PySpark et contraintes de dépendances** : l'image Airflow installe le pipeline avec
+  `--no-deps` et seulement httpx, psycopg et pyyaml, pour éviter PySpark et une JVM. Le fichier de
+  contraintes d'Airflow fige les versions compatibles. Un test vérifie qu'aucun module d'ingestion
+  n'importe PySpark : il a trouvé une importation indirecte, corrigée.
+
+**Pourquoi ce choix :** voir [ADR 007](decisions/007-airflow-ingestion.md). CeleryExecutor + Redis
+écarté : inutile pour deux DAG linéaires sur une machine ; LocalExecutor suffit. Transport des
+données par XCom écarté : XCom est fait pour de petits messages, et les fichiers bruts permettent
+de rejouer une tâche. Supprimer les titres sortis du top écarté : les listes des utilisateurs
+pointeront dessus, on remet seulement leur rang à NULL. Rattrapage (`catchup`) écarté : Jikan ne
+donne que l'état actuel. AniList comme repli pour les stats d'anime écarté : autre population que
+MAL, séries incomparables. Limites assumées : Jikan en panne pendant toute la phase (DAG testé avec
+des réponses simulées, 1re exécution réelle à refaire), embeddings des nouvelles œuvres en
+phase 10, même utilisateur Postgres pour Airflow et Tsuzuku en dev.
+
+**3 questions d'entretien possibles :**
+1. *Comment sais-tu que ton DAG est idempotent ?*
+   Les chargements sont des upserts sur une clé naturelle : (date, œuvre) pour les stats,
+   `anilist_id` pour le catalogue, dans une transaction. Des tests rejouent la même date et
+   vérifient le nombre de lignes. Et je l'ai vu sur les vraies données : la relance AniList sur le
+   même intervalle a donné 0 insertion et 5 000 mises à jour (`reports/exploration_2026-11-20.json`,
+   `anilist_first_runs`).
+2. *Pourquoi as-tu changé de timetable ?*
+   Avec le cron classique, la date logique est le début de l'intervalle. Mes deux premiers runs
+   AniList, lancés le 2026-11-20, ont été datés du 2026-11-16. Pour Jikan, c'est grave : il ne
+   donne que l'état actuel, donc un run manuel aurait rangé les chiffres du jour sous la date de la
+   veille et écrasé son snapshot. Avec `CronTriggerTimetable`, la date est l'heure de déclenchement,
+   et le code refuse en plus de collecter Jikan pour une date passée.
+3. *Comment respectes-tu les limites d'une API publique ?*
+   J'ai lu la limite d'AniList dans ses en-têtes : 30 requêtes par minute. J'espace donc les appels
+   de 2,1 s ; Jikan, limité à 3 par seconde et 60 par minute, est appelé une fois par seconde
+   (`config/settings.yaml`). Le client réessaie sur 429 et 5xx avec une attente croissante, suit
+   `Retry-After` et attend la remise à zéro du quota annoncée par `X-RateLimit-Reset`. Les 100 pages
+   AniList ont pris 3,5 minutes à la 1re exécution, contrôles qualité au vert.
