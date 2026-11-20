@@ -6,7 +6,7 @@ Sous le capot : un pipeline Big Data sur 109 M d'interactions MyAnimeList (PySpa
 quotidienne (Airflow), un modèle de churn (« risque de drop », scikit-learn), une recommandation
 ALS (Spark MLlib), une API FastAPI et un front Next.js.
 
-🚧 **En construction** — phase 4 terminée (recommandation ALS). Voir [docs/SPEC.md](docs/SPEC.md) pour le
+🚧 **En construction** — phase 5 terminée (API data). Voir [docs/SPEC.md](docs/SPEC.md) pour le
 cahier des charges et [docs/architecture.md](docs/architecture.md) pour l'architecture.
 
 ## Démarrage
@@ -22,6 +22,8 @@ make data      # Kaggle → Parquet (staging/clean), filtre adulte, rapport qual
 make spark     # marts (courbes de drop, épisode critique, rétention) + catalogue → Postgres
 make train     # modèle de drop : features Spark, 3 modèles scikit-learn, métriques, figures, artefact
 make reco      # recommandation : popularité vs ALS explicite/implicite (Spark MLlib), fold-in, facteurs exportés
+make api       # API FastAPI en local, rechargement auto (http://localhost:8000/docs)
+make api-up    # API dans Docker (profil compose « api »)
 make figures   # chiffres clés de toutes les phases → reports/key_figures.{json,md} (sans recalcul)
 make lint test # qualité
 make help      # toutes les commandes
@@ -33,6 +35,7 @@ make help      # toutes les commandes
 |---|---|
 | `pipeline/` | Data/ML : Spark, Airflow, entraînement |
 | `backend/` | API FastAPI |
+| `packages/` | code ML partagé pipeline ↔ API (`tsuzuku-ml` : fold-in, features de drop, artefacts) |
 | `frontend/` | Next.js (phase 8) |
 | `config/` | `settings.yaml` (seeds, seuils, chemins), `watchlist.yaml` |
 | `infra/` | scripts d'init Postgres |
@@ -67,6 +70,44 @@ choix dans l'[ADR 003](docs/decisions/003-marts-drop-et-chargement-postgres.md).
 Limites : les spectateurs encore en cours sont ignorés (censure à droite) ; MAL sous-déclare les
 drops par rapport aux Completed, d'où la définition relative du point de non-retour.
 Volumes produits : [reports/marts_summary.json](reports/marts_summary.json).
+
+## API (phase 5)
+
+API FastAPI qui sert le catalogue, la saison en cours, les recommandations et le risque de drop.
+**Mode démo** : le profil de l'utilisateur est passé dans la requête ; les comptes arrivent en
+phase 7.
+
+Lancement : `make up` (base), puis `make api-up` (API dans Docker) ou `make api` (en local). Il
+faut les artefacts de `make train` et `make reco` dans `models/`. Documentation interactive
+(Swagger) : http://localhost:8000/docs
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| GET | `/health` | vivacité : toujours 200, `status` à `degraded` si la base ou un modèle manque |
+| GET | `/health/ready` | disponibilité : 503 si la base ou un modèle manque |
+| GET | `/media/search?q=…` | recherche par titre (filtre `kind` facultatif) |
+| GET | `/media/{media_id}` | fiche d'une œuvre : genres, épisode critique, courbe de drop |
+| GET | `/trending` | saison en cours (Jikan), reliée au catalogue quand l'anime y figure |
+| POST | `/demo/recommendations` | recommandations à partir de titres aimés |
+| POST | `/demo/drop-risk` | risque de drop d'une œuvre à partir de la liste de l'utilisateur |
+
+```bash
+curl "http://localhost:8000/media/search?q=death%20note&kind=anime"
+
+# media_id = identifiant interne (catalog.media.id), pas le MAL_ID. Ceux-ci (Death Note, Naruto,
+# Steins;Gate, Shingeki no Kyojin, Sword Art Online, FMA: Brotherhood) sont ceux de la base de dev
+# du 2026-11-20 ; ailleurs, les relire avec /media/search.
+curl -X POST http://localhost:8000/demo/recommendations \
+  -H "Content-Type: application/json" \
+  -d '{"liked": [{"media_id": 1337}, {"media_id": 11}, {"media_id": 4954, "score": 10},
+                 {"media_id": 6551}, {"media_id": 5788}, {"media_id": 3447}], "k": 10}'
+```
+
+La réponse indique la stratégie suivie (`als` ou `popularity`) et pourquoi. Règle : sous 5 animes
+**aimés** (note ≥ 8, ou choisis sans note) connus du modèle, l'API sert la popularité, car avec
+3 titres l'ALS fait moins bien qu'elle ([ADR 006](docs/decisions/006-api-data.md)). Un manga, un
+manhwa ou un anime plus récent que les données d'entraînement reçoit `insufficient_data` au lieu
+d'un risque de drop chiffré.
 
 ## Résultats
 

@@ -3,6 +3,7 @@ import math
 import numpy as np
 import pandas as pd
 import pytest
+from tsuzuku_ml.fold_in import FoldInModel, fold_in, recommend
 
 from tsuzuku_pipeline.ml.reco.evaluate import (
     evaluate_users,
@@ -11,7 +12,6 @@ from tsuzuku_pipeline.ml.reco.evaluate import (
     rmse,
     shrunk_item_means,
 )
-from tsuzuku_pipeline.ml.reco.fold_in import FoldInModel, fold_in, recommend
 
 
 def test_ranking_metrics_perfect_and_empty():

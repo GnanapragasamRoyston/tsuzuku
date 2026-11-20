@@ -19,8 +19,7 @@ import pandas as pd
 from pyspark.ml.recommendation import ALS
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
-
-from tsuzuku_pipeline.ml.reco.fold_in import FoldInModel, fold_in, predict_scores, scores_for
+from tsuzuku_ml.fold_in import FoldInModel, fold_in, predict_scores, scores_for
 
 logger = logging.getLogger("tsuzuku_pipeline.reco")
 

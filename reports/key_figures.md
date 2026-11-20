@@ -1,6 +1,6 @@
 # Chiffres clés — Tsuzuku
 
-Généré le 2026-11-16T22:58:16Z par `make figures`.
+Généré le 2026-11-20T14:30:59Z par `make figures`.
 Sources :
 - `reports/data_quality.json` (généré le 2026-11-16T11:16:43Z)
 - `reports/marts_summary.json` (généré le 2026-11-16T11:18:57Z)
@@ -312,3 +312,7 @@ Sources :
 - **phase2_point_of_no_return_definitions** (phase 2) — scratchpad ponr_options.py sur les 3 339 animes publiés dans mart.critical_episode ; voir ADR 003 — `reports/exploration_2026-11-16.json`
 - **phase3_population_profile** (phase 3) — scratchpad phase3_profile.py sur clean/animelist ; voir ADR 004 — `reports/exploration_2026-11-16.json`
 - **reco_ratings_profile** (phase 4) — scratchpad explore_ratings.py sur clean/rating_complete (Spark, approxQuantile erreur relative 0,001) ; voir ADR 005 — `reports/exploration_2026-11-16.json`
+- **api_serving_feature_parity** (phase 5) — scratchpad check_skew.py : infos d'anime servies par l'API (catalog.media via catalog_service.anime_infos) comparées à celles de l'entraînement (clean/anime) ; voir ADR 006 — `reports/exploration_2026-11-20.json`
+- **api_docker_image** (phase 5) — docker image ls tsuzuku-api après make api-up ; voir ADR 006 — `reports/exploration_2026-11-20.json`
+- **api_jikan_worst_case** (phase 5) — curl /trending sur l'API Docker alors que api.jikan.moe ne répondait pas (aussi injoignable depuis Windows) ; voir ADR 006 — `reports/exploration_2026-11-20.json`
+- **api_real_data_smoke** (phase 5) — scratchpad smoke_api.py (TestClient sur la base de dev et les vrais modèles, runs 1263a415 reco et 3e8b164f drop) ; voir ADR 006 — `reports/exploration_2026-11-20.json`

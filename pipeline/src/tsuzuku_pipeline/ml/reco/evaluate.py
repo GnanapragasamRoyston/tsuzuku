@@ -13,9 +13,9 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from tsuzuku_ml.fold_in import top_k_positions
 
 from tsuzuku_pipeline.ml.drop.evaluate import SURFACE, TEXT, TEXT_2, _axes, _save
-from tsuzuku_pipeline.ml.reco.fold_in import top_k_positions
 
 # Fonction (anime_ids visibles, notes visibles) → score de chaque anime du catalogue, ou None si
 # le modèle ne sait rien dire de cet utilisateur (on utilise alors `fallback`).

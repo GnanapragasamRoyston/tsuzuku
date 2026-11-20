@@ -1,0 +1,11 @@
+# Liste BLANCHE : le contexte de build est la racine du dépôt, qui contient data/ (plusieurs Go)
+# et models/. Tout est exclu, sauf ce dont l'image de l'API a besoin.
+*
+!backend/app
+!backend/pyproject.toml
+!backend/uv.lock
+!packages/tsuzuku-ml/pyproject.toml
+!packages/tsuzuku-ml/src
+!config/settings.yaml
+**/__pycache__
+**/.venv

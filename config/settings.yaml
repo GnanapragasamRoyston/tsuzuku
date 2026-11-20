@@ -129,3 +129,29 @@ reco:
   selection_k: 10
   # Régime d'usage réel : évaluation avec seulement n animes aimés donnés (onboarding).
   onboarding_n_liked: [3, 5, 10, 20]
+
+api:
+  # Sous ce nombre d'animes aimés connus du modèle, l'API sert la popularité au lieu de l'ALS.
+  # Mesuré en phase 4 (reports/reco_metrics.json, onboarding_test, NDCG@10 test) : avec 3 titres
+  # l'ALS implicite (0,175) fait moins bien que la popularité (0,193), avec 5 il passe devant
+  # (0,214). Règle validée par Royston le 2026-11-20 (ADR 006).
+  min_liked_for_als: 5
+  default_k: 10
+  max_k: 50
+  # Taille maximale d'une liste envoyée à l'API (validation des entrées).
+  max_list_items: 500
+  search_limit_default: 20
+  search_limit_max: 50
+  jikan:
+    # API publique sans clé (SPEC § 2.2). Limite documentée : 3 requêtes/s, 60/min.
+    base_url: https://api.jikan.moe/v4
+    # Appel fait PENDANT une requête /trending : budget court. Pire cas mesuré avec 10 s et
+    # 3 retries quand Jikan ne répond pas : 47 s avant le 503 (2026-11-20). Avec 5 s et 2 retries :
+    # 3 × 5 s + 1 s + 2 s d'attente, soit ~18 s au pire, puis failure_backoff_s sans réessayer.
+    timeout_s: 5
+    max_retries: 2
+    # La saison en cours change peu dans l'heure : un appel par heure suffit.
+    cache_seconds: 3600
+    # Après un échec (retries épuisés), pas de nouvel essai avant ce délai : sans ça, chaque
+    # requête relancerait toute la séquence de retries pendant une panne de Jikan.
+    failure_backoff_s: 120

@@ -24,8 +24,11 @@ from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-
-from tsuzuku_pipeline.ml.drop.features import CATEGORICAL_COLUMNS, feature_columns
+from tsuzuku_ml.drop_features import (  # noqa: F401  (prepare_x ré-exporté pour le pipeline)
+    CATEGORICAL_COLUMNS,
+    feature_columns,
+    prepare_x,
+)
 
 TARGET = "is_dropped"
 GROUP = "user_id"
@@ -57,24 +60,6 @@ def split_by_user(df: pd.DataFrame, val_fraction: float, test_fraction: float, s
     )
     train_idx, val_idx = next(inner.split(rest, groups=rest[GROUP]))
     return Split(rest.iloc[train_idx], rest.iloc[val_idx], df.iloc[test_idx])
-
-
-def prepare_x(df: pd.DataFrame, genres: Sequence[str]) -> pd.DataFrame:
-    """Matrice d'entrée : UNIQUEMENT les colonnes du contrat, types stables.
-
-    Partagée avec l'API : c'est ici, et nulle part ailleurs, que les données deviennent l'entrée
-    du modèle. Une colonne en trop dans `df` (ex. score) est ignorée, pas transmise.
-    """
-    cols = feature_columns(genres)
-    x = df[cols].copy()
-    for c in cols:
-        if c in CATEGORICAL_COLUMNS:
-            # object + NaN : forme que SimpleImputer et OneHotEncoder gèrent sans surprise.
-            x[c] = x[c].astype(object).where(x[c].notna(), np.nan)
-        else:
-            # float32 : divise la mémoire par deux (2 M lignes × ~100 colonnes) ; NaN conservés.
-            x[c] = pd.to_numeric(x[c], errors="coerce").astype(np.float32)
-    return x
 
 
 def build_pipeline(

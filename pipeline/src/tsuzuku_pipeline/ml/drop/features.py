@@ -1,81 +1,30 @@
-"""Features du modèle de drop — UNE définition, deux implémentations.
+"""Features du modèle de drop — implémentation Spark (entraînement).
 
-- `spark_drop_features` : entraînement, sur les 71 M lignes Completed/Dropped (Spark) ;
-- `feature_row`        : production (API, phase 5), pour un utilisateur Tsuzuku (Python pur).
-Un test de parité vérifie qu'elles donnent exactement les mêmes valeurs : c'est la protection
-contre le « training-serving skew » (un modèle servi avec des features calculées autrement que
-pendant l'entraînement donne des prédictions fausses sans aucune erreur visible).
-
-Règle produit (SPEC § 6.1) : chaque feature doit être calculable depuis la liste d'un utilisateur
-Tsuzuku. Les features utilisateur sont donc calculées sur SES AUTRES lignes (leave-one-out) :
-la ligne qu'on cherche à prédire n'y contribue jamais.
+Le CONTRAT des colonnes et l'implémentation Python pur (`feature_row`, utilisée par l'API) vivent
+dans le paquet partagé `tsuzuku_ml.drop_features` (ADR 006) : le pipeline et l'API importent le
+même code. Un test de parité (tests/test_drop_features.py) vérifie que les deux implémentations
+donnent exactement les mêmes valeurs (protection contre le « training-serving skew »).
 """
 
-import re
 from collections.abc import Sequence
-from dataclasses import dataclass, field
 
 from pyspark.sql import Column, DataFrame
 from pyspark.sql import functions as F
+from tsuzuku_ml.drop_features import (  # noqa: F401  (ré-exportés pour le pipeline et ses tests)
+    ANIME_NUMERIC_COLUMNS,
+    CATEGORICAL_COLUMNS,
+    FORBIDDEN_COLUMNS,
+    USER_COLUMNS,
+    AnimeInfo,
+    Entry,
+    feature_columns,
+    feature_row,
+    genre_columns,
+    genre_slug,
+    share_columns,
+)
 
 from tsuzuku_pipeline.spark.retention_stats import StatusCodes
-
-# Fuite de la cible (ADR 004) : ces colonnes décrivent l'issue ou en sont un agrégat.
-# - watched_episodes : un drop a mécaniquement moins d'épisodes vus ;
-# - score : 54 % des drops ne sont pas notés contre 15 % des Completed (mesuré sur clean) ;
-# - agrégats MAL (dropped, completed, ..., mal_score, score_1..10) : comptent la ligne elle-même.
-FORBIDDEN_COLUMNS = frozenset(
-    {
-        "watched_episodes",
-        "score",
-        "watching_status",
-        "is_dropped",
-        "dropped",
-        "completed",
-        "watching",
-        "on_hold",
-        "plan_to_watch",
-        "members",
-        "favorites",
-        "mal_score",
-        "ranked",
-        *(f"score_{i}" for i in range(1, 11)),
-    }
-)
-
-CATEGORICAL_COLUMNS = ("format", "source", "age_rating", "main_studio")
-ANIME_NUMERIC_COLUMNS = ("episodes", "duration_min", "start_year", "popularity")
-USER_COLUMNS = (
-    "user_list_size",
-    "user_cd_count",
-    "user_drop_rate",
-    "user_mean_score",
-    "genre_affinity",
-)
-
-
-def genre_slug(genre: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "_", genre.lower()).strip("_")
-
-
-def genre_columns(genres: Sequence[str]) -> list[str]:
-    return [f"genre_{genre_slug(g)}" for g in genres]
-
-
-def share_columns(genres: Sequence[str]) -> list[str]:
-    return [f"user_share_{genre_slug(g)}" for g in genres]
-
-
-def feature_columns(genres: Sequence[str]) -> list[str]:
-    """Colonnes d'entrée du modèle, dans un ordre stable (contrat avec l'API)."""
-    return [
-        *CATEGORICAL_COLUMNS,
-        *ANIME_NUMERIC_COLUMNS,
-        *genre_columns(genres),
-        *USER_COLUMNS,
-        *share_columns(genres),
-    ]
-
 
 # --- Spark (entraînement) ----------------------------------------------------------------------
 
@@ -166,82 +115,3 @@ def spark_drop_features(
         affinity.alias("genre_affinity"),
         *shares,
     )
-
-
-# --- Python pur (production) -------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class AnimeInfo:
-    genres: Sequence[str] = ()
-    format: str | None = None
-    episodes: int | None = None
-    duration_min: float | None = None
-    source: str | None = None
-    start_year: int | None = None
-    age_rating: str | None = None
-    popularity: int | None = None
-    studios: Sequence[str] = field(default_factory=tuple)
-
-
-@dataclass(frozen=True)
-class Entry:
-    """Une ligne de liste utilisateur. status : 'completed', 'dropped' ou 'other'."""
-
-    anime_id: int
-    status: str
-    score: int | None = None
-
-
-def feature_row(
-    entries: Sequence[Entry],
-    target_anime_id: int,
-    catalog: dict[int, AnimeInfo],
-    genres: Sequence[str],
-) -> dict:
-    """Features d'un utilisateur pour une œuvre, avec exactement la sémantique Spark.
-
-    L'œuvre visée est exclue de la liste si elle y figure (leave-one-out). Une œuvre de la liste
-    absente du catalogue (ex. sortie après 2020, ou exclue car adulte) est IGNORÉE entièrement :
-    c'est ce que fait la jointure interne côté Spark, donc ce que le modèle a vu à l'entraînement.
-    """
-    target = catalog.get(target_anime_id, AnimeInfo())
-    others = [e for e in entries if e.anime_id != target_anime_id and e.anime_id in catalog]
-    g_cols, s_cols = genre_columns(genres), share_columns(genres)
-
-    list_size = len(others)
-    cd = [e for e in others if e.status in ("completed", "dropped")]
-    drops = sum(1 for e in cd if e.status == "dropped")
-    scores = [e.score for e in others if e.score and e.score > 0]
-    counts = dict.fromkeys(genres, 0)
-    for e in others:
-        for g in catalog.get(e.anime_id, AnimeInfo()).genres:
-            if g in counts:
-                counts[g] += 1
-    shares = {g: (counts[g] / list_size if list_size > 0 else None) for g in genres}
-
-    target_genres = [g for g in genres if g in target.genres]
-    if target_genres and list_size > 0:
-        # Même ordre d'opérations que Spark (somme puis division) pour une parité exacte.
-        affinity = sum(shares[g] for g in target_genres) / len(target_genres)
-    else:
-        affinity = None
-
-    row = {
-        "format": target.format,
-        "source": target.source,
-        "age_rating": target.age_rating,
-        "main_studio": target.studios[0] if target.studios else None,
-        "episodes": target.episodes,
-        "duration_min": target.duration_min,
-        "start_year": target.start_year,
-        "popularity": target.popularity,
-        **{c: int(g in target.genres) for g, c in zip(genres, g_cols, strict=True)},
-        "user_list_size": list_size,
-        "user_cd_count": len(cd),
-        "user_drop_rate": drops / len(cd) if cd else None,
-        "user_mean_score": sum(scores) / len(scores) if scores else None,
-        "genre_affinity": affinity,
-        **{s: shares[g] for g, s in zip(genres, s_cols, strict=True)},
-    }
-    return {c: row[c] for c in feature_columns(genres)}

@@ -2,6 +2,7 @@ import json
 
 import numpy as np
 import pytest
+from tsuzuku_ml.fold_in import FoldInModel, fold_in
 
 from tsuzuku_pipeline.ml.drop.export import ArtifactError
 from tsuzuku_pipeline.ml.reco.export import (
@@ -10,7 +11,6 @@ from tsuzuku_pipeline.ml.reco.export import (
     save_reco_artifact,
     verify_reco_artifact,
 )
-from tsuzuku_pipeline.ml.reco.fold_in import FoldInModel, fold_in
 
 
 def _model():

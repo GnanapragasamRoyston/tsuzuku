@@ -1057,6 +1057,34 @@ wheels = [
 ]
 
 [[package]]
+name = "tsuzuku-ml"
+version = "0.1.0"
+source = { editable = "../packages/tsuzuku-ml" }
+dependencies = [
+    { name = "joblib" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "pyarrow" },
+    { name = "scikit-learn" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "joblib", specifier = ">=1.4" },
+    { name = "numpy", specifier = ">=2.0" },
+    { name = "pandas", specifier = ">=2.2" },
+    { name = "pyarrow", specifier = ">=17" },
+    { name = "scikit-learn", specifier = ">=1.9,<1.10" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pip-audit", specifier = ">=2.7" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "ruff", specifier = ">=0.7" },
+]
+
+[[package]]
 name = "tsuzuku-pipeline"
 version = "0.1.0"
 source = { editable = "." }
@@ -1071,6 +1099,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "scikit-learn" },
     { name = "six" },
+    { name = "tsuzuku-ml" },
 ]
 
 [package.dev-dependencies]
@@ -1092,6 +1121,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "scikit-learn", specifier = ">=1.6" },
     { name = "six", specifier = ">=1.17.0" },
+    { name = "tsuzuku-ml", editable = "../packages/tsuzuku-ml" },
 ]
 
 [package.metadata.requires-dev]

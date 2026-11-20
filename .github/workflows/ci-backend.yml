@@ -3,9 +3,12 @@ name: ci-backend
 on:
   push:
     branches: [main]
-    paths: ["backend/**", "ruff.toml", ".github/workflows/ci-backend.yml"]
+    # Le schéma lu par l'API est créé par le pipeline : un changement de SQL doit la retester.
+    paths: ["backend/**", "packages/**", "pipeline/src/tsuzuku_pipeline/db/*.sql", "config/**",
+            "ruff.toml", ".dockerignore", "docker-compose.yml", ".github/workflows/ci-backend.yml"]
   pull_request:
-    paths: ["backend/**", "ruff.toml", ".github/workflows/ci-backend.yml"]
+    paths: ["backend/**", "packages/**", "pipeline/src/tsuzuku_pipeline/db/*.sql", "config/**",
+            "ruff.toml", ".dockerignore", "docker-compose.yml", ".github/workflows/ci-backend.yml"]
 
 permissions:
   contents: read
@@ -16,6 +19,45 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # Postgres pour les tests marqués `db`. Mot de passe jetable, propre au runner.
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: tsuzuku
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: tsuzuku
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tsuzuku -d tsuzuku"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://tsuzuku:ci-only@localhost:5433/tsuzuku
+      REQUIRE_DB: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --python 3.11 --locked
+      - name: Lint
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Tests
+        timeout-minutes: 10
+        run: uv run pytest
+      - name: Audit des dépendances
+        # --no-emit-local : le paquet partagé du dépôt n'est pas sur PyPI (audité via ses propres
+        # dépendances, qui sont dans le lockfile).
+        run: uv export --no-hashes --no-emit-local --format requirements-txt -q | uv run pip-audit -r /dev/stdin
+      - name: Analyse de sécurité (bandit)
+        run: uv run bandit -q -r app
+
+  shared:
+    # Paquet ML partagé (fold-in, features de drop, artefacts) : testé seul, sans Spark.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/tsuzuku-ml
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -26,7 +68,26 @@ jobs:
         run: uv run ruff check . && uv run ruff format --check .
       - name: Tests
         run: uv run pytest
-      - name: Audit des dépendances
-        run: uv export --no-hashes --format requirements-txt -q | uv run pip-audit -r /dev/stdin
-      - name: Analyse de sécurité (bandit)
-        run: uv run bandit -q -r app
+
+  docker:
+    # L'image se construit et l'API démarre sans base ni modèles : /health doit répondre 200
+    # avec « degraded » (pas de plantage au démarrage), /health/ready doit répondre 503.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: docker build -f backend/Dockerfile -t tsuzuku-api:ci .
+      - name: Démarrage et /health
+        run: |
+          docker run -d --name api -e DATABASE_URL=postgresql://x:y@127.0.0.1:1/z -p 8000:8000 tsuzuku-api:ci
+          for i in $(seq 1 30); do
+            if body=$(curl -fsS http://127.0.0.1:8000/health); then
+              echo "$body"
+              echo "$body" | grep -q '"status":"degraded"' || exit 1
+              test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/health/ready)" = 503
+              exit $?
+            fi
+            sleep 1
+          done
+          docker logs api
+          exit 1

@@ -18,7 +18,13 @@ dependencies = [
     "scikit-learn>=1.6",
     # kaggle 2.2.5 importe `six` sans le déclarer dans ses dépendances : on l'ajoute nous-mêmes.
     "six>=1.17.0",
+    # Code ML partagé avec l'API (fold-in, features de drop, artefacts) : ADR 006.
+    "tsuzuku-ml",
 ]
+
+[tool.uv.sources]
+# Paquet local du monorepo, installé en mode éditable : une modification est vue tout de suite.
+tsuzuku-ml = { path = "../packages/tsuzuku-ml", editable = true }
 
 [dependency-groups]
 dev = [

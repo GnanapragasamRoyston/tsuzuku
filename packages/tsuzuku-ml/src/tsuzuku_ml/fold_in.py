@@ -12,8 +12,9 @@ lui seul (même formule, mêmes conventions, vérifiées par un test de parité 
 
 En implicite, la note est d'abord recentrée (r = score − rating_offset) : une note sous le neutre
 devient une préférence NÉGATIVE (« vu, pas aimé »), au lieu d'un signal positif.
-Ce module ne dépend que de NumPy : le backend (phase 5) en garde une copie, vérifiée par le cas
-de référence `parity_check` de la fiche modèle (ADR 005).
+Ce module ne dépend que de NumPy. Il vit dans le paquet partagé tsuzuku_ml : le pipeline
+(évaluation) et l'API (service) importent LE MÊME code (ADR 006) ; le cas de référence
+`parity_check` de la fiche modèle est rejoué au démarrage de l'API.
 """
 
 from collections.abc import Iterable, Mapping

@@ -28,6 +28,13 @@ import pandas as pd
 import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+from tsuzuku_ml.fold_in import (
+    FoldInModel,
+    fold_in,
+    onboarding_ratings,
+    recommend,
+    top_k_positions,
+)
 
 from tsuzuku_pipeline.config import REPO_ROOT, load_settings, require_section, resolve_path
 from tsuzuku_pipeline.data_cli import stamp_dir
@@ -43,13 +50,6 @@ from tsuzuku_pipeline.ml.reco.evaluate import (
 )
 from tsuzuku_pipeline.ml.reco.evaluate import rmse as rmse_fn
 from tsuzuku_pipeline.ml.reco.export import reco_paths, save_reco_artifact, verify_reco_artifact
-from tsuzuku_pipeline.ml.reco.fold_in import (
-    FoldInModel,
-    fold_in,
-    onboarding_ratings,
-    recommend,
-    top_k_positions,
-)
 from tsuzuku_pipeline.ml.reco.train import (
     KINDS,
     GridPoint,

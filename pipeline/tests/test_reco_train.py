@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
+from tsuzuku_ml.fold_in import FoldInModel
 
-from tsuzuku_pipeline.ml.reco.fold_in import FoldInModel
 from tsuzuku_pipeline.ml.reco.train import (
     GridPoint,
     als_predictor,

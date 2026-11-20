@@ -5,17 +5,27 @@ description = "API FastAPI de Tsuzuku"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "fastapi>=0.115",
+    # Client HTTP de Jikan (timeout, retries) ; aussi utilisé par TestClient.
+    "httpx>=0.27",
+    "psycopg[binary]>=3.2",
+    "pydantic-settings>=2.6",
+    "pyyaml>=6.0",
+    "sqlalchemy>=2.0",
+    # Code ML partagé avec le pipeline (fold-in, features de drop, chargement des artefacts).
+    "tsuzuku-ml",
     "uvicorn[standard]>=0.32",
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=8",
-    "httpx>=0.27",
     "ruff>=0.7",
     "pip-audit>=2.7",
     "bandit>=1.7",
 ]
+
+[tool.uv.sources]
+tsuzuku-ml = { path = "../packages/tsuzuku-ml", editable = true }
 
 [build-system]
 requires = ["hatchling"]
@@ -26,3 +36,7 @@ packages = ["app"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "db: a besoin de Postgres (make up) ; sauté en local s'il est absent, obligatoire en CI (REQUIRE_DB=1)",
+]
+addopts = "--strict-markers"

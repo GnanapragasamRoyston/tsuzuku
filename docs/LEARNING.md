@@ -240,3 +240,61 @@ pas d'intervalles de confiance.
    que la production. Les hyperparamètres et le choix du modèle se font sur la validation, le test
    est évalué une seule fois. Limites que j'assume : pas de dates, donc masquage aléatoire ; et
    le meilleur rank (128) est au bord de la grille, donc l'optimum n'est pas encadré.
+
+## Phase 5 — API data (2026-11-20)
+**Ce qui a été construit :** une API FastAPI (catalogue, saison en cours via Jikan, recos ALS,
+risque de drop) en mode démo, un paquet `packages/tsuzuku-ml` partagé avec le pipeline, et une
+image Docker multi-étapes lancée par `make api-up`, testée en CI sans base ni modèles.
+
+**Concepts clés :**
+- **Training-serving skew et code partagé** : si l'API calcule les features ou le fold-in
+  autrement qu'à l'entraînement, le modèle répond faux sans erreur. Le pipeline et l'API importent
+  donc le même paquet (`tsuzuku_ml`), sans copie. Au démarrage, l'API rejoue le `parity_check` de
+  la fiche (mêmes notes → même top 10) ; les infos d'anime servies ont été comparées à celles de
+  l'entraînement : 0 différence sur 16 214 animes.
+- **Lifespan et dégradation contrôlée** : le `lifespan` de FastAPI charge les modèles une fois au
+  démarrage. Un modèle absent ne fait pas planter l'API : ses routes répondent 503 (« indisponible,
+  réessaie plus tard ») et pas 500 (« bug »). `/health` (vivacité : le processus tourne-t-il ?)
+  répond toujours 200 ; `/health/ready` (disponibilité : peut-on lui envoyer du trafic ?) répond
+  503 s'il manque la base ou un modèle.
+- **Dépendance FastAPI (`Depends`)** : une route déclare ce dont elle a besoin (session de base,
+  modèle, règles) et FastAPI le fournit à chaque requête. Le code de la route reste simple, la
+  session est fermée automatiquement, et les tests remplacent facilement une dépendance.
+- **Cache, retries, backoff et circuit simple** : Jikan est une API externe lente ou en panne par
+  moments. Timeout de 5 s, 2 retries avec attente croissante (ou `Retry-After`), cache d'une heure,
+  dernière réponse servie en « stale » si Jikan tombe. Après un échec, on ne réessaie pas pendant
+  120 s : c'est un disjoncteur (« circuit breaker ») simplifié.
+- **Mode démo** : pas de comptes avant la phase 7, donc le profil (titres aimés, liste) est envoyé
+  dans la requête. Les services sont écrits pour recevoir une liste, d'où qu'elle vienne : les
+  routes `/me/...` réutiliseront les mêmes avec la liste lue en base.
+- **Image Docker multi-étapes et liste blanche** : une étape construit le venv avec uv, l'image
+  finale ne garde que lui (pas d'outils de build, utilisateur non-root). Le contexte de build est la
+  racine du dépôt, qui contient `data/` (plusieurs Go) : le `.dockerignore` exclut tout (`*`) puis
+  n'autorise que le nécessaire.
+
+**Pourquoi ce choix :** voir [ADR 006](decisions/006-api-data.md). Copie de `fold_in.py` dans le
+backend (prévue par l'ADR 005) écartée : deux copies finissent par diverger ; un paquet partagé
+sans Spark garde PySpark hors de l'image. SQLAlchemy asynchrone écarté : plus complexe, sans gain
+mesurable ici, et les calculs NumPy restent synchrones. Jikan sans cache écarté : panne et limites
+de débit. Chiffre de drop pour un anime récent écarté : ses features seraient vides, le chiffre
+serait inventé. Limites assumées : Jikan injoignable pendant toute la phase (testé avec un Jikan
+simulé), image de 1,02 GB, `parity_check` strict qui pourrait désactiver la reco si un calcul
+flottant diffère entre machines.
+
+**3 questions d'entretien possibles :**
+1. *Comment garantis-tu que l'API calcule la même chose que ton entraînement ?*
+   Le pipeline et l'API importent le même paquet Python, sans copie. Au démarrage, l'API rejoue un
+   cas de référence enregistré dans la fiche du modèle et refuse le modèle si le top 10 diffère. J'ai
+   aussi comparé les infos d'anime servies par l'API à celles de l'entraînement : 16 214 animes,
+   9 colonnes, 0 différence. Enfin, un anime que le modèle n'a jamais vu reçoit
+   « insufficient_data », pas un chiffre.
+2. *Pourquoi servir la popularité à un utilisateur qui a donné moins de 5 titres ?*
+   Parce que je l'ai mesuré en phase 4 : avec 3 titres aimés, l'ALS implicite a une NDCG@10 de
+   0,175 contre 0,193 pour la popularité ; avec 5, il passe devant (0,214). Seuls les titres
+   aimés (note ≥ 8) comptent, car c'est ce qui a été évalué. La réponse indique la stratégie et la
+   raison, pour que le front puisse l'expliquer.
+3. *Que se passe-t-il si Jikan tombe ?*
+   S'il y a une réponse en cache, l'API la sert marquée « stale ». Sinon, elle répond 503. J'ai
+   mesuré le pire cas : 47,2 s avant le 503 avec un timeout de 10 s et 3 retries, d'où le passage
+   à 5 s et 2 retries (18,2 s). Ensuite, pendant 120 s, elle ne réessaie pas et répond tout de
+   suite : une panne de Jikan ne bloque pas le reste de l'API.

@@ -4,9 +4,10 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help setup up down db-check lint format test audit \
-        data spark train figures reco api web migrate
+        data spark train figures reco api api-up api-down web migrate
 
-PY_PROJECTS := pipeline backend
+# packages/tsuzuku-ml : code ML partagé par le pipeline et l'API (ADR 006).
+PY_PROJECTS := packages/tsuzuku-ml pipeline backend
 
 help: ## Affiche cette aide
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -40,7 +41,7 @@ test: ## Lance pytest sur pipeline et backend
 	@for p in $(PY_PROJECTS); do (cd $$p && uv run pytest) || exit 1; done
 
 audit: ## Audit de sécurité des dépendances (pip-audit) + bandit sur le backend
-	@for p in $(PY_PROJECTS); do (cd $$p && uv export --no-hashes --format requirements-txt -q | uv run pip-audit -r /dev/stdin) || exit 1; done
+	@for p in $(PY_PROJECTS); do (cd $$p && uv export --no-hashes --no-emit-local --format requirements-txt -q | uv run pip-audit -r /dev/stdin) || exit 1; done
 	cd backend && uv run bandit -q -r app
 
 # --- Données (phase 1) ----------------------------------------------------
@@ -71,9 +72,19 @@ reco: ## [phase 4] Reco ALS : baseline popularité vs ALS explicite/implicite, f
 figures: ## Chiffres clés de toutes les phases -> reports/key_figures.{json,md}
 	cd pipeline && uv run python -m tsuzuku_pipeline.key_figures
 
+# --- API (phase 5) ----------------------------------------------------------
+# Nécessite `make up` (base) et les artefacts de `make train` / `make reco` dans models/.
+# Documentation interactive (Swagger) : http://localhost:8000/docs
+api: ## [phase 5] Lance l'API en local (rechargement auto)
+	cd backend && uv run uvicorn app.main:create_app --factory --reload
+
+api-up: ## [phase 5] Construit et lance l'API dans Docker (http://localhost:8000/docs)
+	docker compose --profile api up -d --build --wait api
+
+api-down: ## Arrête le conteneur de l'API
+	docker compose --profile api stop api
+
 # --- Phases suivantes (pas encore implémentées) ----------------------------
-api: ## [phase 5] Lance l'API FastAPI en local
-	cd backend && uv run uvicorn app.main:app --reload
 web: ## [phase 8] Lance le front Next.js
 	@echo "Pas encore implémenté (phase 8)"; exit 1
 migrate: ## [phase 7] Migrations Alembic

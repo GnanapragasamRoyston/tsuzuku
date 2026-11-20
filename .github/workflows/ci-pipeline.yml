@@ -3,9 +3,9 @@ name: ci-pipeline
 on:
   push:
     branches: [main]
-    paths: ["pipeline/**", "config/**", "ruff.toml", ".github/workflows/ci-pipeline.yml"]
+    paths: ["pipeline/**", "packages/**", "config/**", "ruff.toml", ".github/workflows/ci-pipeline.yml"]
   pull_request:
-    paths: ["pipeline/**", "config/**", "ruff.toml", ".github/workflows/ci-pipeline.yml"]
+    paths: ["pipeline/**", "packages/**", "config/**", "ruff.toml", ".github/workflows/ci-pipeline.yml"]
 
 permissions:
   contents: read
@@ -51,4 +51,4 @@ jobs:
         timeout-minutes: 15
         run: uv run pytest
       - name: Audit des dépendances
-        run: uv export --no-hashes --format requirements-txt -q | uv run pip-audit -r /dev/stdin
+        run: uv export --no-hashes --no-emit-local --format requirements-txt -q | uv run pip-audit -r /dev/stdin

@@ -5,10 +5,10 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
+from tsuzuku_ml.fold_in import fold_in, recommend
 
 from tsuzuku_pipeline import reco_cli
 from tsuzuku_pipeline.ml.reco.export import load_reco_model
-from tsuzuku_pipeline.ml.reco.fold_in import fold_in, recommend
 
 
 @pytest.fixture

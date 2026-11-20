@@ -1,0 +1,49 @@
+{
+  "note": "Mesures ponctuelles de la phase 5 (API), faites avec des scripts de vérification (non rejoués par make). Valeurs recopiées telles quelles depuis la sortie des scripts, le 2026-11-20. Elles appuient des décisions documentées dans l'ADR 006.",
+  "measurements": [
+    {
+      "id": "api_serving_feature_parity",
+      "phase": 5,
+      "source": "scratchpad check_skew.py : infos d'anime servies par l'API (catalog.media via catalog_service.anime_infos) comparées à celles de l'entraînement (clean/anime) ; voir ADR 006",
+      "values": {
+        "anime_compared": 16214,
+        "anime_in_clean": 16214,
+        "columns_compared": ["format", "episodes", "duration_min", "source", "start_year", "age_rating", "popularity", "main_studio", "genres"],
+        "differences": 0
+      }
+    },
+    {
+      "id": "api_docker_image",
+      "phase": 5,
+      "source": "docker image ls tsuzuku-api après make api-up ; voir ADR 006",
+      "values": {
+        "image_size": "1.02GB",
+        "runs_as_uid": 10001,
+        "contains_pyspark": false
+      }
+    },
+    {
+      "id": "api_jikan_worst_case",
+      "phase": 5,
+      "source": "curl /trending sur l'API Docker alors que api.jikan.moe ne répondait pas (aussi injoignable depuis Windows) ; voir ADR 006",
+      "values": {
+        "timeout_10s_3_retries_seconds_to_503": 47.2,
+        "timeout_5s_2_retries_seconds_to_503": 18.2,
+        "failure_backoff_s": 120
+      }
+    },
+    {
+      "id": "api_real_data_smoke",
+      "phase": 5,
+      "source": "scratchpad smoke_api.py (TestClient sur la base de dev et les vrais modèles, runs 1263a415 reco et 3e8b164f drop) ; voir ADR 006",
+      "values": {
+        "showcase_profile_titles": 6,
+        "strategy_with_6_liked": "als",
+        "top10_identical_to_phase4_showcase": true,
+        "strategy_with_3_liked": "popularity",
+        "death_note_drop_probability_with_5_completed": 0.0178,
+        "drop_threshold": 0.2406
+      }
+    }
+  ]
+}
