@@ -126,14 +126,20 @@ airflow-trigger: ## [phase 6] Déclenche un DAG (DAG=jikan_daily_ingest ou anili
 
 # --- Front (phase 8) ---------------------------------------------------------
 # Node 24 LTS (nvm) dans WSL. Le front relaie /api/* vers l'API (make api ou make api-up).
+# NODE charge nvm si node n'est pas déjà dans le PATH (terminal ouvert avant l'installation,
+# shell non interactif) : sinon WSL trouverait le npm de Windows, qui échoue sur un chemin WSL.
+NODE := command -v node >/dev/null || . "$$HOME/.nvm/nvm.sh";
+
 covers: ## [phase 8] Couvertures manquantes des animes depuis AniList (idMal), sans Airflow
 	cd pipeline && uv run python -m tsuzuku_pipeline.ingestion.cli covers
 
-web: ## [phase 8] Lance le front Next.js (http://localhost:3000)
-	cd frontend && npm run dev
+web: ## [phase 8] Lance le front Next.js (http://localhost:3000) ; make api dans un autre terminal
+	@$(NODE) cd frontend && (curl -s -o /dev/null --max-time 2 http://127.0.0.1:8000/health \
+		|| echo "⚠ API injoignable sur :8000 : lance « make api » dans un autre terminal") \
+		&& npm run dev
 
 web-test: ## [phase 8] Lint, types et tests Vitest du front
-	cd frontend && npm run lint && npm run typecheck && npm test
+	@$(NODE) cd frontend && npm run lint && npm run typecheck && npm test
 
 web-e2e: ## [phase 8] Parcours de bout en bout (Playwright + axe) sur une base de test dédiée
-	cd frontend && npx playwright test
+	@$(NODE) cd frontend && npx playwright test
