@@ -19,7 +19,7 @@ illisible par les scripts de la page et n'est envoyé qu'en HTTPS.
 
 ## Usage des données
 - Recommandations et risque de drop : calculés à partir de **ta** liste uniquement.
-- Statistiques de l'appli (tableau de bord, phase 12) : **agrégées et anonymes** (par exemple,
+- Statistiques de l'appli (tableau de bord, phase 13) : **agrégées et anonymes** (par exemple,
   « œuvres les plus ajoutées »), jamais au niveau d'un compte.
 - Couvertures et fiches : servies depuis MyAnimeList (via Jikan) et AniList, crédités en pied de
   page ; ces sites ne reçoivent aucune donnée de ton compte.

@@ -135,6 +135,7 @@ tsuzuku/
 | `user` | id, email, pseudo, password_hash, created_at, avatar |
 | `list_entry` | user_id, media_id, status (`planning`, `in_progress`, `completed`, `paused`, `dropped`), progress, dropped_at, score (1-10), review, started_at, finished_at, updated_at |
 | `follow` | follower_id, followed_id (phase 9, optionnel) |
+| `push_subscription` | user_id, endpoint, clés de chiffrement, created_at (phase 12, optionnel) |
 | `onboarding_choice` | user_id, media_id, created_at |
 
 ### Schéma `mart` (analytique, alimenté par Spark)
@@ -202,7 +203,7 @@ Définitions à écrire dans le README :
 | GET | `/me/drop-risk/{media_id}` | risque de drop |
 | GET | `/trending` | saison en cours (Jikan) |
 | GET | `/users/{pseudo}` | profil public |
-| POST | `/me/assistant` | phase 12 |
+| POST | `/me/assistant` | phase 14 |
 | GET | `/health` | état API + base |
 
 Tests : `TestClient`, base de test dédiée, couverture des routes d'auth et de liste en priorité.
@@ -220,6 +221,29 @@ Pages :
 8. **Paramètres** : export et suppression des données
 
 Exigences : responsive (mobile d'abord), mode sombre, chargement rapide, accessibilité de base (contrastes, labels, navigation clavier). Couvertures servies depuis les URLs Jikan/AniList, avec la source créditée en pied de page. Tests : Vitest (composants), Playwright (inscription → onboarding → recos → ajout à la liste).
+
+### 8.1 Application installable (PWA)
+
+- **Pourquoi** : rendre Tsuzuku installable sur téléphone sans passer par les stores. Publier sur les stores est payant (App Store : 99 $ par an ; Google Play : 25 $ une fois, plus 12 testeurs pendant 14 jours pour un nouveau compte personnel). La PWA coûte 0 € et garde une seule base de code (ADR 010).
+- **Manifest** (`app/manifest.ts`, App Router) : nom « Tsuzuku », nom court, `lang: "fr"`, `display: "standalone"`, `start_url`, `scope`, `theme_color` et `background_color` tirées de `docs/DESIGN.md`. Icônes 192 et 512 px (dont une version `maskable`) et `apple-touch-icon` 180 px.
+- **Service worker** : bibliothèque maintenue, compatible avec Next.js App Router (Serwist ou équivalent ; choix justifié dans un ADR).
+  - coquille de l'appli et fichiers statiques : cache-first ;
+  - GET du catalogue, de la fiche œuvre et de « Ma liste » : stale-while-revalidate ;
+  - jaquettes : cache limité en nombre d'entrées et en durée ;
+  - jamais de cache pour l'authentification, les données privées d'un autre utilisateur ni les requêtes qui modifient des données ; les réponses du compte sont effacées du cache à la déconnexion et à la suppression du compte (appareil partagé) ;
+  - page de secours hors ligne, dans le ton de `DESIGN.md`.
+- **Hors ligne** : « Ma liste » et les fiches déjà vues restent consultables, avec la date de dernière synchro affichée. Les modifications hors ligne sont désactivées dans un premier temps, avec un message clair ; la synchro différée viendra plus tard, en option.
+- **Installation** :
+  - Android / Chrome : bouton « Installer l'appli » via `beforeinstallprompt`, proposé après une action utile, jamais à la première visite ;
+  - iPhone / Safari : détection hors mode standalone, puis mini-guide « Partager → Sur l'écran d'accueil » ;
+  - page `/installer` qui explique les deux.
+- **Notifications push** (optionnel, fin de phase) : Web Push avec clés VAPID dans `.env`, table `app.push_subscription`, consentement explicite. Exemples : nouvel épisode d'une série suivie (données Jikan quotidiennes), approche de l'épisode critique. Sur iPhone, ça ne marche que si l'appli est installée. Les abonnements sont inclus dans l'export et la suppression RGPD.
+- **Vérification** :
+  - critères d'installabilité contrôlés dans Chrome DevTools (onglet Application) ;
+  - Lighthouse pour les performances et l'accessibilité (pas de « score PWA » : cette catégorie n'existe plus dans Lighthouse) ;
+  - test Playwright du mode hors ligne ;
+  - test manuel par Royston sur un vrai Android et un vrai iPhone.
+- **Hors périmètre** (à noter dans les limites du README) : publication sur les stores. Pistes futures : Google Play en empaquetant la PWA (TWA, via Bubblewrap ou PWABuilder) ; App Store via Capacitor.
 
 ## 9. Orchestration et déploiement
 
@@ -254,11 +278,12 @@ Chaque phase : `/plan` → validation de Royston → `/tdd` → `/code-review` �
 | 9 | Front, partie 2 | fiche œuvre (risque de drop, courbe), page « Pour toi », profil public |
 | 10 | Recos contenu | embeddings pgvector, recos manga/manhwa et cross-média |
 | 11 | Déploiement | appli en ligne, CI/CD, secrets gérés, monitoring de base |
-| 12 | Power BI | vues SQL, `GUIDE.md`, `measures.dax` ; Royston construit le .pbix |
-| 13 | Assistant IA | explication des recos en langage naturel + RAG sur la doc du projet ; fournisseur de LLM configurable par variable d'environnement, choisi par Royston à cette phase |
-| 14 | README final | pitch, captures, schéma, résultats réels, choix techniques, limites, relance |
+| 12 | PWA | appli installable sur Android et iPhone depuis le navigateur, consultation de « Ma liste » hors ligne, page d'aide à l'installation (§ 8.1) |
+| 13 | Power BI | vues SQL, `GUIDE.md`, `measures.dax` ; Royston construit le .pbix |
+| 14 | Assistant IA | explication des recos en langage naturel + RAG sur la doc du projet ; fournisseur de LLM configurable par variable d'environnement, choisi par Royston à cette phase |
+| 15 | README final | pitch, captures, schéma, résultats réels, choix techniques, limites, relance |
 
-## 11. Tableau de bord Power BI (phase 12)
+## 11. Tableau de bord Power BI (phase 13)
 1. Vue d'ensemble : taux de drop global, top des animes les plus lâchés et les plus « tenus »
 2. Courbes de drop : sélection d'un anime → épisode critique
 3. Studios et genres : rétention par studio, Isekai vs Shonen vs autres
