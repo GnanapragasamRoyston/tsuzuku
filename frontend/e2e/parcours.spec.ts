@@ -70,7 +70,7 @@ test("inscription → onboarding → recos → ajout à la liste → +1 épisode
   // 4. Ajout à la liste (en « Prévu »)
   await firstReco.click();
   // Le bouton reste en place (le focus ne se perd pas) et annonce l'ajout.
-  await expect(forYou.getByRole("button", { name: `${title} : ajouté à Prévu` })).toBeVisible();
+  await expect(forYou.getByRole("button", { name: `${title} : dans ta liste` })).toBeVisible();
   await page.getByRole("tab", { name: /Prévu/ }).click();
   await expect(page.getByRole("heading", { name: title })).toBeVisible();
   await checkScreen(page, "ma-liste");

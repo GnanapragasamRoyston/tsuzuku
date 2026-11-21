@@ -7,7 +7,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { Button, buttonClass } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
@@ -20,17 +20,21 @@ export function Account() {
   const client = useQueryClient();
   const me = useMe();
   const logout = useLogout();
+  // Vrai dès que le compte est supprimé : la session disparaît alors volontairement, il ne faut
+  // pas la traiter comme expirée (test de la phase 8 : on finissait sur /connexion?suivant=/compte).
+  const deleted = useRef(false);
   // Session expirée (useMe renvoie null sur un 401) : retour à la connexion.
   useEffect(() => {
-    if (me.data === null) router.replace("/connexion?suivant=/compte");
+    if (me.data === null && !deleted.current) router.replace("/connexion?suivant=/compte");
   }, [me.data, router]);
   const [error, setError] = useState<string | null>(null);
 
   const remove = useMutation({
     mutationFn: (password: string) => apiFetch("/me", { method: "DELETE", body: { password } }),
     onSuccess: () => {
+      deleted.current = true;
       client.clear();
-      router.push("/");
+      router.replace("/");
     },
     onError: (e) =>
       setError(

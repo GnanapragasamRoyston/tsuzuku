@@ -179,14 +179,16 @@ function ForYou({ announce }: { announce: (message: string) => void }) {
                       <p className="text-small text-ink-2">Parce que tu as aimé {because}.</p>
                     )}
                     {/* Le bouton reste en place une fois l'ajout fait (aria-disabled) : le focus
-                        ne se perd pas, et l'annonce passe par la région aria-live de la page. */}
+                        ne se perd pas, et l'annonce passe par la région aria-live de la page.
+                        Libellé « Dans ta liste » et non « Ajouté à Prévu » : le statut peut changer
+                        ensuite (+1 ép., lâché) et le bouton ne doit pas mentir (test de la phase 8). */}
                     <Button
                       variant="quiet"
                       className="self-start"
                       aria-disabled={done || undefined}
                       disabled={add.isPending && add.variables === media.id}
                       aria-label={
-                        done ? `${media.title} : ajouté à Prévu` : `Ajouter ${media.title} à ma liste`
+                        done ? `${media.title} : dans ta liste` : `Ajouter ${media.title} à ma liste`
                       }
                       onClick={() => {
                         if (done) return;
@@ -196,7 +198,7 @@ function ForYou({ announce }: { announce: (message: string) => void }) {
                         });
                       }}
                     >
-                      {done ? "Ajouté à Prévu" : "Ajouter à ma liste"}
+                      {done ? "Dans ta liste" : "Ajouter à ma liste"}
                     </Button>
                   </div>
                 </li>

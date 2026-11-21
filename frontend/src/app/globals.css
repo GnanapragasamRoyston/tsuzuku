@@ -130,6 +130,12 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Couleur de contour fixée partout : sinon elle vaut currentColor (gris sur ink-2) et
+     transition-colors la fait passer du gris à l'encre à chaque focus (test de la phase 8). */
+  * {
+    outline-color: var(--color-ink);
+  }
+
   /* Focus clavier (§ 5) : contour encre, décalé de 2 px, seulement au clavier. */
   :focus-visible {
     outline: 2px solid var(--color-ink);
