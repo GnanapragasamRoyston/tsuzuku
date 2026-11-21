@@ -21,6 +21,7 @@ Royston, étudiant ingénieur Big Data & ML (EFREI), profil data avec des bases 
 10. Sécurité : mots de passe hachés (argon2), jamais de secret dans les logs, validation de toutes les entrées, dépendances auditées en CI.
 11. Réponds à Royston en français.
 12. Ne jamais ajouter de ligne `Co-Authored-By` ni de mention de Claude dans les commits ou les PR.
+13. Tout travail front respecte `docs/DESIGN.md` (tokens, composants, ton, accessibilité). Une demande qui le contredit est signalée avant d'être codée : on adapte la demande ou on met à jour `DESIGN.md`, jamais d'écart silencieux.
 
 ## Organisation du monorepo
 - `pipeline/` — Data/ML Python (Spark, Airflow, entraînement)
