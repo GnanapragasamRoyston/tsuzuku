@@ -34,4 +34,7 @@ USER api
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
-CMD ["uvicorn", "app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+# --no-proxy-headers : X-Forwarded-For est ignoré. Le relais du front le transmet tel que le
+# client l'a écrit (il ne pose pas l'IP réelle) : s'y fier permettrait de contourner la limite de
+# tentatives par IP. Limite globale en attendant un en-tête de confiance (phase 11, ADR 009).
+CMD ["uvicorn", "app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-proxy-headers"]

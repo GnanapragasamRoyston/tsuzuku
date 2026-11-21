@@ -11,7 +11,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.core.config import ApiRules
-from app.db.app_models import ListEntry, OnboardingChoice, User
+from app.db.app_models import LIST_STATUSES, ListEntry, OnboardingChoice, User
 from app.db.models import Media
 from app.schemas.demo import LikedItem, ListEntryIn
 from app.schemas.me import ListEntryUpdate
@@ -61,7 +61,13 @@ def page(
         .limit(limit)
         .offset(offset)
     ).all()
-    return {"total": total, "items": [_out(e, m) for e, m in rows]}
+    # Compteurs par statut, indépendants du filtre : les onglets du front les affichent tous.
+    by_status = dict(session.execute(
+        select(ListEntry.status, func.count()).where(ListEntry.user_id == user_id)
+        .group_by(ListEntry.status)
+    ).all())  # fmt: skip
+    counts = {s: by_status.get(s, 0) for s in LIST_STATUSES}
+    return {"total": total, "counts": counts, "items": [_out(e, m) for e, m in rows]}
 
 
 def _out(entry: ListEntry, media: Media) -> dict[str, Any]:
@@ -72,9 +78,20 @@ def _out(entry: ListEntry, media: Media) -> dict[str, Any]:
     }  # fmt: skip
 
 
+class AlreadyInList(Exception):
+    """Création seule demandée, mais l'œuvre est déjà dans la liste."""
+
+
 def upsert(
-    session: Session, user_id: int, media_id: int, body: ListEntryUpdate, rules: ApiRules
+    session: Session,
+    user_id: int,
+    media_id: int,
+    body: ListEntryUpdate,
+    rules: ApiRules,
+    create_only: bool = False,
 ) -> dict[str, Any]:
+    """Crée ou remplace l'entrée (PUT). `create_only` (POST) : ne touche JAMAIS une entrée
+    existante — un ajout depuis une reco ne doit pas remettre à zéro progression et note."""
     media = session.get(Media, media_id)
     if media is None:
         raise MediaNotFound(media_id)
@@ -95,6 +112,10 @@ def upsert(
 
     _lock_account(session, user_id)
     exists = session.get(ListEntry, (user_id, media_id)) is not None
+    if exists and create_only:
+        # Vérifié sous le verrou du compte : pas de course avec un autre ajout simultané.
+        session.rollback()
+        raise AlreadyInList(media_id)
     if not exists:
         size = session.scalar(
             select(func.count()).select_from(ListEntry).where(ListEntry.user_id == user_id)

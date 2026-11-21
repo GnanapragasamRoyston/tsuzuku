@@ -159,6 +159,8 @@ ingestion:
     tag_min_rank: 60
     # Contrôle qualité : au moins cette part des titres attendus (per_page × max_pages).
     min_share_of_expected: 0.9
+    # Couvertures des animes (phase 8) : idMal par requête (50 = taille de page max d'AniList).
+    covers_batch_size: 50
 
 api:
   # Sous ce nombre d'animes aimés connus du modèle, l'API sert la popularité au lieu de l'ALS.

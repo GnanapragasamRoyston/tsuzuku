@@ -6,13 +6,13 @@ Sous le capot : un pipeline Big Data sur 109 M d'interactions MyAnimeList (PySpa
 quotidienne (Airflow), un modèle de churn (« risque de drop », scikit-learn), une recommandation
 ALS (Spark MLlib), une API FastAPI et un front Next.js.
 
-🚧 **En construction** — phase 7 terminée (comptes et listes). Voir [docs/SPEC.md](docs/SPEC.md) pour le
+🚧 **En construction** — phase 8 terminée (front, partie 1 : accueil, comptes, onboarding, ma liste). Voir [docs/SPEC.md](docs/SPEC.md) pour le
 cahier des charges et [docs/architecture.md](docs/architecture.md) pour l'architecture.
 
 ## Démarrage
 
 Prérequis : WSL2 (ou Linux/macOS), Docker, `make`, [uv](https://docs.astral.sh/uv/), Java 17
-(PySpark), un jeton Kaggle dans `~/.kaggle/access_token` (`chmod 600`).
+(PySpark), Node 24 LTS (front), un jeton Kaggle dans `~/.kaggle/access_token` (`chmod 600`).
 
 ```bash
 make setup     # environnements Python + .env
@@ -29,6 +29,10 @@ make api-up    # API dans Docker (profil compose « api », migrations appliqué
 make airflow-keys  # secrets d'Airflow ajoutés à .env (jamais affichés)
 make airflow-up    # Airflow dans Docker (http://localhost:8080)
 make airflow-trigger DAG=anilist_catalog_sync  # lance un DAG tout de suite
+make covers    # couvertures manquantes des animes, depuis AniList (aussi fait par le DAG hebdo)
+make web       # front Next.js en local (http://localhost:3000), avec make api lancé à côté
+make web-test  # lint, types et tests Vitest du front
+make web-e2e   # parcours de bout en bout (Playwright + axe) sur une base de test dédiée
 make figures   # chiffres clés de toutes les phases → reports/key_figures.{json,md} (sans recalcul)
 make lint test # qualité
 make help      # toutes les commandes
@@ -125,7 +129,7 @@ d'un risque de drop chiffré.
 | GET / DELETE | `/me` | profil ; suppression du compte et de ses données (mot de passe demandé) |
 | GET | `/me/export` | export RGPD en JSON (profil, liste, onboarding) |
 | GET | `/me/list?status=&limit=&offset=` | ma liste, par statut, paginée |
-| PUT / DELETE | `/me/list/{media_id}` | ajouter ou modifier une œuvre (statut, progression, « lâché à l'épisode X », note, critique, dates) ; la retirer |
+| POST / PUT / DELETE | `/me/list/{media_id}` | ajouter (POST : jamais d'écrasement) ou modifier une œuvre (statut, progression, « lâché à l'épisode X », note, critique, dates) ; la retirer |
 | POST | `/me/onboarding` | au moins 10 œuvres aimées |
 | GET | `/me/recommendations?kind=anime` | recos depuis l'onboarding et la liste (manga/manhwa : phase 10) |
 | GET | `/me/drop-risk/{media_id}` | risque de drop depuis ma liste |
@@ -135,6 +139,33 @@ session JWT dans un cookie `httpOnly` + `Secure` + `SameSite=Lax`, révoquée à
 connexion limitée après 5 échecs, aucun email ni mot de passe dans les journaux. Les tables du
 schéma `app` sont créées par des migrations Alembic ; `catalog` et `mart` restent au pipeline.
 Données et droits : [docs/privacy.md](docs/privacy.md).
+
+## Front (phase 8)
+
+Next.js 16 (App Router, TypeScript), Tailwind v4, TanStack Query. Direction visuelle « Journal
+de bord » : [docs/DESIGN.md](docs/DESIGN.md) (tokens, composants, ton, contrastes vérifiés).
+Choix techniques : [ADR 009](docs/decisions/009-front-next.md).
+
+| Page | Rôle |
+|---|---|
+| `/` | accueil : populaires, mangas et manhwas, un chiffre de drop réel en affiche, saison en cours |
+| `/inscription`, `/connexion` | comptes (cookie de session posé par l'API, jamais visible du JavaScript) |
+| `/onboarding` | choisir au moins 10 œuvres aimées (onglets, recherche) |
+| `/ma-liste` | onglets par statut, « +1 ép. », « J'ai lâché », passage en « Terminé » au dernier épisode ; recos « Pour toi » à côté |
+| `/compte`, `/confidentialite` | déconnexion, export, suppression du compte ; données et droits |
+
+Lancement local : `make up`, `make api`, puis `make web` (http://localhost:3000). Le navigateur
+ne parle qu'au front, qui relaie `/api/*` vers l'API (même origine : pas de CORS, cookie toujours
+envoyé). Le code ne peut pas s'écarter de DESIGN.md : les valeurs par défaut de Tailwind sont
+supprimées, et un test refuse toute couleur, police ou valeur en dur, et recalcule les contrastes.
+
+Tests : `make web-test` (Vitest : logique et garde-fous du design) et `make web-e2e`
+(Playwright, sur une base de test et la vraie API : inscription → onboarding → recos → ajout →
++1 épisode, avec axe-core et un contrôle de débordement à 375 et 1440 px).
+
+Couvertures : le dataset 2020 n'a pas d'images. `make covers` (et le DAG AniList chaque semaine)
+les récupère sur AniList par identifiant MAL : 13 779 animes sur 16 214 en ont une
+(`reports/exploration_2026-11-20.json`) ; les autres gardent une jaquette de secours.
 
 ## Ingestion (phase 6)
 

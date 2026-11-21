@@ -6,7 +6,7 @@ catalog.media.id. Les conversions se font ici, et seulement ici.
 
 from collections.abc import Iterable
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 from tsuzuku_ml.drop_features import AnimeInfo
 
@@ -23,15 +23,37 @@ def _like_pattern(q: str) -> str:
     return f"%{escaped}%"
 
 
-def search(session: Session, q: str, kind: str | None, limit: int) -> list[Media]:
+def _rank():
+    """Rang de popularité, 1 = le plus populaire. 0 veut dire « non classé » chez MAL (œuvre pas
+    encore sortie en 2020) : traité comme inconnu, sinon ces titres passeraient en tête."""
+    return func.nullif(Media.popularity, 0)
+
+
+def search(session: Session, q: str, kinds: list[str], limit: int) -> list[Media]:
     pattern = _like_pattern(q)
     stmt = select(Media).where(
         or_(Media.title.ilike(pattern, escape="\\"), Media.title_alt.ilike(pattern, escape="\\"))
     )
-    if kind:
-        stmt = stmt.where(Media.kind == kind)
-    # Popularité MAL = un rang (1 = la plus populaire) : tri croissant, inconnues à la fin.
-    stmt = stmt.order_by(Media.popularity.asc().nulls_last(), Media.id).limit(limit)
+    if kinds:
+        stmt = stmt.where(Media.kind.in_(kinds))
+    # Tri par rang croissant, inconnus à la fin.
+    stmt = stmt.order_by(_rank().asc().nulls_last(), Media.id).limit(limit)
+    return list(session.scalars(stmt))
+
+
+def popular(session: Session, kinds: list[str], limit: int, offset: int) -> list[Media]:
+    """Œuvres classées les plus populaires des types demandés (accueil, onboarding).
+
+    Les rangs des animes (MAL) et des mangas/manhwas/manhuas (AniList) viennent de deux sources :
+    on ne mélange un anime et un manga dans une même liste que si on les demande ensemble.
+    """
+    stmt = (
+        select(Media)
+        .where(Media.kind.in_(kinds), _rank().is_not(None))
+        .order_by(_rank().asc(), Media.id)
+        .limit(limit)
+        .offset(offset)
+    )
     return list(session.scalars(stmt))
 
 

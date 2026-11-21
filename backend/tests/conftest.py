@@ -58,6 +58,12 @@ def _base_url() -> str:
     url = os.environ.get("DATABASE_URL") or dotenv_values(REPO_ROOT / ".env").get("DATABASE_URL")
     if not url:
         raise KeyError("DATABASE_URL")
+    # Les tests (et l'API e2e) CRÉENT et SUPPRIMENT des bases sur ce serveur : jamais ailleurs
+    # qu'en local, sauf en CI (Postgres jetable du runner). Garde-fou si .env pointe un jour
+    # vers une base hébergée (Neon, phase 11).
+    host = make_url(url).host
+    if host not in ("localhost", "127.0.0.1", "::1") and os.environ.get("CI") != "1":
+        raise RuntimeError(f"tests refusés sur un serveur Postgres distant ({host})")
     return url
 
 

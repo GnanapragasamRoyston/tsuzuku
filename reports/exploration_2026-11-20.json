@@ -72,6 +72,18 @@
         "cause": "jikan_unreachable_timeout",
         "dag_verified_with_simulated_responses_only": true
       }
+    },
+    {
+      "id": "anime_covers_first_run",
+      "phase": 8,
+      "source": "make covers le 2026-11-21 (jobs.anilist_covers, AniList par idMal) : sortie de la commande et rapport reports/ingestion/covers_2026-11-21.json ; voir ADR 009",
+      "values": {
+        "anime_missing_cover": 16214,
+        "covers_found_on_anilist": 13779,
+        "covers_written": 13779,
+        "still_without_cover": 2435,
+        "batch_size": 50
+      }
     }
   ]
 }

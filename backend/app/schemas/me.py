@@ -56,6 +56,8 @@ class ListEntryOut(BaseModel):
 
 class ListPage(BaseModel):
     total: int
+    # Nombre d'œuvres par statut sur toute la liste (indépendant du filtre de la page).
+    counts: dict[ListStatus, int]
     items: list[ListEntryOut]
 
 

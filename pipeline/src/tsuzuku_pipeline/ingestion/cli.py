@@ -1,0 +1,28 @@
+"""Lancer une tâche d'ingestion hors d'Airflow (make covers).
+
+Les DAG restent le chemin normal ; cette commande sert au premier remplissage et au dépannage.
+"""
+
+import argparse
+import datetime as dt
+import json
+import logging
+
+from tsuzuku_pipeline.config import load_settings
+from tsuzuku_pipeline.ingestion import jobs
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(prog="tsuzuku-ingest")
+    parser.add_argument(
+        "task", choices=["covers"], help="covers : couvertures des animes (AniList)"
+    )
+    args = parser.parse_args(argv)
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    day = dt.datetime.now(dt.UTC).date()
+    if args.task == "covers":
+        print(json.dumps(jobs.anilist_covers(load_settings(), day), ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()

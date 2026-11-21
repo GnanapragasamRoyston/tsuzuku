@@ -1,0 +1,154 @@
+/*
+ * Tokens de docs/DESIGN.md (§ 8). SEULE source des couleurs, polices, tailles, espacements et
+ * rayons du front : les valeurs par défaut de Tailwind sont supprimées (« --x-*: initial »), donc
+ * bg-red-500, rounded-xl ou p-5 ne compilent pas. Un test (src/test/design-tokens.test.ts) refuse
+ * aussi les valeurs en dur dans le code et revérifie les contrastes à partir de ce fichier.
+ */
+@import "tailwindcss";
+
+@theme {
+  /* Couleurs (§ 1.1) */
+  --color-*: initial;
+  --color-bg: #0D0E13;
+  --color-surface: #15161D;
+  --color-raised: #1C1D26;
+  --color-hover: #23242F;
+  --color-line: #2A2B36;
+  --color-line-strong: #707282;
+  --color-ink: #ECEAE4;
+  --color-ink-2: #A6A4A0;
+  --color-disabled: #5C5B59;
+  --color-accent: #FF6B57;
+  --color-accent-hover: #FF8573;
+  --color-on-accent: #14142B;
+  --color-good: #7DB4F0;
+  --color-chart: #6E7182;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Polices (§ 2) : variables posées par next/font dans layout.tsx */
+  --font-*: initial;
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-body: var(--font-source-sans), system-ui, sans-serif;
+
+  /* Tailles de texte (§ 2.1) */
+  --text-*: initial;
+  --text-figure: clamp(4.5rem, 3.2rem + 5.6vw, 7.5rem);
+  --text-figure--line-height: 0.9;
+  --text-display: clamp(2.75rem, 2rem + 3.2vw, 4.75rem);
+  --text-display--line-height: 1.02;
+  --text-h1: 2.75rem;
+  --text-h1--line-height: 1.1;
+  --text-h2: 1.875rem;
+  --text-h2--line-height: 1.2;
+  --text-h3: 1.5rem;
+  --text-h3--line-height: 1.25;
+  --text-lead: 1.1875rem;
+  --text-lead--line-height: 1.5;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.55;
+  --text-ui: 1rem;
+  --text-ui--line-height: 1.4;
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.45;
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.4;
+
+  --tracking-*: initial;
+  --tracking-tight: -0.02em;
+  --tracking-meta: 0.08em;
+
+  /* Espacements et tailles (§ 3.2) : seuls ces pas existent */
+  --spacing-*: initial;
+  --spacing-0: 0px;
+  --spacing-px: 1px;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px; /* marge de grille mobile (§ 3.1) */
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px; /* marge de grille desktop (§ 3.1) */
+  --spacing-11: 44px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-18: 72px;
+  --spacing-22: 88px;
+  --spacing-24: 96px;
+  --spacing-32: 128px;
+  --spacing-40: 160px;
+  /* Zone de sécurité du bas d'écran (iPhone) sous la barre de navigation mobile (§ 5.9). */
+  --spacing-safe: env(safe-area-inset-bottom);
+  /* Hauteur de la barre de navigation mobile, zone de sécurité comprise : un élément fixé en bas
+     (barre de l'onboarding) se pose au-dessus. */
+  --spacing-nav: calc(64px + env(safe-area-inset-bottom));
+  --spacing-9: 36px; /* logo en haut de page sur mobile (§ 5.9) */
+
+  --container-*: initial;
+  --container-form: 480px;
+  --container-prose: 560px;
+  --container-page: 1240px;
+
+  /* Rayons (§ 3.3) */
+  --radius-*: initial;
+  --radius-none: 0px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 9999px;
+
+  /* Profondeur (§ 3.4) : une seule ombre, pour les menus et dialogues ouverts */
+  --shadow-*: initial;
+  --shadow-menu: 0 8px 24px rgb(0 0 0 / 0.45);
+
+  /* Points de rupture (§ 3.1) */
+  --breakpoint-*: initial;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+
+  /* Mouvement (§ 6) */
+  --ease-*: initial;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    background-color: var(--color-bg);
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Focus clavier (§ 5) : contour encre, décalé de 2 px, seulement au clavier. */
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-raised);
+    color: var(--color-ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

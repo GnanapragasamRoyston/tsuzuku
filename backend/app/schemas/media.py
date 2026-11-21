@@ -58,3 +58,7 @@ class MediaDetail(MediaSummary):
 class SearchResponse(BaseModel):
     query: str
     items: list[MediaSummary]
+
+
+class PopularResponse(BaseModel):
+    items: list[MediaSummary]

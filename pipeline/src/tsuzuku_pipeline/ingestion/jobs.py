@@ -20,7 +20,7 @@ import yaml
 
 from tsuzuku_pipeline.config import REPO_ROOT, require_section, resolve_path
 from tsuzuku_pipeline.db import loader
-from tsuzuku_pipeline.ingestion import anilist_client, jikan_client
+from tsuzuku_pipeline.ingestion import anilist_client, catalog_loader, jikan_client
 from tsuzuku_pipeline.ingestion.catalog_loader import (
     ANILIST_SOURCE,
     JIKAN_SOURCE,
@@ -288,4 +288,36 @@ def anilist_quality(settings: dict[str, Any], day: dt.date, conn=None) -> dict[s
     _report(settings, "anilist", day, report)
     if not report["ok"]:
         raise IngestionError(f"Contrôle qualité AniList en échec : {checks}")
+    return report
+
+
+# --- AniList : couvertures des animes (phase 8) ------------------------------------------------
+
+
+def anilist_covers(settings: dict[str, Any], day: dt.date, transport=None, sleep=None,
+                   conn=None) -> dict[str, Any]:  # fmt: skip
+    """Couvertures manquantes des animes, par lots d'idMal → catalog.media.cover_url.
+
+    Les animes du dataset 2020 n'ont pas d'image, et Jikan (qui en fournit) est en panne depuis
+    la phase 6. AniList les connaît par leur idMal. Seules les couvertures absentes sont
+    remplies : relancer ne refait rien (idempotent). Les URL reçues sont gardées dans
+    covers.json pour rejouer ou auditer.
+    """
+    cfg = require_section(settings, "ingestion")["anilist"]
+    size = int(cfg["covers_batch_size"])
+    with _connection(conn) as c:
+        missing = catalog_loader.missing_anime_covers(c)
+        found: dict[int, str] = {}
+        with _client(cfg, cfg["url"], transport, sleep) as client:
+            for start in range(0, len(missing), size):
+                found.update(anilist_client.fetch_covers(client, missing[start : start + size]))
+        _write(raw_dir(settings, ANILIST_SOURCE, day) / "covers.json",
+               {str(k): v for k, v in found.items()})  # fmt: skip
+        updated = catalog_loader.fill_anime_covers(c, found)
+        remaining = len(catalog_loader.missing_anime_covers(c))
+    report = {"dag": "anilist_catalog_sync", "task": "covers", "run_date": day.isoformat(),
+              "missing": len(missing), "found": len(found), "updated": updated,
+              "still_missing": remaining}  # fmt: skip
+    _report(settings, "covers", day, report)
+    logger.info("Couvertures AniList : %s", report)
     return report

@@ -4,7 +4,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help setup up down db-check lint format test audit \
-        data spark train figures reco api api-keys api-up api-down web migrate \
+        data spark train figures reco api api-keys api-up api-down web web-test web-e2e covers migrate \
         airflow-keys airflow-up airflow-down airflow-test airflow-trigger
 
 # packages/tsuzuku-ml : code ML partagé par le pipeline et l'API (ADR 006).
@@ -77,7 +77,7 @@ figures: ## Chiffres clés de toutes les phases -> reports/key_figures.{json,md}
 # Nécessite `make up` (base) et les artefacts de `make train` / `make reco` dans models/.
 # Documentation interactive (Swagger) : http://localhost:8000/docs
 api: ## [phase 5] Lance l'API en local (rechargement auto)
-	cd backend && uv run uvicorn app.main:create_app --factory --reload
+	cd backend && uv run uvicorn app.main:create_app --factory --reload --no-proxy-headers
 
 api-keys: ## [phase 7] Ajoute à .env le secret des sessions (JWT_SECRET), sans l'afficher
 	python3 infra/api/gen_keys.py .env
@@ -124,6 +124,16 @@ airflow-test: ## [phase 6] Vérifie dans l'image que les DAG se chargent sans er
 airflow-trigger: ## [phase 6] Déclenche un DAG (DAG=jikan_daily_ingest ou anilist_catalog_sync)
 	$(AIRFLOW) exec airflow-scheduler airflow dags trigger $(DAG)
 
-# --- Phases suivantes (pas encore implémentées) ----------------------------
-web: ## [phase 8] Lance le front Next.js
-	@echo "Pas encore implémenté (phase 8)"; exit 1
+# --- Front (phase 8) ---------------------------------------------------------
+# Node 24 LTS (nvm) dans WSL. Le front relaie /api/* vers l'API (make api ou make api-up).
+covers: ## [phase 8] Couvertures manquantes des animes depuis AniList (idMal), sans Airflow
+	cd pipeline && uv run python -m tsuzuku_pipeline.ingestion.cli covers
+
+web: ## [phase 8] Lance le front Next.js (http://localhost:3000)
+	cd frontend && npm run dev
+
+web-test: ## [phase 8] Lint, types et tests Vitest du front
+	cd frontend && npm run lint && npm run typecheck && npm test
+
+web-e2e: ## [phase 8] Parcours de bout en bout (Playwright + axe) sur une base de test dédiée
+	cd frontend && npx playwright test

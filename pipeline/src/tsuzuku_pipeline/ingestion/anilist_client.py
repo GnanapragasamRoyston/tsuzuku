@@ -37,9 +37,19 @@ query ($page: Int, $perPage: Int) {
 """
 
 
-def fetch_page(client: PoliteClient, page: int, per_page: int) -> dict[str, Any]:
-    variables = {"page": page, "perPage": per_page}
-    body = client.post_json("", json={"query": QUERY, "variables": variables})
+# Couvertures des animes du catalogue (dataset 2020 sans images, Jikan en panne) : recherche
+# par idMal, l'identifiant MAL que nos animes ont déjà (aucun identifiant deviné).
+COVERS_QUERY = """
+query ($ids: [Int], $perPage: Int) {
+  Page(page: 1, perPage: $perPage) {
+    media(type: ANIME, isAdult: false, idMal_in: $ids) { idMal coverImage { large } }
+  }
+}
+"""
+
+
+def _graphql(client: PoliteClient, query: str, variables: dict[str, Any]) -> dict[str, Any]:
+    body = client.post_json("", json={"query": query, "variables": variables})
     if body.get("errors"):
         # GraphQL répond 200 avec une liste d'erreurs : ce n'est pas un succès.
         raise HttpError(f"AniList : {body['errors'][0].get('message', 'erreur GraphQL')}")
@@ -47,6 +57,25 @@ def fetch_page(client: PoliteClient, page: int, per_page: int) -> dict[str, Any]
     if not isinstance(page_data, dict):
         raise HttpError("AniList : réponse sans Page")
     return page_data
+
+
+def fetch_page(client: PoliteClient, page: int, per_page: int) -> dict[str, Any]:
+    return _graphql(client, QUERY, {"page": page, "perPage": per_page})
+
+
+def parse_covers(page: dict[str, Any]) -> dict[int, str]:
+    """{idMal: url de couverture} ; les titres sans idMal ou sans image sont ignorés."""
+    covers = {}
+    for item in page.get("media") or []:
+        url = (item.get("coverImage") or {}).get("large")
+        if item.get("idMal") and url:
+            covers[int(item["idMal"])] = url
+    return covers
+
+
+def fetch_covers(client: PoliteClient, mal_ids: list[int]) -> dict[int, str]:
+    """Couvertures d'un lot d'animes (au plus 50 idMal, la taille de page maximale d'AniList)."""
+    return parse_covers(_graphql(client, COVERS_QUERY, {"ids": mal_ids, "perPage": len(mal_ids)}))
 
 
 def is_adult(item: dict[str, Any]) -> bool:

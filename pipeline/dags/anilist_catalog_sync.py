@@ -1,10 +1,12 @@
 """Synchronisation hebdomadaire du catalogue manga / manhwa / manhua depuis AniList (SPEC § 9).
 
-fetch_pages → load → quality_check. Les 5 000 titres les plus populaires (100 pages de 50, sous
-la limite de débit lue dans les en-têtes d'AniList ; romans exclus) sont upsertés dans
-catalog.media (clé : anilist_id), avec genres et tags. Aucune œuvre n'est supprimée ; un titre
-sorti du top perd son rang. Le recalcul des embeddings des nouvelles œuvres s'ajoutera ici en
-phase 10.
+fetch_pages → load → quality_check → anime_covers.
+
+Les 5 000 titres les plus populaires (100 pages de 50, sous la limite de débit lue dans les
+en-têtes d'AniList ; romans exclus) sont upsertés dans catalog.media (clé : anilist_id), avec
+genres et tags. Aucune œuvre n'est supprimée ; un titre sorti du top perd son rang.
+anime_covers (phase 8) remplit les couvertures manquantes des animes par leur idMal.
+Le recalcul des embeddings des nouvelles œuvres s'ajoutera ici en phase 10.
 """
 
 import datetime as dt
@@ -46,7 +48,13 @@ def anilist_catalog_sync() -> None:
         report = jobs.anilist_quality(load_settings(), day(logical_date))
         return {k: report[k] for k in ("pages", "fetched", "catalog_by_kind", "ok")}
 
-    fetch_pages() >> load() >> quality_check()
+    @task
+    def anime_covers(logical_date=None) -> dict:
+        # Après le catalogue et en série, jamais en parallèle : deux tâches AniList simultanées
+        # doubleraient le débit et dépasseraient la limite de 30 requêtes par minute.
+        return jobs.anilist_covers(load_settings(), day(logical_date))
+
+    fetch_pages() >> load() >> quality_check() >> anime_covers()
 
 
 anilist_catalog_sync()

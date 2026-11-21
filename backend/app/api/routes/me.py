@@ -98,12 +98,34 @@ def get_list(
     return list_service.page(session, user.id, status_, limit, offset)
 
 
+@router.post("/list/{media_id}", response_model=ListEntryOut, status_code=status.HTTP_201_CREATED)
+def create_entry(
+    media_id: MediaId, body: ListEntryUpdate, user: CurrentUser, session: DbSession, rules: Rules
+) -> dict:
+    """Ajout seul (« Ajouter à ma liste » depuis une reco) : 409 si l'œuvre y est déjà, au lieu
+    d'écraser sa progression et sa note comme le ferait un PUT."""
+    return _write_entry(session, user.id, media_id, body, rules, create_only=True)
+
+
 @router.put("/list/{media_id}", response_model=ListEntryOut)
 def put_entry(
     media_id: MediaId, body: ListEntryUpdate, user: CurrentUser, session: DbSession, rules: Rules
 ) -> dict:
+    return _write_entry(session, user.id, media_id, body, rules, create_only=False)
+
+
+def _write_entry(
+    session: Session,
+    user_id: int,
+    media_id: int,
+    body: ListEntryUpdate,
+    rules: ApiRules,
+    create_only: bool,
+) -> dict:
     try:
-        return list_service.upsert(session, user.id, media_id, body, rules)
+        return list_service.upsert(session, user_id, media_id, body, rules, create_only)
+    except list_service.AlreadyInList:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Déjà dans ta liste") from None
     except list_service.MediaNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Œuvre {media_id} introuvable") from None
     except list_service.InvalidEntry as exc:

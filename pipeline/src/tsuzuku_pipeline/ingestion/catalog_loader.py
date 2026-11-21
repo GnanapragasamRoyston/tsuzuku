@@ -164,6 +164,42 @@ def upsert_daily_stats(
     return len(rows)
 
 
+# Seules les images du CDN d'AniList sont acceptées : l'URL est affichée telle quelle par le front
+# (et autorisée dans sa politique de sécurité du contenu), elle ne doit pas pointer n'importe où.
+# Même chemin que les remotePatterns du front (frontend/next.config.ts) : une URL acceptée ici
+# est toujours affichable là-bas.
+COVER_URL_PREFIX = "https://s4.anilist.co/file/anilistcdn/"
+
+
+def missing_anime_covers(conn: psycopg.Connection) -> list[int]:
+    """idMal des animes sans couverture, les plus populaires d'abord (rang le plus bas)."""
+    rows = conn.execute(
+        "SELECT mal_id FROM catalog.media WHERE kind = 'anime' AND mal_id IS NOT NULL"
+        " AND cover_url IS NULL ORDER BY popularity NULLS LAST, mal_id"
+    ).fetchall()
+    return [r[0] for r in rows]
+
+
+def fill_anime_covers(conn: psycopg.Connection, covers: dict[int, str | None]) -> int:
+    """Remplit cover_url des animes qui n'en ont pas. Une couverture existante n'est jamais
+    remplacée ; c'est le seul champ touché (lignes du dataset 2020 protégées, ADR 007)."""
+    rows = [(mal, url) for mal, url in covers.items()
+            if isinstance(url, str) and url.startswith(COVER_URL_PREFIX)]  # fmt: skip
+    if not rows:
+        return 0
+    with conn.transaction():
+        conn.execute("CREATE TEMP TABLE tmp_cover (mal_id integer, url text) ON COMMIT DROP")
+        with conn.cursor().copy("COPY tmp_cover (mal_id, url) FROM STDIN") as copy:
+            for row in rows:
+                copy.write_row(row)
+        updated = conn.execute(
+            "UPDATE catalog.media m SET cover_url = t.url, updated_at = now() FROM tmp_cover t"
+            " WHERE m.kind = 'anime' AND m.mal_id = t.mal_id AND m.cover_url IS NULL"
+        ).rowcount
+    logger.info("catalog.media : %d couverture(s) d'anime ajoutée(s)", updated)
+    return updated
+
+
 def upsert_anilist_media(
     conn: psycopg.Connection, records: Sequence[MediaRecord]
 ) -> dict[str, int]:

@@ -31,7 +31,7 @@ discrète : la couleur signale, elle ne décore pas.
 | `raised` | `#1C1D26` | éléments posés sur une surface (menu ouvert, ligne survolée) |
 | `hover` | `#23242F` | survol d'un élément interactif sur `surface` |
 | `line` | `#2A2B36` | filets de séparation (décoratifs) |
-| `line-strong` | `#6A6C7B` | bord des champs, des boutons secondaires, des cases (éléments d'interface) |
+| `line-strong` | `#707282` | bord des champs, des boutons secondaires, des cases (éléments d'interface) |
 | `ink` | `#ECEAE4` | texte principal, grands chiffres, filet de titre de section |
 | `ink-2` | `#A6A4A0` | texte secondaire, métadonnées, placeholders |
 | `disabled` | `#5C5B59` | texte et bords désactivés (exemptés de contraste par WCAG) |
@@ -56,7 +56,7 @@ Calculés avec la formule de luminance relative de WCAG (script : 26 paires, 202
 | `accent` | `bg` / `surface` / `raised` | 6,88 / 6,43 / 5,98 | texte de signal, marqueurs |
 | `on-accent` | `accent` / `accent-hover` | 6,43 / 7,60 | libellé des boutons corail |
 | `good` | `bg` / `surface` / `raised` | 8,87 / 8,30 / 7,71 | texte et marqueurs « bon signe » |
-| `line-strong` | `bg` / `surface` / `raised` | 3,71 / 3,47 / 3,23 | bords de champs et de contrôles (≥ 3:1) |
+| `line-strong` | `bg` / `surface` / `raised` / `hover` | 4,06 / 3,79 / 3,53 / 3,24 | bords de champs et de contrôles (≥ 3:1) |
 | `chart` | `bg` / `surface` | 3,99 / 3,73 | barres de données (≥ 3:1) |
 
 **Combinaisons interdites** :
@@ -171,6 +171,16 @@ Breakpoints Tailwind : `md` = 768 px, `lg` = 1024 px, `xl` = 1280 px. On conçoi
 Rythme vertical : 64 px entre sections sur desktop, 48 px sur mobile ; 96 px sous le titre
 d'accueil. Dans un composant : 8 à 16 px.
 
+**Marges de grille** (§ 3.1) : `5` = 20 px (mobile) et `10` = 40 px (desktop), plus `safe` =
+zone de sécurité du bas d'écran sous la barre de navigation mobile, et `nav` = hauteur de cette
+barre (64 px + zone de sécurité), pour poser un élément fixé en bas juste au-dessus. `9` = 36 px
+(logo mobile).
+
+**Tailles de composants** (ajoutées au début de la phase 8, mêmes multiples de 4) : `11` = 44 px
+(cible tactile minimale), `18` = 72 px (barre de navigation desktop), `22` = 88 px (jaquette dans
+une ligne de liste), `40` = 160 px (jaquette en rangée). Largeurs maximales : `page` = 1240 px,
+`prose` = 560 px (texte courant), `form` = 480 px (formulaires).
+
 ### 3.3 Rayons
 
 | Token | Valeur | Usage |
@@ -218,7 +228,10 @@ Un écran stable n'utilise ni asymétrie, ni chiffre `figure` décoratif, ni ban
 | chargement | squelette : bloc `surface` à la forme du contenu, sans texte ; bouton : libellé remplacé par « Un instant… », `aria-busy="true"`, largeur figée |
 
 ### 5.1 Jaquette (2:3)
-- `aspect-ratio: 2 / 3`, rayon `md`, bord `1px line`, image `object-fit: cover`, `alt` = titre.
+- `aspect-ratio: 2 / 3`, rayon `md`, bord `1px line`, image `object-fit: cover`. `alt=""` : le
+  titre est toujours écrit à côté de la jaquette, il serait sinon lu deux fois par les lecteurs
+  d'écran (revue de la phase 8). Une jaquette seule, sans titre visible, porterait le titre en
+  `alt`.
 - **Sans image** (dataset 2020, image absente ou en erreur) : fond `surface`, titre en Fraunces
   600 `h3` (coupé à 3 lignes) en bas à gauche, type (« ANIME », « MANHWA ») en `meta` en haut.
   Même taille que l'image : la grille ne saute pas.
@@ -227,8 +240,8 @@ Un écran stable n'utilise ni asymétrie, ni chiffre `figure` décoratif, ni ban
 - Tailles : 160 px de large en rangée desktop, 2 colonnes sur mobile, 88 px dans une ligne de liste.
 
 ### 5.2 Ligne de liste (Ma liste)
-- Grille : jaquette 64 px · titre et méta · progression · actions. Sur mobile, les actions
-  passent sous le titre.
+- Grille : jaquette 88 px · titre et méta · progression, actions sous la progression (toutes les
+  barres ont la même largeur d'une ligne à l'autre).
 - Progression : « 7 / 24 ép. » tabulaire + barre de 4 px (rayon `sm`, fond `line`, remplissage
   `ink-2`). Lâché : barre figée, libellé « Lâché à l'ép. 3 ».
 - Actions : « +1 ép. » (bouton secondaire, une seule frappe) et « J'ai lâché » (bouton discret).
@@ -299,7 +312,8 @@ Hauteur min 44 px, padding horizontal 16 à 24 px. Bouton icône seule : 44 × 4
   visiteur, « Créer mon journal » en bouton **secondaire** : l'action principale corail est dans
   la page (une seule par écran, § 1.3).
 - **Mobile** : barre basse fixe de 64 px + zone de sécurité (`env(safe-area-inset-bottom)`),
-  4 entrées icône + libellé (Découvrir, Ma liste, Pour toi, Profil), fond `surface`, filet
+  4 entrées icône + libellé (Découvrir, Ma liste, Pour toi, Profil ; en phase 8, avant ces deux
+  pages : Découvrir, Ma liste, Compte ou Connexion), fond `surface`, filet
   `line` en haut ; actif : icône et libellé `ink` + trait 2 px `accent` au-dessus. En haut de
   page : le logo complet à 36 px de haut (l'icône seule sous 360 px de large).
 - Lien d'évitement « Aller au contenu » en premier élément focusable.
@@ -363,7 +377,7 @@ n'existent pas, seule la palette ci-dessous compile.
   --color-raised: #1C1D26;
   --color-hover: #23242F;
   --color-line: #2A2B36;
-  --color-line-strong: #6A6C7B;
+  --color-line-strong: #707282;
   --color-ink: #ECEAE4;
   --color-ink-2: #A6A4A0;
   --color-disabled: #5C5B59;

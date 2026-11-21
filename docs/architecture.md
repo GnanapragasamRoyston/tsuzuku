@@ -64,7 +64,8 @@ le même serveur Postgres.
   → `catalog.media` (nouveaux animes) et `catalog.media_daily_stats` (une ligne par anime et par
   jour, colonne `in_season`).
 - **`anilist_catalog_sync`** (le lundi, 05:00 UTC) : titres les plus populaires d'AniList →
-  `catalog.media` (manga, manhwa, manhua), `catalog.media_genre`, `catalog.media_tag`.
+  `catalog.media` (manga, manhwa, manhua), `catalog.media_genre`, `catalog.media_tag`, puis
+  couvertures manquantes des animes par idMal (tâche `anime_covers`, phase 8).
 - Chaque tâche écrit d'abord la réponse brute dans `data/raw/<source>/<date>/`, puis charge par
   upsert ; un rapport de contrôle va dans `reports/ingestion/`.
 - **`/trending`** lit le dernier snapshot de `catalog.media_daily_stats` (saison seulement) ;
@@ -72,3 +73,11 @@ le même serveur Postgres.
 - L'embedding des nouvelles œuvres (flèche `catalog → Embeddings`) arrive en phase 10.
 
 Choix et limites : [ADR 007](decisions/007-airflow-ingestion.md).
+
+## Front (phase 8)
+
+- Le navigateur ne parle qu'à `frontend/` (Next.js), qui relaie `/api/*` vers `backend/` :
+  même origine, cookie de session `httpOnly` envoyé tout seul, pas de CORS.
+- Accueil rendu côté serveur (sections en streaming) ; pages de compte côté navigateur
+  (TanStack Query). `proxy.ts` renvoie vers la connexion sans cookie ; l'API reste seule juge.
+- Tokens et composants : [DESIGN.md](DESIGN.md). Choix et limites : [ADR 009](decisions/009-front-next.md).

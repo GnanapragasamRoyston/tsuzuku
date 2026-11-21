@@ -1,0 +1,14 @@
+import react from "@vitejs/plugin-react";
+import tsconfigPaths from "vite-tsconfig-paths";
+import { defineConfig } from "vitest/config";
+
+// Tests unitaires et de composants (jsdom). Les parcours complets sont dans e2e/ (Playwright).
+export default defineConfig({
+  plugins: [tsconfigPaths(), react()],
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
+    restoreMocks: true,
+  },
+});

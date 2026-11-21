@@ -416,3 +416,58 @@ revoir en phase 11), déconnexion qui ferme toutes les sessions du compte.
    données de sécurité. Suppression du compte avec mot de passe redemandé, et cascade en base :
    un test vérifie qu'il ne reste aucune ligne. Aucun email ni mot de passe dans les journaux
    (testé), pas de traceur tiers, et une page de confidentialité (`docs/privacy.md`).
+
+## Phase 8 — Front, partie 1 : accueil, comptes, onboarding, ma liste (2026-11-21)
+**Ce qui a été construit :** un front Next.js 16 au design « Journal de bord » (DESIGN.md) :
+accueil rendu côté serveur, inscription et connexion, onboarding de 10 œuvres, « Ma liste » avec
+« +1 ép. » et « J'ai lâché », recos « Pour toi » ; couvertures récupérées sur AniList ; tests
+Vitest, Playwright et axe-core.
+
+**Concepts clés :**
+- **Design tokens** : les couleurs, tailles, espacements et rayons sont des variables nommées
+  (`bg`, `accent`, `spacing-4`…) déclarées une seule fois. Les valeurs par défaut de Tailwind
+  sont supprimées et un test refuse toute valeur en dur : le code ne peut pas s'écarter du
+  design, et un contraste insuffisant casse la CI.
+- **Contraste WCAG** : rapport de luminance entre texte et fond (4,5:1 pour le texte, 3:1 pour
+  les éléments d'interface). Je le calcule par script plutôt que de l'estimer à l'œil ; axe-core
+  le revérifie sur les pages réelles pendant les tests de bout en bout.
+- **Relais d'API (rewrites)** : le navigateur appelle `/api/...` sur le front, qui transmet à
+  FastAPI. Même origine : le cookie `httpOnly` part tout seul, pas de CORS, et le JavaScript ne
+  voit jamais le jeton de session.
+- **Server et Client Components** : l'accueil est rendu sur le serveur (rapide, sans
+  JavaScript à exécuter pour l'afficher) ; les pages de compte tournent dans le navigateur avec
+  TanStack Query, qui met en cache et met à jour les données après une action.
+- **Suspense et streaming** : chaque section de l'accueil charge ses données dans sa propre
+  limite `<Suspense>`. La page s'affiche tout de suite ; une API lente ne bloque que sa section.
+- **Tests de bout en bout en build de production** : Playwright pilote un vrai navigateur sur
+  la vraie API et une base dédiée. Ils ont trouvé un bug invisible en développement : le
+  préchargement des liens avait mis en cache une redirection de visiteur.
+
+**Pourquoi ce choix :** voir [ADR 009](decisions/009-front-next.md) et
+[DESIGN.md](DESIGN.md). Appels directs du navigateur vers l'API écartés : CORS avec cookies, et
+cookie tiers bloqué quand front et API sont sur deux domaines. Direction « Fiche technique »
+(monospace, tableaux) écartée au profit du « Journal de bord » : plus proche d'un journal de fan.
+TDD gardé pour la logique (progression, erreurs, formats) et non pour l'apparence des
+composants, vérifiée par axe-core et des captures à 375 et 1440 px. Limite connue : derrière le
+relais, l'API ne voit pas l'IP réelle des visiteurs ; la production devra passer par une
+plateforme qui pose `X-Forwarded-For` (phase 11).
+
+**3 questions d'entretien possibles :**
+1. *Comment garantis-tu que le code respecte la charte graphique ?*
+   Les tokens de DESIGN.md sont la seule palette disponible : les valeurs par défaut de Tailwind
+   sont supprimées, donc `bg-red-500` ne génère rien. Un test refuse toute couleur hexadécimale,
+   police ou valeur arbitraire dans le code, vérifie que chaque pas d'espacement existe, et
+   recalcule les contrastes à partir du fichier de tokens. Il a bloqué deux écarts pendant la
+   phase, que j'ai réglés en complétant DESIGN.md plutôt qu'en contournant le test.
+2. *Pourquoi un relais `/api` plutôt qu'appeler l'API directement ?*
+   Le cookie de session est `httpOnly` et `SameSite=Lax`. Si le navigateur appelait l'API sur
+   un autre domaine, il faudrait ouvrir CORS avec cookies, et les navigateurs bloquent de plus en
+   plus les cookies tiers. Avec le relais, tout est même origine. Le prix : l'API ne voit plus
+   l'IP du visiteur, sauf si la plateforme réécrit `X-Forwarded-For` ; je l'ai mesuré et
+   documenté.
+3. *Qu'est-ce que tes tests de bout en bout ont trouvé ?*
+   Après l'inscription, « Ma liste » renvoyait vers la connexion, alors que la session était
+   valide. En build de production, Next précharge les liens visibles : il avait préchargé « Ma
+   liste » quand j'étais visiteur, donc gardé la redirection en cache. Invisible en
+   développement, où il n'y a pas de préchargement. Correctif : pas de préchargement des pages de
+   compte et rafraîchissement du routeur à chaque changement de session.

@@ -1,0 +1,96 @@
+name: ci-frontend
+
+# Front Next.js (phase 8). Les tests de bout en bout lancent la VRAIE API (base de test, mini
+# catalogue, mini modèles : backend/scripts/e2e_api.py) : un changement d'API ou de schéma doit
+# aussi les rejouer.
+on:
+  push:
+    branches: [main]
+    paths: ["frontend/**", "backend/**", "packages/**", "config/**",
+            "pipeline/src/tsuzuku_pipeline/db/*.sql", ".github/workflows/ci-frontend.yml"]
+  pull_request:
+    paths: ["frontend/**", "backend/**", "packages/**", "config/**",
+            "pipeline/src/tsuzuku_pipeline/db/*.sql", ".github/workflows/ci-frontend.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Types
+        run: npm run typecheck
+      # Comprend les garde-fous de DESIGN.md : tokens, contrastes, aucune valeur en dur.
+      - name: Tests (Vitest)
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Audit des dépendances
+        run: npm audit --audit-level=moderate
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: tsuzuku
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: tsuzuku
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tsuzuku -d tsuzuku"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # Serveur de base : e2e_api.py crée sa propre base tsuzuku_e2e dessus.
+      DATABASE_URL: postgresql://tsuzuku:ci-only@localhost:5433/tsuzuku
+      NEXT_TELEMETRY_DISABLED: "1"
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Environnement de l'API
+        working-directory: backend
+        run: uv sync --python 3.11 --locked
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Dépendances du front
+        working-directory: frontend
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: Parcours de bout en bout (Playwright + axe-core)
+        working-directory: frontend
+        timeout-minutes: 15
+        run: npx playwright test
+      - name: Captures 375/1440 et rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-captures
+          path: |
+            frontend/test-results
+            frontend/playwright-report
+          retention-days: 14

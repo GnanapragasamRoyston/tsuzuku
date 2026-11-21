@@ -125,3 +125,37 @@ def test_drop_point_cannot_exceed_progress_even_without_total(user_client, catal
     # Total du manga inconnu : la règle dropped_at ≤ progression s'applique quand même.
     r = _put(user_client, catalog["manga"], status="dropped", progress=5, dropped_at=30)
     assert r.status_code == 422
+
+
+def test_list_reports_counts_per_status(user_client, catalog):
+    for mal, status in ((1, "planning"), (2, "planning"), (3, "dropped")):
+        _put(user_client, catalog["anime"][mal], status=status)
+    page = user_client.get("/me/list", params={"status": "dropped"}).json()
+    # Compteurs de TOUS les statuts, quel que soit le filtre (onglets « En cours · 3 »).
+    assert page["counts"] == {"planning": 2, "in_progress": 0, "completed": 0, "paused": 0,
+                              "dropped": 1}  # fmt: skip
+    assert page["total"] == 1
+
+
+def test_post_creates_but_never_overwrites(user_client, catalog):
+    """Ajout depuis une reco : création seule. Une entrée existante (notée, avancée) n'est jamais
+    remise à zéro par un second ajout (revue phase 8 : le PUT écrasait tout)."""
+    mid = catalog["anime"][2]
+    created = user_client.post(f"/me/list/{mid}", json={"status": "planning"})
+    assert created.status_code == 201 and created.json()["status"] == "planning"
+    _put(user_client, mid, progress=5, score=9)
+    again = user_client.post(f"/me/list/{mid}", json={"status": "planning"})
+    assert again.status_code == 409
+    entry = user_client.get("/me/list").json()["items"][0]
+    assert (entry["progress"], entry["score"]) == (5, 9)
+
+
+def test_post_validates_and_checks_limits(make_client, clean_users, catalog):
+    client = make_client(list_max_entries=1)
+    register(client)
+    assert client.post("/me/list/987654", json={"status": "planning"}).status_code == 404
+    assert client.post(f"/me/list/{catalog['anime'][1]}", json={"status": "x"}).status_code == 422
+    assert client.post(f"/me/list/{catalog['anime'][1]}",
+                       json={"status": "planning"}).status_code == 201  # fmt: skip
+    assert client.post(f"/me/list/{catalog['anime'][2]}",
+                       json={"status": "planning"}).status_code == 409  # fmt: skip
