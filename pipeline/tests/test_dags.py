@@ -30,7 +30,8 @@ def test_no_import_errors_and_both_dags_found(dagbag):
 
 @pytest.mark.parametrize(("dag_id", "tasks", "schedule"), [
     ("jikan_daily_ingest", ["collect", "fetch_stats", "load", "quality_check"], "0 6 * * *"),
-    ("anilist_catalog_sync", ["fetch_pages", "load", "quality_check"], "0 5 * * 1"),
+    ("anilist_catalog_sync", ["fetch_pages", "load", "quality_check", "anime_covers"],
+     "0 5 * * 1"),
 ])  # fmt: skip
 def test_dag_shape(dagbag, dag_id, tasks, schedule):
     from airflow.timetables.trigger import CronTriggerTimetable
