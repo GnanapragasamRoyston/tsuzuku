@@ -98,6 +98,7 @@ class ExportUser(BaseModel):
     email: str
     pseudo: str
     created_at: dt.datetime
+    profile_public: bool
 
 
 class AccountExport(BaseModel):

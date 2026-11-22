@@ -5,10 +5,11 @@
 "use client";
 
 import clsx from "clsx";
+import Link from "next/link";
 import { useRef, useState } from "react";
 
-import { Cover } from "@/components/cover";
 import { ListRow } from "@/components/list-row";
+import { RecoCard } from "@/components/reco-card";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -22,20 +23,15 @@ import {
 } from "@/hooks/use-list";
 import { useMe, useRedirectOn401 } from "@/hooks/use-me";
 import { messageFor } from "@/lib/errors";
-import { mediaMeta } from "@/lib/format";
+import { STATUS_LABEL } from "@/lib/format";
 import { ONBOARDING_MIN } from "@/lib/onboarding";
 import { markDropped, plusOne, progressLabel } from "@/lib/progress";
 import { recoReason } from "@/lib/reco";
 import type { ListEntry, ListStatus } from "@/lib/types";
 import { LIST_STATUSES } from "@/lib/types";
 
-const TAB_LABEL: Record<ListStatus, string> = {
-  in_progress: "En cours",
-  planning: "Prévu",
-  completed: "Terminé",
-  paused: "En pause",
-  dropped: "Lâché",
-};
+// Libellés partagés avec la fiche œuvre et le profil (lib/format.ts).
+const TAB_LABEL = STATUS_LABEL;
 
 // Micro-textes de DESIGN.md § 7.
 const EMPTY: Record<ListStatus, string> = {
@@ -145,7 +141,7 @@ function StatusPanel({ status, announce }: StatusPanelProps) {
 }
 
 function ForYou({ announce }: { announce: (message: string) => void }) {
-  const recos = useRecos();
+  const recos = useRecos(3);
   const added = useAddedIds();
   const [error, setError] = useState<string | null>(null);
   const add = useAddPlanned((e) => setError(messageFor(e, "save")));
@@ -156,54 +152,36 @@ function ForYou({ announce }: { announce: (message: string) => void }) {
       aria-labelledby="pour-toi"
       className="flex flex-col gap-4 lg:border-l lg:border-line lg:pl-8"
     >
-      <h2 id="pour-toi" className="font-display text-h2 font-semibold">
-        Pour toi
-      </h2>
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 id="pour-toi" className="font-display text-h2 font-semibold">
+          Pour toi
+        </h2>
+        <Link href="/pour-toi" prefetch={false} className="text-ui font-semibold underline">
+          Tout voir
+        </Link>
+      </div>
       {recos.isPending && <p className="text-ink-2">Un instant…</p>}
       {recos.error && <p className="text-ink-2">{messageFor(recos.error)}</p>}
       {recos.data && (
         <>
           <p className="text-small text-ink-2">{recoReason(recos.data)}</p>
           <ul className="flex flex-col gap-6">
-            {recos.data.items.map(({ media, because }) => {
-              const done = added.has(media.id);
-              return (
-                <li key={media.id} className="flex gap-4">
-                  <Cover media={media} size="list" />
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <h3 className="font-semibold">{media.title}</h3>
-                    <p className="text-meta font-semibold tracking-meta text-ink-2 uppercase">
-                      {mediaMeta(media)}
-                    </p>
-                    {because && (
-                      <p className="text-small text-ink-2">Parce que tu as aimé {because}.</p>
-                    )}
-                    {/* Le bouton reste en place une fois l'ajout fait (aria-disabled) : le focus
-                        ne se perd pas, et l'annonce passe par la région aria-live de la page.
-                        Libellé « Dans ta liste » et non « Ajouté à Prévu » : le statut peut changer
-                        ensuite (+1 ép., lâché) et le bouton ne doit pas mentir (test de la phase 8). */}
-                    <Button
-                      variant="quiet"
-                      className="self-start"
-                      aria-disabled={done || undefined}
-                      disabled={add.isPending && add.variables === media.id}
-                      aria-label={
-                        done ? `${media.title} : dans ta liste` : `Ajouter ${media.title} à ma liste`
-                      }
-                      onClick={() => {
-                        if (done) return;
-                        setError(null);
-                        add.mutate(media.id, {
-                          onSuccess: () => announce(`${media.title} ajouté à Prévu.`),
-                        });
-                      }}
-                    >
-                      {done ? "Dans ta liste" : "Ajouter à ma liste"}
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
+            {/* Trois recos ici : la page Pour toi montre le reste (phase 9). */}
+            {recos.data.items.map((item) => (
+              <li key={item.media.id}>
+                <RecoCard
+                  item={item}
+                  done={added.has(item.media.id)}
+                  pending={add.isPending && add.variables === item.media.id}
+                  onAdd={() => {
+                    setError(null);
+                    add.mutate(item.media.id, {
+                      onSuccess: () => announce(`${item.media.title} ajouté à Prévu.`),
+                    });
+                  }}
+                />
+              </li>
+            ))}
           </ul>
         </>
       )}

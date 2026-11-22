@@ -126,13 +126,15 @@ d'un risque de drop chiffré.
 | Méthode | Route | Rôle |
 |---|---|---|
 | POST | `/auth/register`, `/auth/login`, `/auth/logout` | inscription, connexion (cookie de session), déconnexion de toutes les sessions |
-| GET / DELETE | `/me` | profil ; suppression du compte et de ses données (mot de passe demandé) |
+| GET / PATCH / DELETE | `/me` | profil ; réglage du profil public (opt-in, phase 9) ; suppression du compte et de ses données (mot de passe demandé) |
 | GET | `/me/export` | export RGPD en JSON (profil, liste, onboarding) |
 | GET | `/me/list?status=&limit=&offset=` | ma liste, par statut, paginée |
+| GET | `/me/list/{media_id}` | une seule entrée (fiche œuvre), 404 si absente |
 | POST / PUT / DELETE | `/me/list/{media_id}` | ajouter (POST : jamais d'écrasement) ou modifier une œuvre (statut, progression, « lâché à l'épisode X », note, critique, dates) ; la retirer |
 | POST | `/me/onboarding` | au moins 10 œuvres aimées |
 | GET | `/me/recommendations?kind=anime` | recos depuis l'onboarding et la liste (manga/manhwa : phase 10) |
 | GET | `/me/drop-risk/{media_id}` | risque de drop depuis ma liste |
+| GET | `/users/{pseudo}` | profil public (phase 9) : chiffres, genres favoris, dernières notes ; même 404 pour un profil privé ou inconnu |
 
 Sécurité ([ADR 008](docs/decisions/008-comptes-et-listes.md)) : mots de passe hachés en argon2id,
 session JWT dans un cookie `httpOnly` + `Secure` + `SameSite=Lax`, révoquée à la déconnexion,
@@ -140,7 +142,7 @@ connexion limitée après 5 échecs, aucun email ni mot de passe dans les journa
 schéma `app` sont créées par des migrations Alembic ; `catalog` et `mart` restent au pipeline.
 Données et droits : [docs/privacy.md](docs/privacy.md).
 
-## Front (phase 8)
+## Front (phases 8 et 9)
 
 Next.js 16 (App Router, TypeScript), Tailwind v4, TanStack Query. Direction visuelle « Journal
 de bord » : [docs/DESIGN.md](docs/DESIGN.md) (tokens, composants, ton, contrastes vérifiés).
@@ -152,7 +154,10 @@ Choix techniques : [ADR 009](docs/decisions/009-front-next.md).
 | `/inscription`, `/connexion` | comptes (cookie de session posé par l'API, jamais visible du JavaScript) |
 | `/onboarding` | choisir au moins 10 œuvres aimées (onglets, recherche) |
 | `/ma-liste` | onglets par statut, « +1 ép. », « J'ai lâché », passage en « Terminé » au dernier épisode ; recos « Pour toi » à côté |
-| `/compte`, `/confidentialite` | déconnexion, export, suppression du compte ; données et droits |
+| `/oeuvre/{id}` | fiche (phase 9) : risque de drop personnel, courbe de drop par épisode avec épisode critique et point de non-retour, communauté, note sur 10 |
+| `/pour-toi` | recos en page entière (phase 9) : une à la une, puis une rangée ; manga et manhwa en phase 10 |
+| `/profil/{pseudo}` | profil public (phase 9), privé par défaut : épisodes vus, taux de drop, genres favoris, dernières notes |
+| `/compte`, `/confidentialite` | déconnexion, profil public, export, suppression du compte ; données et droits |
 
 Lancement local : `make up`, `make api`, puis `make web` (http://localhost:3000). Le navigateur
 ne parle qu'au front, qui relaie `/api/*` vers l'API (même origine : pas de CORS, cookie toujours
@@ -161,7 +166,8 @@ supprimées, et un test refuse toute couleur, police ou valeur en dur, et recalc
 
 Tests : `make web-test` (Vitest : logique et garde-fous du design) et `make web-e2e`
 (Playwright, sur une base de test et la vraie API : inscription → onboarding → recos → ajout →
-+1 épisode, avec axe-core et un contrôle de débordement à 375 et 1440 px).
++1 épisode → fiche et note → profil public → Pour toi, avec axe-core et un contrôle de débordement à
+375 et 1440 px). Choix de la phase 9 : [ADR 011](docs/decisions/011-front-partie-2.md).
 
 Couvertures : le dataset 2020 n'a pas d'images. `make covers` (et le DAG AniList chaque semaine)
 les récupère sur AniList par identifiant MAL : 13 779 animes sur 16 214 en ont une

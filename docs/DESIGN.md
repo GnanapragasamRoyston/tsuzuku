@@ -279,6 +279,9 @@ compact (ligne de liste, carte de reco) : chiffre en `h3` + libellé.
   équivalent masqué visuellement (`sr-only`).
 - Au-delà de 26 épisodes : regroupement par tranches (1–5, 6–10…) pour garder des barres
   lisibles sur mobile.
+- Valeurs au-dessus des barres sur desktop **jusqu'à 13 barres** ; au-delà elles se
+  chevaucheraient et passent au survol, comme sur mobile (ajouté en phase 9). Le tableau `sr-only`
+  donne toujours toutes les valeurs.
 - Chargement : squelette `surface` de la hauteur du graphique.
 
 ### 5.6 Onglets
@@ -312,8 +315,8 @@ Hauteur min 44 px, padding horizontal 16 à 24 px. Bouton icône seule : 44 × 4
   visiteur, « Créer mon journal » en bouton **secondaire** : l'action principale corail est dans
   la page (une seule par écran, § 1.3).
 - **Mobile** : barre basse fixe de 64 px + zone de sécurité (`env(safe-area-inset-bottom)`),
-  4 entrées icône + libellé (Découvrir, Ma liste, Pour toi, Profil ; en phase 8, avant ces deux
-  pages : Découvrir, Ma liste, Compte ou Connexion), fond `surface`, filet
+  4 entrées icône + libellé (Découvrir, Ma liste, Pour toi, Profil ; Profil mène à Compte, d'où un
+  lien ouvre le profil public ; Connexion pour un visiteur), fond `surface`, filet
   `line` en haut ; actif : icône et libellé `ink` + trait 2 px `accent` au-dessus. En haut de
   page : le logo complet à 36 px de haut (l'icône seule sous 360 px de large).
 - Lien d'évitement « Aller au contenu » en premier élément focusable.

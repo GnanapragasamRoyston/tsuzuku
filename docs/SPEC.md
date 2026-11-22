@@ -194,15 +194,15 @@ Définitions à écrire dans le README :
 | Méthode | Route | Rôle |
 |---|---|---|
 | POST | `/auth/register`, `/auth/login`, `/auth/logout` | comptes |
-| GET / DELETE | `/me`, `/me/export` | profil, export, suppression RGPD |
+| GET / PATCH / DELETE | `/me`, `/me/export` | profil, réglage du profil public (phase 9), export, suppression RGPD |
 | GET | `/media/search?q=&kind=` | recherche catalogue |
 | GET | `/media/{id}` | fiche + stats + épisode critique |
-| GET / PUT / DELETE | `/me/list`, `/me/list/{media_id}` | gestion de la liste |
+| GET / POST / PUT / DELETE | `/me/list`, `/me/list/{media_id}` | gestion de la liste (GET d'une entrée : phase 9) |
 | POST | `/me/onboarding` | choix initiaux |
 | GET | `/me/recommendations?kind=` | recos personnalisées |
 | GET | `/me/drop-risk/{media_id}` | risque de drop |
 | GET | `/trending` | saison en cours (Jikan) |
-| GET | `/users/{pseudo}` | profil public |
+| GET | `/users/{pseudo}` | profil public, opt-in (privé par défaut, ADR 011) |
 | POST | `/me/assistant` | phase 14 |
 | GET | `/health` | état API + base |
 

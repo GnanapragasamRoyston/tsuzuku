@@ -10,7 +10,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { CompassIcon, ListIcon, UserIcon } from "@/components/icons";
+import { CompassIcon, ListIcon, SparkIcon, UserIcon } from "@/components/icons";
 import { ButtonLink } from "@/components/ui/button";
 import { useMe } from "@/hooks/use-me";
 
@@ -27,11 +27,15 @@ function isActive(pathname: string, href: string): boolean {
 export function SiteHeader() {
   const pathname = usePathname();
   const { data: me, isPending } = useMe();
-  const accountHref = me ? "/compte" : "/connexion";
   const items: NavItem[] = [
     { href: "/", label: "Découvrir", icon: <CompassIcon /> },
     { href: "/ma-liste", label: "Ma liste", icon: <ListIcon /> },
+    { href: "/pour-toi", label: "Pour toi", icon: <SparkIcon /> },
   ];
+  // Entrée « Profil » du mobile (§ 5.9) : toujours Compte (déconnexion, export, suppression,
+  // visibilité), d'où un lien mène au profil public. Pointer vers le profil public rendait Compte
+  // inaccessible sur mobile (revue de la phase 9).
+  const profileHref = me ? "/compte" : "/connexion";
 
   return (
     <>
@@ -105,8 +109,8 @@ export function SiteHeader() {
         aria-label="Navigation principale"
         className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface pb-safe md:hidden"
       >
-        <ul className="grid grid-cols-3">
-          {[...items, { href: accountHref, label: me ? "Compte" : "Connexion", icon: <UserIcon /> }].map(
+        <ul className="grid grid-cols-4">
+          {[...items, { href: profileHref, label: me ? "Profil" : "Connexion", icon: <UserIcon /> }].map(
             (item) => {
               const active = isActive(pathname, item.href);
               return (

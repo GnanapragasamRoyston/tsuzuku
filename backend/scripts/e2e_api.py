@@ -62,6 +62,9 @@ def create_database() -> str:
     return url
 
 
+E2E_CURVE = ((1, 5), (2, 2), (4, 2), (6, 1))
+
+
 def seed_catalog(url: str) -> None:
     """Animes 1-8 : groupe « action », 9-16 : groupe « drame ». Titres volontairement fictifs."""
     with psycopg.connect(url, autocommit=True) as conn:
@@ -77,6 +80,19 @@ def seed_catalog(url: str) -> None:
             ).fetchone()[0]
             g = "Action" if mal <= N_ANIME // 2 else "Drama"
             conn.execute("INSERT INTO catalog.media_genre VALUES (%s, %s)", (mid, genre[g]))
+            # Courbe de drop FICTIVE (fiche œuvre, phase 9) : 10 drops, pic à l'épisode 1,
+            # point de non-retour à l'épisode 4. Base E2E seulement, jamais montrée comme réelle.
+            cumulative = 0
+            for episode, drops in E2E_CURVE:
+                cumulative += drops
+                conn.execute("INSERT INTO mart.drop_curve VALUES (%s, %s, %s, %s)",
+                             (mid, episode, drops, cumulative / 10))  # fmt: skip
+            conn.execute(
+                "INSERT INTO mart.critical_episode (media_id, critical_episode,"
+                " critical_drop_share, point_of_no_return, nb_drops, nb_completed, drop_rate)"
+                " VALUES (%s, 1, 0.5, 4, 10, 30, 0.25)",
+                (mid,),
+            )
         for i, kind in enumerate(("manga", "manhwa", "manhua"), start=1):
             conn.execute(
                 "INSERT INTO catalog.media (kind, title, chapters, start_year, popularity,"

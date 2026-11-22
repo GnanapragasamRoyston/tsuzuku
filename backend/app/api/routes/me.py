@@ -21,7 +21,7 @@ from app.api.deps import (
 from app.api.routes.auth import close_session
 from app.core.config import ApiRules
 from app.db.session import get_session
-from app.schemas.auth import DeleteAccountRequest, MeOut
+from app.schemas.auth import DeleteAccountRequest, MeOut, MeUpdate
 from app.schemas.demo import DropRiskResponse, ListStatus, RecoResponse
 from app.schemas.me import (
     AccountExport,
@@ -43,6 +43,14 @@ MediaId = Annotated[int, Path(gt=0)]
 # --- Profil et RGPD ------------------------------------------------------------------------------
 @router.get("", response_model=MeOut)
 def me(user: CurrentUser, session: DbSession) -> dict:
+    return auth_service.profile(session, user)
+
+
+@router.patch("", response_model=MeOut)
+def update_me(body: MeUpdate, user: CurrentUser, session: DbSession) -> dict:
+    """Réglages du compte : pour l'instant la visibilité du profil public (opt-in, ADR 011)."""
+    user.profile_public = body.profile_public
+    session.commit()
     return auth_service.profile(session, user)
 
 
@@ -96,6 +104,15 @@ def get_list(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT,
                             f"limit : {rules.list_page_max} au maximum")  # fmt: skip
     return list_service.page(session, user.id, status_, limit, offset)
+
+
+@router.get("/list/{media_id}", response_model=ListEntryOut)
+def get_entry(media_id: MediaId, user: CurrentUser, session: DbSession) -> dict:
+    """Une seule entrée : la fiche œuvre sait si l'œuvre est dans la liste, et où on en est."""
+    found = list_service.entry(session, user.id, media_id)
+    if found is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Œuvre absente de ta liste")
+    return found
 
 
 @router.post("/list/{media_id}", response_model=ListEntryOut, status_code=status.HTTP_201_CREATED)

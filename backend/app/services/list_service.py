@@ -78,6 +78,13 @@ def _out(entry: ListEntry, media: Media) -> dict[str, Any]:
     }  # fmt: skip
 
 
+def entry(session: Session, user_id: int, media_id: int) -> dict[str, Any] | None:
+    found = session.get(ListEntry, (user_id, media_id))
+    if found is None:
+        return None
+    return _out(found, session.get(Media, media_id))
+
+
 class AlreadyInList(Exception):
     """Création seule demandée, mais l'œuvre est déjà dans la liste."""
 

@@ -20,7 +20,7 @@ from sqlalchemy.exc import OperationalError
 from tsuzuku_ml.artifacts import check_reco_parity, load_drop_model, load_reco_model
 
 from app.api.deps import AuthState
-from app.api.routes import auth, demo, health, me, media, trending
+from app.api.routes import auth, demo, health, me, media, trending, users
 from app.clients.jikan import JikanClient
 from app.core.config import ApiRules, Settings, get_settings, load_rules
 from app.db.session import make_engine, make_sessionmaker
@@ -127,12 +127,12 @@ def create_app(
         allow_origins=settings.cors_origins,
         # Le cookie de session doit accompagner les appels du front (autre origine en dev).
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Content-Type"],
     )
     app.add_exception_handler(OperationalError, _database_unavailable)
     app.add_exception_handler(RequestValidationError, _invalid_request)
     for router in (health.router, media.router, trending.router, demo.router, auth.router,
-                   me.router):  # fmt: skip
+                   me.router, users.router):  # fmt: skip
         app.include_router(router)
     return app

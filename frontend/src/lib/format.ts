@@ -2,7 +2,7 @@
  * Formats français (DESIGN.md § 2.2) : toujours Intl, jamais à la main. Intl fr-FR place des
  * espaces fines insécables (milliers, avant %) : un nombre ne se coupe jamais en fin de ligne.
  */
-import type { Kind, MediaSummary } from "@/lib/types";
+import type { Kind, ListStatus, MediaSummary } from "@/lib/types";
 
 const INT = new Intl.NumberFormat("fr-FR");
 
@@ -28,6 +28,14 @@ const KIND_LABEL: Record<Kind, string> = {
 export function kindLabel(kind: Kind): string {
   return KIND_LABEL[kind];
 }
+
+export const STATUS_LABEL: Record<ListStatus, string> = {
+  in_progress: "En cours",
+  planning: "Prévu",
+  completed: "Terminé",
+  paused: "En pause",
+  dropped: "Lâché",
+};
 
 const FORMAT_LABEL: Record<string, string> = { Movie: "Film", Music: "Clip", Special: "Spécial" };
 

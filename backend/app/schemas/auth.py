@@ -55,3 +55,13 @@ class UserOut(BaseModel):
 class MeOut(UserOut):
     onboarding_done: bool
     list_size: int
+    profile_public: bool
+
+
+class MeUpdate(BaseModel):
+    """Corps de PATCH /me : seul réglage modifiable pour l'instant (phase 9). strict : pas de
+    conversion silencieuse ("oui" → True) ; extra interdit : ni pseudo ni email par ce biais."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    profile_public: bool

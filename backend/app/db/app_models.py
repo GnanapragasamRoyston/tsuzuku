@@ -13,6 +13,7 @@ import datetime as dt
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -22,6 +23,7 @@ from sqlalchemy import (
     Integer,
     SmallInteger,
     Text,
+    false,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -61,6 +63,8 @@ class User(Base):
     # Incrémenté à la déconnexion (et à la suppression) : tous les jetons déjà émis, qui portent
     # l'ancienne valeur, deviennent invalides. Révocation sans table de sessions (ADR 008).
     token_version: Mapped[int] = mapped_column(Integer, server_default="0")
+    # Profil public (/users/{pseudo}) : opt-in, privé par défaut (ADR 011).
+    profile_public: Mapped[bool] = mapped_column(Boolean, server_default=false())
     created_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

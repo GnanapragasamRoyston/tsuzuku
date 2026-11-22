@@ -90,6 +90,7 @@ def profile(session: Session, user: User) -> dict:
         "created_at": user.created_at,
         "onboarding_done": bool(onboarded),
         "list_size": size or 0,
+        "profile_public": user.profile_public,
     }
 
 
@@ -113,6 +114,7 @@ def export(session: Session, user: User) -> dict:
             "email": user.email,
             "pseudo": user.pseudo,
             "created_at": user.created_at,
+            "profile_public": user.profile_public,
         },  # fmt: skip
         "list": [
             {

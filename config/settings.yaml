@@ -187,6 +187,12 @@ api:
   review_max_length: 2000
   # Taille maximale d'une page de GET /me/list.
   list_page_max: 100
+  # Profil public (phase 9) : le taux de drop perso n'est affiché qu'à partir de ce nombre
+  # d'œuvres terminées ou lâchées (sous ce seuil, « 100 % » après un seul drop ne dirait rien).
+  # Choix produit, pas une mesure ; validé avec le plan de la phase 9 (ADR 011).
+  profile_min_finished_for_drop_rate: 3
+  profile_top_genres: 5
+  profile_recent_scores: 10
   jikan:
     # API publique sans clé (SPEC § 2.2). Limite documentée : 3 requêtes/s, 60/min.
     base_url: https://api.jikan.moe/v4

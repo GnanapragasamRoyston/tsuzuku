@@ -92,10 +92,29 @@ export function usePendingUpdates(): Set<number> {
   return new Set(ids.filter((id): id is number => id !== undefined));
 }
 
-export function useRecos() {
+/** Recos animes. `k` dans la clé : l'aside de Ma liste (6) et la page Pour toi (12) ont chacune
+ *  leur cache, invalidés ensemble par le préfixe RECOS_KEY. */
+export function useRecos(k = 6) {
   return useQuery({
-    queryKey: RECOS_KEY,
-    queryFn: () => apiFetch<RecoResponse>("/me/recommendations?kind=anime&k=6"),
+    queryKey: [...RECOS_KEY, k],
+    queryFn: () => apiFetch<RecoResponse>(`/me/recommendations?kind=anime&k=${k}`),
+  });
+}
+
+/** Une seule entrée (fiche œuvre) : null si l'œuvre n'est pas dans la liste. Sous LIST_KEY : un
+ *  ajout ou une modification ailleurs la recharge. */
+export function useEntry(mediaId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: [...LIST_KEY, "entry", mediaId],
+    enabled,
+    queryFn: async () => {
+      try {
+        return await apiFetch<ListEntry>(`/me/list/${mediaId}`);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return null;
+        throw error;
+      }
+    },
   });
 }
 

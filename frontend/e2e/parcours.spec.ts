@@ -37,7 +37,7 @@ test("une page de compte renvoie vers la connexion, avec retour prévu", async (
   await checkScreen(page, "connexion");
 });
 
-test("inscription → onboarding → recos → ajout à la liste → +1 épisode", async ({ page }) => {
+test("inscription → onboarding → recos → ajout → +1 ép. → fiche et note → profil public → Pour toi", async ({ page }) => {
   const pseudo = `e2e_${Date.now().toString(36)}`;
 
   // 1. Inscription
@@ -80,6 +80,44 @@ test("inscription → onboarding → recos → ajout à la liste → +1 épisode
   await expect(page.getByRole("tab", { name: /En cours\s*·\s*1/ })).toBeVisible();
   await page.getByRole("tab", { name: /En cours/ }).click();
   await expect(page.getByText("1 / 12 ép.")).toBeVisible();
+
+  // 6. Fiche œuvre (phase 9) : le titre mène à la fiche ; risque, courbe, note
+  await page.getByRole("link", { name: title }).first().click();
+  await expect(page).toHaveURL(/\/oeuvre\/\d+$/);
+  await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ton risque de drop" })).toBeVisible();
+  await expect(page.getByText(/^(À risque|Risque faible|Pas encore assez de données)$/)).toBeVisible();
+  await expect(page.getByText("Épisode 1 — critique.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Dans ta liste :", { exact: false })).toBeVisible();
+  // On clique le segment (le libellé), comme une personne : la case radio est masquée dessous.
+  const eight = page.getByRole("radio", { name: `8 sur 10 pour ${title}` });
+  await page.locator("label").filter({ has: eight }).click();
+  await expect(eight).toBeChecked();
+  await expect(page.getByText("8/10", { exact: true })).toBeVisible();
+  await checkScreen(page, "fiche");
+
+  // 7. Profil public : privé par défaut, ouvert depuis Compte, la note y apparaît
+  await page.goto("/compte");
+  await page.getByLabel("Rendre mon profil public").check();
+  await page.getByRole("link", { name: "Voir mon profil public" }).click();
+  await expect(page).toHaveURL(new RegExp(`/profil/${pseudo}$`));
+  await expect(page.getByRole("heading", { level: 1, name: pseudo })).toBeVisible();
+  await expect(page.getByRole("link", { name: title })).toBeVisible();
+  await expect(page.getByText("8/10", { exact: true })).toBeVisible();
+  await checkScreen(page, "profil");
+
+  // 8. Pour toi en page entière
+  await page.goto("/pour-toi");
+  await expect(page.getByRole("heading", { level: 1, name: "Pour toi" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mangas et manhwas" })).toBeVisible();
+  await checkScreen(page, "pour-toi");
+});
+
+test("un profil privé ou inconnu est introuvable, comme une page qui n'existe pas", async ({ page }) => {
+  await page.goto("/profil/personne_ici");
+  await expect(page.getByRole("heading", { name: "Page introuvable" })).toBeVisible();
+  await page.goto("/oeuvre/999999");
+  await expect(page.getByRole("heading", { name: "Page introuvable" })).toBeVisible();
 });
 
 test("connexion refusée : message neutre, sans dire ce qui est faux", async ({ page }) => {

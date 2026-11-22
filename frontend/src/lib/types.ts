@@ -42,6 +42,32 @@ export interface MediaDetail extends MediaSummary {
   genres: string[];
   critical: CriticalEpisode | null;
   drop_curve: { episode: number; nb_drops: number; cumulative_share: number }[];
+  /** Dernier snapshot Jikan ; null tant que Jikan n'a rien fourni (panne depuis la phase 6). */
+  latest_stats: { snapshot_date: string; score: number | null; members: number | null } | null;
+}
+
+/** GET /me/drop-risk/{id} (backend/app/schemas/demo.py, DropRiskResponse). */
+export interface DropRisk {
+  media_id: number;
+  status: "ok" | "insufficient_data";
+  message: string | null;
+  probability: number | null;
+  threshold: number | null;
+  at_risk: boolean | null;
+  entries_used: number;
+  critical_episode: number | null;
+  point_of_no_return: number | null;
+}
+
+/** GET /users/{pseudo} (backend/app/schemas/users.py). */
+export interface PublicProfile {
+  pseudo: string;
+  member_since: string;
+  counts: Record<ListStatus, number>;
+  episodes_watched: number;
+  drop_rate: number | null;
+  top_genres: string[];
+  recent_scores: { media: MediaSummary; score: number }[];
 }
 
 export interface ListEntry {
@@ -72,6 +98,7 @@ export interface Me {
   created_at: string;
   onboarding_done: boolean;
   list_size: number;
+  profile_public: boolean;
 }
 
 export interface RecoItem {

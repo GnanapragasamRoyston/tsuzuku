@@ -4,6 +4,8 @@
  */
 "use client";
 
+import Link from "next/link";
+
 import { Cover } from "@/components/cover";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -30,7 +32,12 @@ export function ListRow({ entry, busy, onPlusOne, onDrop }: ListRowProps) {
     <li className="flex items-start gap-4 border-b border-line py-4 transition-colors duration-150 hover:bg-hover md:px-4">
       <Cover media={media} size="list" />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <h3 className="font-display text-h3 font-semibold">{media.title}</h3>
+        <h3 className="font-display text-h3 font-semibold">
+          {/* Le titre est le lien vers la fiche ; la ligne entière ne l'est pas (§ 5.2). */}
+          <Link href={`/oeuvre/${media.id}`} prefetch={false} className="hover:underline">
+            {media.title}
+          </Link>
+        </h3>
         <p className="text-meta font-semibold tracking-meta text-ink-2 uppercase">
           {mediaMeta(media)}
         </p>

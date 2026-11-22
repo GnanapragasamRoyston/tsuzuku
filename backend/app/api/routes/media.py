@@ -67,4 +67,5 @@ def get_media(
         genres=found["genres"],
         critical=found["critical"],
         drop_curve=found["drop_curve"],
+        latest_stats=found["latest_stats"],
     )

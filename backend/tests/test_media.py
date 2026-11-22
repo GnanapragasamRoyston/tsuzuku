@@ -137,3 +137,23 @@ def test_search_accepts_several_kinds(client, pg_url, catalog):
     finally:
         with psycopg.connect(pg_url, autocommit=True) as conn:
             conn.execute("DELETE FROM catalog.media WHERE id = ANY(%s)", (ids,))
+
+
+def test_media_detail_serves_the_latest_jikan_snapshot(client, catalog, pg_url):
+    import psycopg
+
+    mid = catalog["anime"][1]
+    assert client.get(f"/media/{mid}").json()["latest_stats"] is None  # Jikan en panne : rien
+    with psycopg.connect(pg_url, autocommit=True) as conn:
+        for day, members in (("2026-11-01", 100), ("2026-11-02", 150)):
+            conn.execute(
+                "INSERT INTO catalog.media_daily_stats (snapshot_date, media_id, score, members,"
+                " source, in_season) VALUES (%s, %s, 8.1, %s, 'jikan', true)",
+                (day, mid, members),
+            )
+    try:
+        stats = client.get(f"/media/{mid}").json()["latest_stats"]
+        assert stats == {"snapshot_date": "2026-11-02", "score": 8.1, "members": 150}
+    finally:
+        with psycopg.connect(pg_url, autocommit=True) as conn:
+            conn.execute("DELETE FROM catalog.media_daily_stats")

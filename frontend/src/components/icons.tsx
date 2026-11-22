@@ -46,3 +46,12 @@ export function UserIcon() {
     </Icon>
   );
 }
+
+/** « Pour toi » : une étoile à quatre branches (recommandation), pas un cœur (pas de « like »). */
+export function SparkIcon() {
+  return (
+    <Icon>
+      <path d="M12 3c.6 4.8 2.2 6.4 7 7-4.8.6-6.4 2.2-7 7-.6-4.8-2.2-6.4-7-7 4.8-.6 6.4-2.2 7-7z" />
+    </Icon>
+  );
+}

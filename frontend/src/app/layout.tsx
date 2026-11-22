@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Source_Sans_3 } from "next/font/google";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
@@ -46,7 +47,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Aller au contenu
         </a>
         <Providers>
-          <SiteHeader />
+          {/* Suspense : l'en-tête lit l'URL (usePathname), connue seulement à la requête sur les
+              routes dynamiques (/oeuvre/[id], /profil/[pseudo]). Sans lui, Next 16 refuse de
+              pré-rendre la coquille de ces pages. Repli : une barre vide de même hauteur. */}
+          <Suspense fallback={<div aria-hidden="true" className="min-h-16 border-b border-line lg:min-h-18" />}>
+            <SiteHeader />
+          </Suspense>
           <main id="contenu" className="flex-1">
             {children}
           </main>

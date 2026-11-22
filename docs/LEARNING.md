@@ -471,3 +471,34 @@ plateforme qui pose `X-Forwarded-For` (phase 11).
    liste » quand j'étais visiteur, donc gardé la redirection en cache. Invisible en
    développement, où il n'y a pas de préchargement. Correctif : pas de préchargement des pages de
    compte et rafraîchissement du routeur à chaque changement de session.
+
+## Phase 9 — Front, partie 2 : fiche œuvre, Pour toi, profil public (2026-11-22)
+**Ce qui a été construit :** la fiche œuvre (risque de drop personnel, courbe de drop par épisode
+avec épisode critique et point de non-retour, note sur 10), la page « Pour toi », et un profil
+public opt-in (`/users/{pseudo}`, migration `profile_public`, `PATCH /me`).
+
+**Concepts clés :**
+- *Îlots client (islands)* : la page est rendue sur le serveur (catalogue public, rapide, sans
+  JavaScript inutile) ; seules les parties qui dépendent du compte (ajout, note, risque) tournent
+  dans le navigateur. On paie le JavaScript là où il sert.
+- *Opt-in et minimisation (RGPD)* : une donnée personnelle n'est exposée que si la personne le
+  choisit. Le profil est privé par défaut ; le rendre public est un geste explicite et réversible.
+- *Énumération de comptes* : si « profil privé » et « pseudo inconnu » répondaient différemment,
+  on pourrait tester l'existence d'un compte. Une seule réponse (404) ferme cette fuite.
+- *Mise à jour optimiste* : l'interface applique le changement tout de suite et revient en arrière
+  si le serveur refuse. Une case qui attend le réseau pour se cocher paraît cassée.
+
+**Pourquoi ce choix :** courbe en CSS plutôt qu'une bibliothèque de graphes (une rangée de barres
+ne justifie pas des dizaines de Ko de JavaScript, et la logique reste testable seule). Profil
+public par défaut écarté (exposition sans consentement). Avatar écarté (l'upload d'images ouvre
+une surface d'attaque et demande du stockage). Voir [ADR 011](decisions/011-front-partie-2.md).
+
+**3 questions d'entretien possibles :**
+1. *Pourquoi la même 404 pour un profil privé et un pseudo inconnu ?* — Sinon on peut savoir si un
+   compte existe en essayant des pseudos (énumération). La réponse identique ne révèle rien.
+2. *Comment rendre une courbe accessible ?* — Un résumé textuel (`role="img"` + `aria-label` : pic
+   et repères), un tableau équivalent masqué visuellement, et jamais la couleur seule : chaque
+   repère a aussi un libellé écrit.
+3. *Pourquoi rendre la fiche côté serveur et le risque côté client ?* — Le catalogue est public et
+   identique pour tous : le serveur le rend vite. Le risque dépend de la liste du compte, donc du
+   cookie : il est calculé par l'API pour la personne connectée, dans un îlot client.

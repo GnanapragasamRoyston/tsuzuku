@@ -7,7 +7,7 @@ techniques : [ADR 008](decisions/008-comptes-et-listes.md).*
 | Donnée | Pourquoi |
 |---|---|
 | Email | te connecter ; jamais affiché publiquement, jamais partagé |
-| Pseudo | t'identifier dans l'appli (profil public à venir) |
+| Pseudo | t'identifier dans l'appli, et sur ton profil public si tu l'ouvres |
 | Mot de passe | **jamais stocké en clair** : seulement son empreinte argon2id, qui ne permet pas de le retrouver |
 | Ta liste (statut, progression, épisode ou chapitre de drop, note, critique, dates) | te montrer ta liste, calculer tes recommandations et ton risque de drop |
 | Tes choix d'onboarding | premières recommandations |
@@ -18,6 +18,10 @@ celui de ta session (`tsuzuku_session`), strictement nécessaire à la connexion
 illisible par les scripts de la page et n'est envoyé qu'en HTTPS.
 
 ## Usage des données
+- Profil public : **fermé par défaut**. Si tu coches « Rendre mon profil public » (*Compte*), qui
+  a le lien voit ton pseudo, ton mois d'inscription, tes chiffres (épisodes vus, taux de drop),
+  tes genres favoris et tes dix dernières notes. Jamais ton email ni tes critiques. Tu peux le
+  refermer à tout moment : il disparaît aussitôt (pas de cache).
 - Recommandations et risque de drop : calculés à partir de **ta** liste uniquement.
 - Statistiques de l'appli (tableau de bord, phase 13) : **agrégées et anonymes** (par exemple,
   « œuvres les plus ajoutées »), jamais au niveau d'un compte.

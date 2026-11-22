@@ -51,6 +51,9 @@ class ApiRules(BaseModel):
     list_max_entries: int = Field(ge=1)
     review_max_length: int = Field(ge=1)
     list_page_max: int = Field(ge=1)
+    profile_min_finished_for_drop_rate: int = Field(ge=1)
+    profile_top_genres: int = Field(ge=1)
+    profile_recent_scores: int = Field(ge=1)
     jikan: JikanSettings
     auth: AuthRules
 

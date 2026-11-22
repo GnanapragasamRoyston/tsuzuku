@@ -1,19 +1,21 @@
 /**
- * Compte (écran STABLE) : déconnexion, export des données, suppression (RGPD, SPEC § 7-8).
+ * Compte (écran STABLE) : déconnexion, profil public (opt-in, phase 9), export des données, suppression (RGPD, SPEC § 7-8).
  * L'export est un lien direct vers l'API (fichier JSON téléchargé, cookie envoyé par le
  * navigateur) ; la suppression redemande le mot de passe, comme l'exige l'API.
  */
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { Button, buttonClass } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
-import { useLogout, useMe } from "@/hooks/use-me";
+import { ME_KEY, useLogout, useMe } from "@/hooks/use-me";
 import { apiFetch } from "@/lib/api";
 import { ApiError, messageFor } from "@/lib/errors";
+import type { Me } from "@/lib/types";
 
 export function Account() {
   const router = useRouter();
@@ -28,6 +30,26 @@ export function Account() {
     if (me.data === null && !deleted.current) router.replace("/connexion?suivant=/compte");
   }, [me.data, router]);
   const [error, setError] = useState<string | null>(null);
+
+  const [visibilityError, setVisibilityError] = useState<string | null>(null);
+  const visibility = useMutation({
+    mutationFn: (profilePublic: boolean) =>
+      apiFetch<Me>("/me", { method: "PATCH", body: { profile_public: profilePublic } }),
+    // Optimiste : la case suit le clic tout de suite (une case qui attend le réseau paraît
+    // cassée). En cas d'échec, retour à l'état d'avant et message d'erreur.
+    onMutate: (profilePublic) => {
+      setVisibilityError(null);
+      const previous = client.getQueryData<Me | null>(ME_KEY);
+      if (previous) client.setQueryData<Me>(ME_KEY, { ...previous, profile_public: profilePublic });
+      return { previous };
+    },
+    // Réponse de l'API = état réel enregistré.
+    onSuccess: (saved) => client.setQueryData(ME_KEY, saved),
+    onError: (e, _vars, context) => {
+      if (context?.previous) client.setQueryData(ME_KEY, context.previous);
+      setVisibilityError(messageFor(e, "save"));
+    },
+  });
 
   const remove = useMutation({
     mutationFn: (password: string) => apiFetch("/me", { method: "DELETE", body: { password } }),
@@ -71,6 +93,38 @@ export function Account() {
         >
           Me déconnecter
         </Button>
+      </section>
+
+      <section aria-labelledby="visibilite" className="flex flex-col gap-4 border-t border-line pt-6">
+        <h2 id="visibilite" className="font-display text-h3 font-semibold">
+          Profil public
+        </h2>
+        <p className="text-ink-2">
+          Montre ton pseudo, tes chiffres (épisodes vus, taux de drop), tes genres favoris et tes
+          dernières notes à qui a le lien. Jamais ton email ni tes critiques.
+        </p>
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 self-start">
+          <input
+            type="checkbox"
+            className="size-5 accent-ink"
+            checked={me.data?.profile_public ?? false}
+            disabled={!me.data || visibility.isPending}
+            onChange={(e) => visibility.mutate(e.currentTarget.checked)}
+          />
+          Rendre mon profil public
+        </label>
+        {/* Seulement une fois l'enregistrement confirmé : avant, la page du profil répondrait
+            encore « introuvable » (revue de la phase 9). */}
+        {me.data?.profile_public && !visibility.isPending && (
+          <Link href={`/profil/${me.data.pseudo}`} prefetch={false} className="self-start underline">
+            Voir mon profil public
+          </Link>
+        )}
+        {visibilityError && (
+          <p role="alert" className="text-small text-accent">
+            {visibilityError}
+          </p>
+        )}
       </section>
 
       <section aria-labelledby="export" className="flex flex-col gap-4 border-t border-line pt-6">

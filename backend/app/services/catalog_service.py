@@ -10,7 +10,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 from tsuzuku_ml.drop_features import AnimeInfo
 
-from app.db.models import CriticalEpisode, DropCurve, Genre, Media, MediaGenre
+from app.db.models import CriticalEpisode, DropCurve, Genre, Media, MediaDailyStats, MediaGenre
 
 # Seules les œuvres du dataset d'entraînement ont des features comparables à l'entraînement :
 # une œuvre ajoutée plus tard (Jikan, AniList) n'existait pas pour le modèle de drop.
@@ -85,6 +85,12 @@ def detail(session: Session, media_id: int) -> dict | None:
         "genres": genres_by_media(session, [media_id])[media_id],
         "critical": session.get(CriticalEpisode, media_id),
         "drop_curve": list(curve),
+        "latest_stats": session.scalars(
+            select(MediaDailyStats)
+            .where(MediaDailyStats.media_id == media_id)
+            .order_by(MediaDailyStats.snapshot_date.desc())
+            .limit(1)
+        ).first(),
     }
 
 
