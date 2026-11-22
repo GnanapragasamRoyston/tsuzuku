@@ -11,11 +11,11 @@ import { MediaTile, MediaTileSkeleton } from "@/components/media-tile";
 import { SectionHeading } from "@/components/section-heading";
 import { ButtonLink } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
+import { PAGE } from "@/lib/layout";
 import { messageFor } from "@/lib/errors";
 import { formatPercent, mediaMeta } from "@/lib/format";
 import type { MediaDetail, MediaSummary, TrendingResponse } from "@/lib/types";
 
-const PAGE = "mx-auto max-w-page px-5 md:px-8 lg:px-10";
 
 // cache() : une seule requête par rendu pour les mêmes arguments (la rangée « Populaires » et le
 // bandeau d'affiche lisent la même liste). Pas de cache entre visites pour l'instant : à décider

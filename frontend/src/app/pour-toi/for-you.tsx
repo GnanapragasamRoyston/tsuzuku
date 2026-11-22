@@ -12,9 +12,9 @@ import { SectionHeading } from "@/components/section-heading";
 import { useAddedIds, useAddPlanned, useRecos } from "@/hooks/use-list";
 import { useRedirectOn401 } from "@/hooks/use-me";
 import { messageFor } from "@/lib/errors";
+import { PAGE } from "@/lib/layout";
 import { recoReason } from "@/lib/reco";
 
-const PAGE = "mx-auto max-w-page px-5 md:px-8 lg:px-10";
 
 export function ForYouPage() {
   const recos = useRecos(12);

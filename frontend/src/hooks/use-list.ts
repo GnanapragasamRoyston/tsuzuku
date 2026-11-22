@@ -26,7 +26,7 @@ import { applySaved, type ListPages, nextOffset } from "@/lib/list-cache";
 import type { ListEntry, ListEntryUpdate, ListPage, ListStatus, RecoResponse } from "@/lib/types";
 
 export const LIST_KEY = ["list"] as const;
-export const RECOS_KEY = ["recos"] as const;
+const RECOS_KEY = ["recos"] as const;
 const PAGE_LIMIT = 100;
 const UPDATE_KEY = ["update-entry"] as const;
 const ADD_KEY = ["add-entry"] as const;

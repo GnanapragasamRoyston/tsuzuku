@@ -27,7 +27,7 @@ export interface MediaSummary {
   popularity: number | null;
 }
 
-export interface CriticalEpisode {
+interface CriticalEpisode {
   critical_episode: number;
   critical_drop_share: number;
   initial_drop_risk: number | null;
@@ -115,7 +115,7 @@ export interface RecoResponse {
   items: RecoItem[];
 }
 
-export interface TrendingItem {
+interface TrendingItem {
   mal_id: number;
   title: string;
   cover_url: string | null;

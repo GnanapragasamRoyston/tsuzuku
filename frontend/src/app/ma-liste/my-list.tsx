@@ -30,8 +30,6 @@ import { recoReason } from "@/lib/reco";
 import type { ListEntry, ListStatus } from "@/lib/types";
 import { LIST_STATUSES } from "@/lib/types";
 
-// Libellés partagés avec la fiche œuvre et le profil (lib/format.ts).
-const TAB_LABEL = STATUS_LABEL;
 
 // Micro-textes de DESIGN.md § 7.
 const EMPTY: Record<ListStatus, string> = {
@@ -133,7 +131,7 @@ function StatusPanel({ status, announce }: StatusPanelProps) {
     <>
       {/* Titre de panneau (h2) : la hiérarchie reste h1 → h2 → h3 (titres de ligne). */}
       <h2 ref={heading} tabIndex={-1} className="sr-only">
-        {TAB_LABEL[status]}
+        {STATUS_LABEL[status]}
       </h2>
       {body}
     </>
@@ -221,7 +219,7 @@ export function MyList() {
           <TabsList aria-label="Statut">
             {LIST_STATUSES.map((s) => (
               <TabsTrigger key={s} value={s}>
-                {TAB_LABEL[s]}
+                {STATUS_LABEL[s]}
                 <span className={clsx("ml-1", tab !== s && "text-ink-2")}>
                   · {counts.data ? counts.data[s] : "…"}
                 </span>

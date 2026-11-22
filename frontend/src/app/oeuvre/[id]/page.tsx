@@ -12,13 +12,13 @@ import { cache, Suspense } from "react";
 import { Cover } from "@/components/cover";
 import { DropCurve } from "@/components/drop-curve";
 import { apiFetch } from "@/lib/api";
+import { PAGE } from "@/lib/layout";
 import { ApiError } from "@/lib/errors";
 import { formatInt, formatPercent, mediaMeta } from "@/lib/format";
 import type { MediaDetail } from "@/lib/types";
 
 import { DropRiskPanel, EntryPanel } from "./account-panels";
 
-const PAGE = "mx-auto max-w-page px-5 md:px-8 lg:px-10";
 
 type Params = Promise<{ id: string }>;
 

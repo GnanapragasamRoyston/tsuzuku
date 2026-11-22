@@ -12,7 +12,6 @@ from typing import Any
 
 import joblib
 from tsuzuku_ml.artifacts import (  # noqa: F401  (ré-exportés pour le pipeline et ses tests)
-    DROP_NAME,
     ArtifactError,
     atomic_copy,
     load_drop_model,
@@ -21,7 +20,6 @@ from tsuzuku_ml.artifacts import (  # noqa: F401  (ré-exportés pour le pipelin
 )
 from tsuzuku_ml.artifacts import drop_paths as artifact_paths
 
-ARTIFACT_NAME = DROP_NAME
 # Noms historiques (phase 3), gardés pour ne pas casser les appelants.
 verify_artifact = verify_drop_artifact
 load_artifact = load_drop_model

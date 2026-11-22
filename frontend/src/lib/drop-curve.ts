@@ -8,7 +8,7 @@
  */
 import { formatPercent } from "@/lib/format";
 
-export const MAX_SINGLE_BARS = 26;
+const MAX_SINGLE_BARS = 26;
 const BUCKET = 5;
 
 export type Marker = "critical" | "ponr" | null;

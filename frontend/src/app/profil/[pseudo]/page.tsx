@@ -11,11 +11,11 @@ import { cache, Suspense } from "react";
 import { Cover } from "@/components/cover";
 import { SectionHeading } from "@/components/section-heading";
 import { apiFetch } from "@/lib/api";
+import { PAGE } from "@/lib/layout";
 import { ApiError } from "@/lib/errors";
 import { formatInt, formatPercent, mediaMeta } from "@/lib/format";
 import type { PublicProfile } from "@/lib/types";
 
-const PAGE = "mx-auto max-w-page px-5 md:px-8 lg:px-10";
 
 type Params = Promise<{ pseudo: string }>;
 
