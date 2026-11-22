@@ -131,7 +131,7 @@ airflow-trigger: ## [phase 6] Déclenche un DAG (DAG=jikan_daily_ingest ou anili
 NODE := command -v node >/dev/null || . "$$HOME/.nvm/nvm.sh";
 
 covers: ## [phase 8] Jaquettes des animes depuis AniList (idMal) : manquantes et petites, sans Airflow
-	cd pipeline && uv run python -m tsuzuku_pipeline.ingestion.cli covers
+	cd pipeline && uv run python -m tsuzuku_pipeline.ingestion.cli covers $(ARGS)
 
 covers-report: ## [jaquettes] Couverture par source, type et popularité → reports/covers_coverage.json
 	cd pipeline && uv run python -m tsuzuku_pipeline.ingestion.cli covers-report

@@ -299,19 +299,19 @@ def anilist_quality(settings: dict[str, Any], day: dt.date, conn=None) -> dict[s
 
 
 def anilist_covers(settings: dict[str, Any], day: dt.date, transport=None, sleep=None,
-                   conn=None) -> dict[str, Any]:  # fmt: skip
+                   conn=None, include_small: bool = False) -> dict[str, Any]:  # fmt: skip
     """Jaquettes des animes, par lots d'idMal → catalog.media (cover_url, cover_color).
 
     Les animes du dataset 2020 n'ont pas d'image, et Jikan (qui en fournit) est en panne depuis
-    la phase 6. AniList les connaît par leur idMal. Sont demandées les jaquettes absentes et les
-    petites images AniList (230 px, remplacées par les 460 px) : relancer ne refait rien
-    (idempotent). Les URL reçues sont gardées dans
+    la phase 6. AniList les connaît par leur idMal. Sont demandées les jaquettes absentes, et avec
+    `include_small` les petites images AniList (230 px → 460 px quand elle existe). Relancer ne
+    refait rien (idempotent). Les URL reçues sont gardées dans
     covers.json pour rejouer ou auditer.
     """
     cfg = require_section(settings, "ingestion")["anilist"]
     size = int(cfg["covers_batch_size"])
     with _connection(conn) as c:
-        targets = catalog_loader.anime_cover_targets(c)
+        targets = catalog_loader.anime_cover_targets(c, include_small)
         found: dict[int, dict[str, str | None]] = {}
         with _client(cfg, cfg["url"], transport, sleep) as client:
             for start in range(0, len(targets), size):

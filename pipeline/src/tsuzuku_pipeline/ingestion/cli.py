@@ -19,11 +19,21 @@ def main(argv: list[str] | None = None) -> None:
         choices=["covers", "covers-report"],
         help="covers : jaquettes des animes (AniList) ; covers-report : rapport de couverture",
     )
+    parser.add_argument(
+        "--include-small",
+        action="store_true",
+        help="covers : redemande aussi les petites images AniList (remise à niveau)",
+    )
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     day = dt.datetime.now(dt.UTC).date()
     if args.task == "covers":
-        print(json.dumps(jobs.anilist_covers(load_settings(), day), ensure_ascii=False))
+        print(
+            json.dumps(
+                jobs.anilist_covers(load_settings(), day, include_small=args.include_small),
+                ensure_ascii=False,
+            )
+        )
     elif args.task == "covers-report":
         settings = load_settings()
         with jobs.connection() as conn:

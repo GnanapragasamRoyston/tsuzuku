@@ -57,7 +57,7 @@ def _cover(pg, mal):
                       (mal,)).fetchone()[0]  # fmt: skip
 
 
-def test_covers_fill_missing_and_upgrade_small_anilist_covers(cov_settings, pg):
+def test_covers_upgrade_option_fills_missing_and_replaces_small_anilist_covers(cov_settings, pg):
     _anime(pg, 1)  # sans jaquette
     _anime(pg, 2, cover="https://cdn.myanimelist.net/2.jpg")  # image MAL : jamais remplacée
     _anime(pg, 3, cover=f"{CDN}/medium/3.jpg")  # petite image AniList : remplacée par la grande
@@ -65,7 +65,8 @@ def test_covers_fill_missing_and_upgrade_small_anilist_covers(cov_settings, pg):
     _anime(pg, 5, cover="https://cdn.myanimelist.net/5.jpg", cover_source="suggestion")
     _anime(pg, 1, kind="manga", source="anilist")  # même idMal, mais manga : hors périmètre
     fake = FakeCovers({m: f"{CDN}/large/{m}.jpg" for m in (1, 2, 3, 5)})
-    report = jobs.anilist_covers(cov_settings, DAY, transport=httpx.MockTransport(fake), conn=pg)
+    report = jobs.anilist_covers(cov_settings, DAY, transport=httpx.MockTransport(fake), conn=pg,
+                                 include_small=True)  # fmt: skip
     # Demandés : sans jaquette (1, 4) et petite AniList (3) ; ni MAL (2) ni validée par Royston (5).
     assert (report["requested"], report["found"], report["updated"]) == (3, 2, 2)
     assert _cover(pg, 1) == f"{CDN}/large/1.jpg" and _cover(pg, 3) == f"{CDN}/large/3.jpg"
@@ -139,3 +140,15 @@ def test_jikan_sync_never_erases_an_anilist_cover(pg):
                                         cover_url="https://cdn.myanimelist.net/images/99.jpg",
                                         cover_source="jikan")])  # fmt: skip
     assert _cover(pg, 99) == f"{CDN}/large/99.jpg"
+
+
+def test_weekly_run_only_asks_for_missing_covers(cov_settings, pg):
+    """Sans l'option : seulement les jaquettes absentes. Les petites images restent (pour les
+    images anciennes, AniList n'a pas de grande version : les redemander chaque semaine ne
+    servirait à rien, mesuré le 2026-11-22)."""
+    _anime(pg, 1)
+    _anime(pg, 3, cover=f"{CDN}/medium/3.jpg")
+    fake = FakeCovers({1: f"{CDN}/large/1.jpg", 3: f"{CDN}/large/3.jpg"})
+    report = jobs.anilist_covers(cov_settings, DAY, transport=httpx.MockTransport(fake), conn=pg)
+    assert report["requested"] == 1 and fake.batches == [[1]]
+    assert _cover(pg, 3) == f"{CDN}/medium/3.jpg"

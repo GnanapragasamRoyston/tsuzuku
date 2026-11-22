@@ -1,0 +1,119 @@
+{
+  "generated_at": "2026-11-22T20:38:12+00:00",
+  "buckets": {
+    "top_1000": {
+      "from": 1,
+      "to": 1000
+    },
+    "1000_to_10000": {
+      "from": 1001,
+      "to": 10000
+    },
+    "beyond_10000": {
+      "from": 10001,
+      "to": null
+    }
+  },
+  "by_kind": {
+    "anime": {
+      "total": 16214,
+      "with_cover": 13764,
+      "share": 0.8488960157888245
+    },
+    "manga": {
+      "total": 3717,
+      "with_cover": 3717,
+      "share": 1.0
+    },
+    "manhua": {
+      "total": 182,
+      "with_cover": 182,
+      "share": 1.0
+    },
+    "manhwa": {
+      "total": 1105,
+      "with_cover": 1105,
+      "share": 1.0
+    }
+  },
+  "by_source": {
+    "anime": {
+      "anilist": 13764,
+      "none": 2450
+    },
+    "manga": {
+      "anilist": 3717
+    },
+    "manhua": {
+      "anilist": 182
+    },
+    "manhwa": {
+      "anilist": 1105
+    }
+  },
+  "by_popularity": {
+    "anime": {
+      "1000_to_10000": {
+        "total": 7835,
+        "with_cover": 7329,
+        "share": 0.9354179961710274
+      },
+      "beyond_10000": {
+        "total": 7374,
+        "with_cover": 5435,
+        "share": 0.7370490914022241
+      },
+      "top_1000": {
+        "total": 1005,
+        "with_cover": 1000,
+        "share": 0.9950248756218906
+      }
+    },
+    "manga": {
+      "1000_to_10000": {
+        "total": 2985,
+        "with_cover": 2985,
+        "share": 1.0
+      },
+      "top_1000": {
+        "total": 729,
+        "with_cover": 729,
+        "share": 1.0
+      },
+      "unranked": {
+        "total": 3,
+        "with_cover": 3,
+        "share": 1.0
+      }
+    },
+    "manhua": {
+      "1000_to_10000": {
+        "total": 161,
+        "with_cover": 161,
+        "share": 1.0
+      },
+      "top_1000": {
+        "total": 21,
+        "with_cover": 21,
+        "share": 1.0
+      }
+    },
+    "manhwa": {
+      "1000_to_10000": {
+        "total": 854,
+        "with_cover": 854,
+        "share": 1.0
+      },
+      "top_1000": {
+        "total": 250,
+        "with_cover": 250,
+        "share": 1.0
+      },
+      "unranked": {
+        "total": 1,
+        "with_cover": 1,
+        "share": 1.0
+      }
+    }
+  }
+}

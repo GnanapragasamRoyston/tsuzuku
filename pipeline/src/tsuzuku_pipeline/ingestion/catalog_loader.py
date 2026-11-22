@@ -203,18 +203,22 @@ def is_trusted_cover(url: object) -> bool:
             and not url.rsplit("/", 1)[-1].startswith("default."))  # fmt: skip
 
 
-def anime_cover_targets(conn: psycopg.Connection) -> list[int]:
-    """idMal des animes à (re)demander à AniList, les plus populaires d'abord :
-    - sans jaquette ;
-    - avec une PETITE image AniList (chemin /cover/medium/, 230 px) : la grande existe (460 px).
-    Jamais une image MyAnimeList (Jikan) ni une jaquette validée par Royston. Un titre pour
-    lequel AniList n'a pas de grande image reste demandé à chaque passage (cas non observé sur
-    l'échantillon du 2026-11-22 ; coût : une place dans un lot de 50)."""
+def anime_cover_targets(conn: psycopg.Connection, include_small: bool = False) -> list[int]:
+    """idMal des animes à demander à AniList, les plus populaires d'abord : ceux sans jaquette.
+
+    `include_small` (remise à niveau ponctuelle, `make covers ARGS=--include-small`) : aussi les
+    PETITES images AniList (chemin /cover/medium/, 230 px), pour obtenir la grande (460 px).
+    Pas chaque semaine : pour les images anciennes, AniList n'a pas de grande version (7 003
+    animes sur 13 764, mesuré le 2026-11-22) ; les redemander ne changerait rien.
+    Jamais une image MyAnimeList (Jikan) ni une jaquette validée par Royston."""
+    # %s = motif des petites images, ou NULL (LIKE NULL n'est jamais vrai) : une seule requête
+    # fixe, aucun SQL construit à la volée.
+    small = COVER_URL_PREFIX + "%/cover/medium/%" if include_small else None
     rows = conn.execute(
         "SELECT mal_id FROM catalog.media WHERE kind = 'anime' AND mal_id IS NOT NULL"
         " AND (cover_url IS NULL OR (cover_source = 'anilist' AND cover_url LIKE %s))"
         " ORDER BY popularity NULLS LAST, mal_id",
-        (COVER_URL_PREFIX + "%/cover/medium/%",),
+        (small,),
     ).fetchall()
     return [r[0] for r in rows]
 

@@ -60,6 +60,17 @@ le plus proche ; sans couleur (ou grise), un hachage du titre, toujours le même
 - **Écartés** : envoi de fichiers (stockage, contrôle du contenu des images) et téléchargement
   côté serveur pour vérifier l'image (SSRF, coût).
 
+## Résultats mesurés (2026-11-22, `reports/covers_coverage.json` et requêtes sur la base)
+- Grandes images (460 px) : 6 761 animes, 3 513 mangas, 1 045 manhwas, 148 manhuas. Pour les
+  autres (7 003 animes, 298 mangas, manhwas et manhuas), AniList n'a que l'image moyenne : son
+  `extraLarge` renvoie la même (images anciennes, fichiers `b…` au lieu de `bx…`).
+- La remise à niveau des petites images est donc **ponctuelle** (`make covers
+  ARGS=--include-small`) ; le DAG hebdomadaire ne demande que les jaquettes absentes, sinon il
+  redemanderait chaque semaine 7 003 animes pour rien.
+- Couverture inchangée (les nouvelles tailles ne créent pas de jaquettes) : 13 764 animes sur
+  16 214 (2 450 sans image, dont les 15 `default.jpg` écartés), 100 % des mangas, manhwas et
+  manhuas. Les 2 450 animes restants comptent sur Jikan (en panne) et les propositions.
+
 ## Conséquences
 - **Ordre de déploiement** (phase 11) : l'API lit `cover_color` et `cover_source`, créées par le
   schéma du pipeline (`schema_catalog.sql`, propriétaire du catalogue, ADR 003) et non par
