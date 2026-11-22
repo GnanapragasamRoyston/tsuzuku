@@ -2,7 +2,7 @@
 
 import datetime as dt
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MediaSummary(BaseModel):
@@ -19,6 +19,9 @@ class MediaSummary(BaseModel):
     chapters: int | None = None
     start_year: int | None = None
     cover_url: str | None = None
+    # Couleur dominante (#rrggbb) : le front la ramène à un ton de DESIGN.md pour la jaquette de
+    # secours ; jamais affichée brute.
+    cover_color: str | None = None
     popularity: int | None = None
 
 
@@ -67,6 +70,15 @@ class MediaDetail(MediaSummary):
     drop_curve: list[DropCurvePoint] = []
     # None tant que Jikan n'a rien fourni pour cette œuvre (panne connue depuis la phase 6).
     latest_stats: DailyStatsOut | None = None
+
+
+class CoverSuggestionIn(BaseModel):
+    """Corps de POST /media/{id}/cover-suggestions. Borne large ici ; la vraie validation (hôtes,
+    longueur de settings.yaml) est faite par cover_service.check_url."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    url: str = Field(min_length=1, max_length=2000)
 
 
 class SearchResponse(BaseModel):

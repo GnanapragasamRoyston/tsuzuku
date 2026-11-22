@@ -60,7 +60,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* pb-24 : place pour la barre de navigation fixe en bas de l'écran sur mobile. */}
         <footer className="border-t border-line pb-24 md:pb-0">
           <div className="mx-auto flex max-w-page flex-wrap justify-between gap-4 px-5 py-6 text-small text-ink-2 md:px-8 lg:px-10">
-            <p>Fiches et couvertures : MyAnimeList (via Jikan et le dataset Kaggle 2020), AniList.</p>
+            <p>Fiches et couvertures : MyAnimeList (via Jikan et le dataset Kaggle 2020), AniList, Kitsu.</p>
             <Link
               href="/confidentialite"
               className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"

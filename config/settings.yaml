@@ -193,6 +193,15 @@ api:
   profile_min_finished_for_drop_rate: 3
   profile_top_genres: 5
   profile_recent_scores: 10
+  # « Proposer une jaquette » (lot qualité, ADR 012). Seules ces adresses sont acceptées : les
+  # mêmes que les remotePatterns du front (frontend/next.config.ts), sinon l'image validée ne
+  # s'afficherait pas. Domaine Kitsu relevé sur leur API le 2026-11-22 (posterImage).
+  cover_suggestion_prefixes:
+    - https://s4.anilist.co/file/anilistcdn/
+    - https://cdn.myanimelist.net/images/
+    - https://media.kitsu.app/
+  cover_suggestions_per_day: 10
+  cover_url_max_length: 500
   jikan:
     # API publique sans clé (SPEC § 2.2). Limite documentée : 3 requêtes/s, 60/min.
     base_url: https://api.jikan.moe/v4

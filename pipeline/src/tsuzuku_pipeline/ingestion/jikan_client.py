@@ -16,6 +16,7 @@ from tsuzuku_pipeline.ingestion.records import (
     as_float,
     as_int,
     clean_text,
+    display_titles,
 )
 
 
@@ -53,11 +54,13 @@ def media_record(item: dict[str, Any]) -> MediaRecord:
     year = item.get("year") or (
         ((item.get("aired") or {}).get("prop") or {}).get("from") or {}
     ).get("year")
+    title, title_alt = display_titles(item.get("title"), item.get("title_english"))
+    cover_url = images.get("large_image_url") or images.get("image_url")
     return MediaRecord(
         kind="anime",
         mal_id=int(item["mal_id"]),
-        title=item.get("title") or "",
-        title_alt=item.get("title_english"),
+        title=title,
+        title_alt=title_alt,
         synopsis=clean_text(item.get("synopsis")),
         episodes=as_int(item.get("episodes")),
         airing_status=item.get("status"),
@@ -67,7 +70,8 @@ def media_record(item: dict[str, Any]) -> MediaRecord:
         creators=tuple(_names(item, "studios")),
         source=item.get("source"),
         age_rating=item.get("rating"),
-        cover_url=images.get("large_image_url") or images.get("image_url"),
+        cover_url=cover_url,
+        cover_source="jikan" if cover_url else None,
         # Rang de popularité MAL (1 = le plus populaire) : même sémantique que le dataset 2020.
         popularity=as_int(item.get("popularity")),
         # Même périmètre que la colonne Genres de MAL dans le dataset : genres, thèmes, démographie.

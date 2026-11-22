@@ -4,7 +4,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help setup up down db-check lint format test audit \
-        data spark train figures reco api api-keys api-up api-down web web-test web-e2e covers migrate \
+        data spark train figures reco api api-keys api-up api-down web web-test web-e2e covers covers-report covers-review covers-approve covers-reject migrate \
         airflow-keys airflow-up airflow-down airflow-test airflow-trigger
 
 # packages/tsuzuku-ml : code ML partagé par le pipeline et l'API (ADR 006).
@@ -130,8 +130,22 @@ airflow-trigger: ## [phase 6] Déclenche un DAG (DAG=jikan_daily_ingest ou anili
 # shell non interactif) : sinon WSL trouverait le npm de Windows, qui échoue sur un chemin WSL.
 NODE := command -v node >/dev/null || . "$$HOME/.nvm/nvm.sh";
 
-covers: ## [phase 8] Couvertures manquantes des animes depuis AniList (idMal), sans Airflow
+covers: ## [phase 8] Jaquettes des animes depuis AniList (idMal) : manquantes et petites, sans Airflow
 	cd pipeline && uv run python -m tsuzuku_pipeline.ingestion.cli covers
+
+covers-report: ## [jaquettes] Couverture par source, type et popularité → reports/covers_coverage.json
+	cd pipeline && uv run python -m tsuzuku_pipeline.ingestion.cli covers-report
+
+covers-review: ## [jaquettes] Jaquettes proposées en attente de validation
+	cd backend && uv run python -m scripts.covers_review list
+
+covers-approve: ## [jaquettes] Valide une jaquette proposée (ID=12)
+	@test -n "$(ID)" || (echo "Usage : make covers-approve ID=12" && exit 1)
+	cd backend && uv run python -m scripts.covers_review approve $(ID)
+
+covers-reject: ## [jaquettes] Refuse une jaquette proposée (ID=13)
+	@test -n "$(ID)" || (echo "Usage : make covers-reject ID=13" && exit 1)
+	cd backend && uv run python -m scripts.covers_review reject $(ID)
 
 web: ## [phase 8] Lance le front Next.js (http://localhost:3000) ; make api dans un autre terminal
 	@$(NODE) cd frontend && (curl -s -o /dev/null --max-time 2 http://127.0.0.1:8000/health \

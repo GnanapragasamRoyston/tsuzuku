@@ -28,9 +28,13 @@ illisible par les scripts de la page et n'est envoyé qu'en HTTPS.
 - Couvertures et fiches : servies depuis MyAnimeList (via Jikan) et AniList, crédités en pied de
   page ; ces sites ne reçoivent aucune donnée de ton compte.
 
+- Jaquettes proposées : l'adresse de l'image et l'œuvre, liées à ton compte le temps de la
+  vérification ; incluses dans ton export, effacées avec ton compte. La personne qui les vérifie
+  voit ton pseudo, jamais ton email.
+
 ## Tes droits (RGPD)
 - **Accès et portabilité** : *Paramètres → Exporter mes données* télécharge un fichier JSON avec
-  ton profil, ta liste et tes choix d'onboarding (`GET /me/export`).
+  ton profil, ta liste, tes choix d'onboarding et tes propositions de jaquettes (`GET /me/export`).
 - **Effacement** : *Paramètres → Supprimer mon compte* (mot de passe demandé) efface
   immédiatement et définitivement ton compte, ta liste et tes choix (`DELETE /me`). Rien n'est
   conservé.

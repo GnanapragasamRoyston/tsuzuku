@@ -47,6 +47,50 @@ BEGIN
     END IF;
 END $$;
 
+-- Qualité des jaquettes (2026-11-22, ADR 012). cover_source : origine de l'image ('anilist',
+-- 'jikan', ou 'suggestion' = proposée par un utilisateur et validée par Royston, jamais écrasée
+-- par une synchro). cover_color : couleur dominante fournie par AniList (#rrggbb), ramenée par le
+-- front à un ton de la palette « jaquette » de DESIGN.md (jamais affichée brute).
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'catalog' AND table_name = 'media' AND column_name = 'cover_source'
+    ) THEN
+        ALTER TABLE catalog.media ADD COLUMN cover_source text
+            CONSTRAINT media_cover_source_check
+            CHECK (cover_source IN ('anilist', 'jikan', 'suggestion'));
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'catalog' AND table_name = 'media' AND column_name = 'cover_color'
+    ) THEN
+        ALTER TABLE catalog.media ADD COLUMN cover_color text
+            CONSTRAINT media_cover_color_check CHECK (cover_color ~ '^#[0-9a-f]{6}$');
+    END IF;
+END $$;
+
+-- Rattrapage idempotent (ne touche que les lignes concernées) : l'image par défaut d'AniList
+-- (« default.jpg ») n'est pas une jaquette ; la source des jaquettes déjà en base se déduit de
+-- leur hôte (CDN AniList, sinon MyAnimeList via Jikan).
+UPDATE catalog.media SET cover_url = NULL, cover_source = NULL, cover_color = NULL
+WHERE cover_url ~ '/default\.[a-z]+$';
+UPDATE catalog.media
+SET cover_source = CASE WHEN cover_url LIKE 'https://s4.anilist.co/file/anilistcdn/%'
+                        THEN 'anilist' ELSE 'jikan' END
+WHERE cover_source IS NULL AND cover_url IS NOT NULL;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'media_cover_source_matches_url'
+    ) THEN
+        -- Une jaquette a toujours une origine, et une origine sans jaquette n'a pas de sens.
+        ALTER TABLE catalog.media ADD CONSTRAINT media_cover_source_matches_url
+            CHECK ((cover_url IS NULL) = (cover_source IS NULL));
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS catalog.genre (
     id   integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name text NOT NULL UNIQUE

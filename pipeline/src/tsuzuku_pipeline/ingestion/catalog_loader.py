@@ -27,14 +27,16 @@ JIKAN_SOURCE, ANILIST_SOURCE = "jikan", "anilist"
 COLUMNS = (
     "kind", "mal_id", "anilist_id", "title", "title_alt", "synopsis", "episodes", "chapters",
     "airing_status", "format", "duration_min", "start_year", "creators", "source", "age_rating",
-    "cover_url", "popularity",
+    "cover_url", "cover_color", "cover_source", "popularity",
 )  # fmt: skip
+COVER_COLUMNS = ("cover_url", "cover_color", "cover_source")
 
 
 def _row(r: MediaRecord) -> tuple:
     return (r.kind, r.mal_id, r.anilist_id, r.title, r.title_alt, r.synopsis, r.episodes,
             r.chapters, r.airing_status, r.format, r.duration_min, r.start_year,
-            list(r.creators), r.source, r.age_rating, r.cover_url, r.popularity)  # fmt: skip
+            list(r.creators), r.source, r.age_rating, r.cover_url, r.cover_color, r.cover_source,
+            r.popularity)  # fmt: skip
 
 
 def _ids(cols: Sequence[str]) -> sql.Composed:
@@ -46,6 +48,17 @@ def _assign(cols: Sequence[str], source: str) -> sql.Composed:
     """« col = source.col, … » ; source vaut 't' (table de travail) ou 'EXCLUDED' (upsert)."""
     return sql.SQL(", ").join(
         sql.SQL("{c} = {s}.{c}").format(c=sql.Identifier(c), s=sql.SQL(source)) for c in cols
+    )
+
+
+def _keep_approved_cover(target: str, source: str) -> sql.Composed:
+    """« cover_* = … » qui ne remplace JAMAIS une jaquette proposée par un utilisateur et validée
+    par Royston (cover_source = 'suggestion') : une synchro ne défait pas une modération."""
+    return sql.SQL(", ").join(
+        sql.SQL(
+            "{c} = CASE WHEN {t}.cover_source = 'suggestion' THEN {t}.{c} ELSE {s}.{c} END"
+        ).format(c=sql.Identifier(c), t=sql.SQL(target), s=sql.SQL(source))
+        for c in COVER_COLUMNS
     )
 
 
@@ -112,13 +125,26 @@ def upsert_jikan_anime(conn: psycopg.Connection, records: Sequence[MediaRecord])
             "INSERT INTO catalog.media ({c}, data_source) SELECT {c}, %s FROM tmp_ing"
             " ON CONFLICT ON CONSTRAINT media_kind_mal_id_key DO NOTHING").format(c=_ids(COLUMNS)),
             (JIKAN_SOURCE,))  # fmt: skip
-        updatable = [c for c in COLUMNS if c not in ("kind", "mal_id", "anilist_id")]
+        updatable = [c for c in COLUMNS
+                     if c not in ("kind", "mal_id", "anilist_id", *COVER_COLUMNS)]  # fmt: skip
         conn.execute(sql.SQL(
             "UPDATE catalog.media m SET {}, updated_at = now() FROM tmp_ing t"
             " WHERE m.kind = 'anime' AND m.mal_id = t.mal_id AND m.data_source = %s"
         ).format(_assign(updatable, "t")), (JIKAN_SOURCE,))  # fmt: skip
+        # Jaquette (animes de Jikan comme du dataset 2020) : Jikan ne fait que COMPLÉTER une
+        # jaquette absente. Il ne remplace ni une image AniList (plus grande), ni une jaquette
+        # validée, et ne l'efface pas quand il n'en envoie pas (elle clignotait d'un jour à
+        # l'autre, revue du lot qualité).
         conn.execute(
-            "UPDATE catalog.media m SET cover_url = COALESCE(t.cover_url, m.cover_url),"
+            "UPDATE catalog.media m SET cover_url = COALESCE(m.cover_url, t.cover_url),"
+            " cover_source = CASE WHEN m.cover_url IS NULL AND t.cover_url IS NOT NULL"
+            " THEN 'jikan' ELSE m.cover_source END, updated_at = now()"
+            " FROM tmp_ing t WHERE m.kind = 'anime' AND m.mal_id = t.mal_id"
+            " AND m.data_source IN (%s, %s)",
+            (KAGGLE_SOURCE, JIKAN_SOURCE),
+        )
+        conn.execute(
+            "UPDATE catalog.media m SET"
             " airing_status = COALESCE(t.airing_status, m.airing_status), updated_at = now()"
             " FROM tmp_ing t WHERE m.kind = 'anime' AND m.mal_id = t.mal_id"
             " AND m.data_source = %s",
@@ -171,32 +197,57 @@ def upsert_daily_stats(
 COVER_URL_PREFIX = "https://s4.anilist.co/file/anilistcdn/"
 
 
-def missing_anime_covers(conn: psycopg.Connection) -> list[int]:
-    """idMal des animes sans couverture, les plus populaires d'abord (rang le plus bas)."""
+def is_trusted_cover(url: object) -> bool:
+    """URL du CDN d'AniList, et pas son image par défaut (« default.jpg »)."""
+    return (isinstance(url, str) and url.startswith(COVER_URL_PREFIX)
+            and not url.rsplit("/", 1)[-1].startswith("default."))  # fmt: skip
+
+
+def anime_cover_targets(conn: psycopg.Connection) -> list[int]:
+    """idMal des animes à (re)demander à AniList, les plus populaires d'abord :
+    - sans jaquette ;
+    - avec une PETITE image AniList (chemin /cover/medium/, 230 px) : la grande existe (460 px).
+    Jamais une image MyAnimeList (Jikan) ni une jaquette validée par Royston. Un titre pour
+    lequel AniList n'a pas de grande image reste demandé à chaque passage (cas non observé sur
+    l'échantillon du 2026-11-22 ; coût : une place dans un lot de 50)."""
     rows = conn.execute(
         "SELECT mal_id FROM catalog.media WHERE kind = 'anime' AND mal_id IS NOT NULL"
-        " AND cover_url IS NULL ORDER BY popularity NULLS LAST, mal_id"
+        " AND (cover_url IS NULL OR (cover_source = 'anilist' AND cover_url LIKE %s))"
+        " ORDER BY popularity NULLS LAST, mal_id",
+        (COVER_URL_PREFIX + "%/cover/medium/%",),
     ).fetchall()
     return [r[0] for r in rows]
 
 
-def fill_anime_covers(conn: psycopg.Connection, covers: dict[int, str | None]) -> int:
-    """Remplit cover_url des animes qui n'en ont pas. Une couverture existante n'est jamais
-    remplacée ; c'est le seul champ touché (lignes du dataset 2020 protégées, ADR 007)."""
-    rows = [(mal, url) for mal, url in covers.items()
-            if isinstance(url, str) and url.startswith(COVER_URL_PREFIX)]  # fmt: skip
+def missing_anime_count(conn: psycopg.Connection) -> int:
+    """Animes sans jaquette qu'AniList pourrait remplir (avec un idMal)."""
+    return conn.execute(
+        "SELECT count(*) FROM catalog.media WHERE kind = 'anime' AND mal_id IS NOT NULL"
+        " AND cover_url IS NULL"
+    ).fetchone()[0]
+
+
+def apply_anime_covers(conn: psycopg.Connection, covers: dict[int, dict[str, str | None]]) -> int:
+    """Jaquettes AniList des animes ({idMal: {url, color}}) : remplit les absentes et remplace
+    les petites images AniList. Seuls les champs de jaquette sont touchés (lignes du dataset 2020
+    protégées, ADR 007) ; jamais une image MyAnimeList ni une jaquette validée par Royston."""
+    rows = [(mal, c["url"], c.get("color")) for mal, c in covers.items()
+            if isinstance(c, dict) and is_trusted_cover(c.get("url"))]  # fmt: skip
     if not rows:
         return 0
     with conn.transaction():
-        conn.execute("CREATE TEMP TABLE tmp_cover (mal_id integer, url text) ON COMMIT DROP")
-        with conn.cursor().copy("COPY tmp_cover (mal_id, url) FROM STDIN") as copy:
+        conn.execute("CREATE TEMP TABLE tmp_cover (mal_id integer, url text, color text)"
+                     " ON COMMIT DROP")  # fmt: skip
+        with conn.cursor().copy("COPY tmp_cover (mal_id, url, color) FROM STDIN") as copy:
             for row in rows:
                 copy.write_row(row)
         updated = conn.execute(
-            "UPDATE catalog.media m SET cover_url = t.url, updated_at = now() FROM tmp_cover t"
-            " WHERE m.kind = 'anime' AND m.mal_id = t.mal_id AND m.cover_url IS NULL"
+            "UPDATE catalog.media m SET cover_url = t.url, cover_color = t.color,"
+            " cover_source = 'anilist', updated_at = now() FROM tmp_cover t"
+            " WHERE m.kind = 'anime' AND m.mal_id = t.mal_id"
+            " AND (m.cover_url IS NULL OR (m.cover_source = 'anilist' AND m.cover_url <> t.url))"
         ).rowcount
-    logger.info("catalog.media : %d couverture(s) d'anime ajoutée(s)", updated)
+    logger.info("catalog.media : %d jaquette(s) d'anime ajoutée(s) ou agrandie(s)", updated)
     return updated
 
 
@@ -225,11 +276,13 @@ def upsert_anilist_media(
             " SELECT 1 FROM catalog.media m WHERE m.kind = t.kind AND m.mal_id = t.mal_id"
             " AND m.anilist_id IS DISTINCT FROM t.anilist_id)"
         ).rowcount
-        updatable = [c for c in COLUMNS if c != "anilist_id"]
+        updatable = [c for c in COLUMNS if c != "anilist_id" and c not in COVER_COLUMNS]
         inserted = conn.execute(sql.SQL(
             "INSERT INTO catalog.media ({c}, data_source) SELECT {c}, %s FROM tmp_ing"
-            " ON CONFLICT (anilist_id) DO UPDATE SET {u}, updated_at = now() RETURNING (xmax = 0)"
-        ).format(c=_ids(COLUMNS), u=_assign(updatable, "EXCLUDED")),
+            " ON CONFLICT (anilist_id) DO UPDATE SET {u}, {k}, updated_at = now()"
+            " RETURNING (xmax = 0)"
+        ).format(c=_ids(COLUMNS), u=_assign(updatable, "EXCLUDED"),
+                 k=_keep_approved_cover("media", "EXCLUDED")),
             (ANILIST_SOURCE,)).fetchall()  # fmt: skip
         _replace_labels(conn, records, "anilist_id", ANILIST_SOURCE)
         # Titre sorti du top récupéré : son ancien rang n'a plus de sens (deux titres finiraient

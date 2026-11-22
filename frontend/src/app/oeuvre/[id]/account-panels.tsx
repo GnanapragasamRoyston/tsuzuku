@@ -6,16 +6,17 @@
  */
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import Link from "next/link";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 
 import { Button, ButtonLink } from "@/components/ui/button";
+import { TextField } from "@/components/ui/text-field";
 import { LIST_KEY, useAddPlanned, useEntry, useUpdateEntry } from "@/hooks/use-list";
 import { useMe } from "@/hooks/use-me";
 import { apiFetch } from "@/lib/api";
-import { messageFor } from "@/lib/errors";
+import { ApiError, messageFor } from "@/lib/errors";
 import { formatPercent, STATUS_LABEL } from "@/lib/format";
 import { progressLabel, toUpdate } from "@/lib/progress";
 import type { DropRisk, ListEntry } from "@/lib/types";
@@ -206,5 +207,86 @@ export function DropRiskPanel({ mediaId }: { mediaId: number }) {
           : ""}
       </p>
     </div>
+  );
+}
+
+// --- Proposer une jaquette (ADR 012) ------------------------------------------------------------
+function suggestionError(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.status === 422) {
+      return "Adresse refusée : une image d'AniList, de MyAnimeList ou de Kitsu, en https://.";
+    }
+    if (error.status === 409) return "Tu as déjà proposé cette image.";
+    if (error.status === 429) return "Trop de propositions aujourd'hui. Réessaie demain.";
+  }
+  return messageFor(error, "save");
+}
+
+/** Lien discret sous la jaquette : une URL d'image, jamais un fichier. Rien ne s'affiche avant
+ *  la validation de Royston. Réservé aux comptes (un visiteur ne voit rien). */
+export function CoverSuggestion({ mediaId }: { mediaId: number }) {
+  const me = useMe();
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const send = useMutation({
+    mutationFn: (url: string) =>
+      apiFetch<{ status: string }>(`/media/${mediaId}/cover-suggestions`, {
+        method: "POST",
+        body: { url },
+      }),
+    onMutate: () => setError(null),
+    onError: (e) => setError(suggestionError(e)),
+  });
+
+  if (!me.data) return null;
+  if (send.isSuccess) {
+    return (
+      <p role="status" className="text-small text-ink-2">
+        Merci, on la vérifie avant de l&apos;afficher.
+      </p>
+    );
+  }
+  if (!open) {
+    return (
+      <Button variant="quiet" className="self-start" onClick={() => setOpen(true)}>
+        Proposer une jaquette
+      </Button>
+    );
+  }
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    send.mutate(String(new FormData(event.currentTarget).get("url") ?? "").trim());
+  }
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      <TextField
+        label="Adresse de l'image"
+        name="url"
+        type="url"
+        inputMode="url"
+        required
+        autoFocus
+        placeholder="https://s4.anilist.co/…"
+        help="Une image d'AniList, de MyAnimeList ou de Kitsu. Elle s'affichera après vérification."
+        error={error}
+      />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" loading={send.isPending}>
+          Envoyer
+        </Button>
+        <Button
+          type="button"
+          variant="quiet"
+          onClick={() => {
+            // Rouvrir le formulaire ne doit pas montrer l'ancienne erreur sur un champ vide.
+            setError(null);
+            send.reset();
+            setOpen(false);
+          }}
+        >
+          Annuler
+        </Button>
+      </div>
+    </form>
   );
 }

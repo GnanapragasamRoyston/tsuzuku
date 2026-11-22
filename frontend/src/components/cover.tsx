@@ -1,6 +1,7 @@
 /**
- * Jaquette 2:3 (DESIGN.md § 5.1). Sans image (dataset 2020, image absente ou en erreur) : rendu
- * de secours de même taille, avec le type et le titre en serif, pour que la grille ne saute pas.
+ * Jaquette 2:3 (DESIGN.md § 5.1). Sans image (dataset 2020, image absente ou en erreur) : une
+ * jaquette de secours composée (ton de la palette « jaquette », type et année, filet, titre en
+ * serif), de même taille, pour que la grille ne saute pas et que l'absence ait l'air voulue.
  */
 "use client";
 
@@ -9,6 +10,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 import { kindLabel } from "@/lib/format";
+import { JACKET_CLASS, jacketTone } from "@/lib/jacket";
 import type { MediaSummary } from "@/lib/types";
 
 type CoverSize = "row" | "list" | "fluid";
@@ -22,7 +24,8 @@ const SIZES: Record<CoverSize, string> = {
 };
 
 interface CoverProps {
-  media: Pick<MediaSummary, "title" | "kind" | "cover_url">;
+  media: Pick<MediaSummary, "title" | "kind" | "cover_url"> &
+    Partial<Pick<MediaSummary, "start_year" | "cover_color">>;
   size?: CoverSize;
   /** Chargement immédiat (au-dessus de la ligne de flottaison ; « priority » est déprécié en
    *  Next 16). */
@@ -36,7 +39,8 @@ export function Cover({ media, size = "fluid", eager = false, className }: Cover
   return (
     <div
       className={clsx(
-        "relative aspect-2/3 shrink-0 overflow-hidden rounded-md border border-line bg-surface",
+        "relative aspect-2/3 shrink-0 overflow-hidden rounded-md border border-line",
+        showImage ? "bg-surface" : JACKET_CLASS[jacketTone(media)],
         WIDTH[size],
         className,
       )}
@@ -62,14 +66,19 @@ export function Cover({ media, size = "fluid", eager = false, className }: Cover
         >
           <span className="text-meta font-semibold tracking-meta text-ink-2 uppercase">
             {kindLabel(media.kind)}
+            {size !== "list" && media.start_year ? ` · ${media.start_year}` : ""}
           </span>
-          <span
-            className={clsx(
-              "line-clamp-3 font-display font-semibold text-ink",
-              size === "list" ? "text-small" : "text-h3",
-            )}
-          >
-            {media.title}
+          <span className="flex flex-col gap-2">
+            {/* Filet encre de 2 px : la marque d'une couverture de carnet (« Journal de bord »). */}
+            {size !== "list" && <span className="w-6 border-t-2 border-ink" />}
+            <span
+              className={clsx(
+                "line-clamp-3 font-display font-semibold text-ink",
+                size === "list" ? "text-small" : "text-h3",
+              )}
+            >
+              {media.title}
+            </span>
           </span>
         </div>
       )}

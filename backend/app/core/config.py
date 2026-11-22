@@ -54,6 +54,9 @@ class ApiRules(BaseModel):
     profile_min_finished_for_drop_rate: int = Field(ge=1)
     profile_top_genres: int = Field(ge=1)
     profile_recent_scores: int = Field(ge=1)
+    cover_suggestion_prefixes: list[str] = Field(min_length=1)
+    cover_suggestions_per_day: int = Field(ge=1)
+    cover_url_max_length: int = Field(ge=20)
     jikan: JikanSettings
     auth: AuthRules
 

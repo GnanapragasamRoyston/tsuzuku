@@ -8,6 +8,24 @@ from dataclasses import dataclass, field
 from html import unescape
 
 
+def display_titles(original: str | None, english: str | None) -> tuple[str, str | None]:
+    """(titre affiché, titre secondaire). Le titre anglais d'abord, celui que tout le monde
+    connaît (« Solo Leveling » et non « Na Honjaman Level Up ») ; le titre d'origine romanisé
+    reste en titre secondaire, donc trouvable par la recherche. S'ils ne diffèrent que par la
+    ponctuation, les espaces ou la casse (« Fullmetal Alchemist:Brotherhood »), l'original est
+    gardé, souvent mieux écrit, et il n'y a pas de titre secondaire en double."""
+    original = (original or "").strip() or None
+    english = (english or "").strip() or None
+    if not english or (original and title_key(english) == title_key(original)):
+        return original or english or "", None
+    return english, original
+
+
+def title_key(title: str) -> str:
+    """Titre réduit à ses lettres et chiffres ASCII, en minuscules (même règle que Spark)."""
+    return re.sub(r"[^0-9a-z]", "", title.lower())
+
+
 @dataclass(frozen=True)
 class MediaRecord:
     """Une œuvre, au format des colonnes de catalog.media (+ genres et tags)."""
@@ -28,6 +46,10 @@ class MediaRecord:
     source: str | None = None
     age_rating: str | None = None
     cover_url: str | None = None
+    # Couleur dominante de la jaquette (#rrggbb, fournie par AniList) et origine de l'image
+    # ('anilist', 'jikan' ; 'suggestion' = proposée par un utilisateur et validée par Royston).
+    cover_color: str | None = None
+    cover_source: str | None = None
     popularity: int | None = None
     genres: tuple[str, ...] = ()
     tags: tuple[tuple[str, int], ...] = field(default_factory=tuple)  # (nom, rang 0-100)

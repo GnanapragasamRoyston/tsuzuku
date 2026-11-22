@@ -40,13 +40,15 @@ discrète : la couleur signale, elle ne décore pas.
 | `on-accent` | `#14142B` | texte posé sur le corail (bleu nuit du logo) |
 | `good` | `#7DB4F0` | « bon signe » : risque faible, point de non-retour |
 | `chart` | `#6E7182` | barres ordinaires de la courbe de drop |
+| `jacket-wine` · `jacket-umber` · `jacket-moss` | `#3A1F2A` · `#3A2A1C` · `#26301F` | fond de la jaquette de secours (§ 5.1) |
+| `jacket-teal` · `jacket-indigo` · `jacket-plum` | `#1A2F31` · `#1F2440` · `#2F2140` | fond de la jaquette de secours (§ 5.1) |
 
 Bleu et corail plutôt que vert et rouge : ils restent distincts pour les daltoniens les plus
 courants (deutéranopie, protanopie) et diffèrent aussi en luminosité.
 
 ### 1.2 Contrastes vérifiés (WCAG 2.2 AA)
 
-Calculés avec la formule de luminance relative de WCAG (script : 26 paires, 2026-11-21). Seuils :
+Calculés avec la formule de luminance relative de WCAG (script : 26 paires le 2026-11-21, 38 avec les jaquettes le 2026-11-22). Seuils :
 4,5:1 pour le texte, 3:1 pour le texte ≥ 24 px (ou ≥ 18,66 px gras) et les éléments d'interface.
 
 | Premier plan | Fond | Ratio | Usage autorisé |
@@ -58,6 +60,8 @@ Calculés avec la formule de luminance relative de WCAG (script : 26 paires, 202
 | `good` | `bg` / `surface` / `raised` | 8,87 / 8,30 / 7,71 | texte et marqueurs « bon signe » |
 | `line-strong` | `bg` / `surface` / `raised` / `hover` | 4,06 / 3,79 / 3,53 / 3,24 | bords de champs et de contrôles (≥ 3:1) |
 | `chart` | `bg` / `surface` | 3,99 / 3,73 | barres de données (≥ 3:1) |
+| `ink` | les 6 `jacket-*` | 11,43 à 12,61 | titre de la jaquette de secours |
+| `ink-2` | les 6 `jacket-*` | 5,52 à 6,09 | type et année de la jaquette de secours |
 
 **Combinaisons interdites** :
 - `ink` sur `accent` (2,33) : jamais de texte blanc sur le corail, toujours `on-accent` ;
@@ -232,9 +236,13 @@ Un écran stable n'utilise ni asymétrie, ni chiffre `figure` décoratif, ni ban
   titre est toujours écrit à côté de la jaquette, il serait sinon lu deux fois par les lecteurs
   d'écran (revue de la phase 8). Une jaquette seule, sans titre visible, porterait le titre en
   `alt`.
-- **Sans image** (dataset 2020, image absente ou en erreur) : fond `surface`, titre en Fraunces
-  600 `h3` (coupé à 3 lignes) en bas à gauche, type (« ANIME », « MANHWA ») en `meta` en haut.
-  Même taille que l'image : la grille ne saute pas.
+- **Sans image** (dataset 2020, image absente ou en erreur) : une composition voulue, pas une
+  erreur. Fond d'un des six tons `jacket-*` ; en haut, type et année en `meta` `ink-2`
+  (« MANHWA · 2018 ») ; en bas, un filet `ink` de 2 px sur 24 px puis le titre en Fraunces 600
+  `h3` (coupé à 3 lignes). Le ton vient de la couleur dominante fournie par AniList, ramenée au
+  ton de teinte la plus proche (jamais affichée brute) ; sans couleur, le titre choisit le ton,
+  toujours le même pour une œuvre (`lib/jacket.ts`). Même taille que l'image : la grille ne saute
+  pas. Dans une ligne de liste (88 px) : type seul en haut, titre en `small`.
 - Survol (si c'est un lien) : bord `line-strong`, titre souligné sous la jaquette.
 - Chargement : squelette `surface` 2:3.
 - Tailles : 160 px de large en rangée desktop, 2 colonnes sur mobile, 88 px dans une ligne de liste.
@@ -357,6 +365,8 @@ Exemples de micro-textes :
 | erreur de connexion | Email ou mot de passe incorrect. |
 | trop de tentatives | Trop d'essais. Réessaie dans 5 minutes. |
 | risque sans données | Pas encore assez de données pour les manhwas. On ne va pas inventer un chiffre. |
+| fiche, sous la jaquette | Proposer une jaquette |
+| proposition envoyée | Merci, on la vérifie avant de l'afficher. |
 
 ---
 

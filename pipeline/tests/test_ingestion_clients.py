@@ -129,3 +129,42 @@ def test_anilist_graphql_errors_are_failures():
 
 def test_clean_text_handles_empty():
     assert clean_text("") is None and clean_text(None) is None
+
+
+CDN = "https://s4.anilist.co/file/anilistcdn/media/manga/cover"
+
+
+# --- Titres et jaquettes (lot « qualité des jaquettes ») -----------------------------------------
+@pytest.mark.parametrize(("titles", "title", "alt"), [
+    ({"romaji": "Na Honjaman Level Up", "english": "Solo Leveling"}, "Solo Leveling",
+     "Na Honjaman Level Up"),
+    ({"romaji": "One Piece", "english": "One Piece"}, "One Piece", None),
+    ({"romaji": "Oshi no Ko", "english": None}, "Oshi no Ko", None),
+    # Ne diffèrent que par la ponctuation ou les espaces : l'original, mieux écrit, est gardé.
+    ({"romaji": "Fullmetal Alchemist: Brotherhood", "english": "Fullmetal Alchemist:Brotherhood"},
+     "Fullmetal Alchemist: Brotherhood", None),
+])  # fmt: skip
+def test_anilist_shows_the_english_title_first(titles, title, alt):
+    # Le titre que tout le monde connaît (Solo Leveling) ; le romaji reste cherchable en titre_alt.
+    r = anilist_client.media_record({**ANILIST_ITEM, "title": titles}, 1, 60)
+    assert (r.title, r.title_alt) == (title, alt)
+
+
+def test_jikan_shows_the_english_title_first():
+    r = jikan_client.media_record(JIKAN_ITEM)
+    assert (r.title, r.title_alt) == ("Frieren", "Sousou no Frieren")
+
+
+@pytest.mark.parametrize(("cover", "url", "color"), [
+    # extraLarge (460 px de large, mesuré le 2026-11-22) plutôt que large (230 px).
+    ({"extraLarge": f"{CDN}/large/b.jpg", "large": f"{CDN}/medium/b.jpg", "color": "#E4A15D"},
+     f"{CDN}/large/b.jpg", "#e4a15d"),
+    ({"large": f"{CDN}/medium/b.jpg", "color": None}, f"{CDN}/medium/b.jpg", None),
+    # Image par défaut d'AniList : ce n'est pas une jaquette.
+    ({"extraLarge": f"{CDN}/large/default.jpg", "color": "#fff"}, None, None),
+    ({"extraLarge": f"{CDN}/large/c.jpg", "color": "rouge"}, f"{CDN}/large/c.jpg", None),
+])  # fmt: skip
+def test_anilist_best_cover_and_color(cover, url, color):
+    r = anilist_client.media_record({**ANILIST_ITEM, "coverImage": cover}, 1, 60)
+    assert (r.cover_url, r.cover_color) == (url, color)
+    assert r.cover_source == ("anilist" if url else None)

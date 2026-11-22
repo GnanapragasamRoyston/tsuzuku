@@ -77,6 +77,10 @@ def _connection(conn=None):
         yield c
 
 
+# Public pour la ligne de commande (make covers-report) : même connexion que les tâches.
+connection = _connection
+
+
 def _client(cfg: dict[str, Any], base_url: str, transport: httpx.BaseTransport | None,
             sleep=None) -> PoliteClient:  # fmt: skip
     kwargs = {"sleep": sleep} if sleep else {}
@@ -296,27 +300,28 @@ def anilist_quality(settings: dict[str, Any], day: dt.date, conn=None) -> dict[s
 
 def anilist_covers(settings: dict[str, Any], day: dt.date, transport=None, sleep=None,
                    conn=None) -> dict[str, Any]:  # fmt: skip
-    """Couvertures manquantes des animes, par lots d'idMal → catalog.media.cover_url.
+    """Jaquettes des animes, par lots d'idMal → catalog.media (cover_url, cover_color).
 
     Les animes du dataset 2020 n'ont pas d'image, et Jikan (qui en fournit) est en panne depuis
-    la phase 6. AniList les connaît par leur idMal. Seules les couvertures absentes sont
-    remplies : relancer ne refait rien (idempotent). Les URL reçues sont gardées dans
+    la phase 6. AniList les connaît par leur idMal. Sont demandées les jaquettes absentes et les
+    petites images AniList (230 px, remplacées par les 460 px) : relancer ne refait rien
+    (idempotent). Les URL reçues sont gardées dans
     covers.json pour rejouer ou auditer.
     """
     cfg = require_section(settings, "ingestion")["anilist"]
     size = int(cfg["covers_batch_size"])
     with _connection(conn) as c:
-        missing = catalog_loader.missing_anime_covers(c)
-        found: dict[int, str] = {}
+        targets = catalog_loader.anime_cover_targets(c)
+        found: dict[int, dict[str, str | None]] = {}
         with _client(cfg, cfg["url"], transport, sleep) as client:
-            for start in range(0, len(missing), size):
-                found.update(anilist_client.fetch_covers(client, missing[start : start + size]))
+            for start in range(0, len(targets), size):
+                found.update(anilist_client.fetch_covers(client, targets[start : start + size]))
         _write(raw_dir(settings, ANILIST_SOURCE, day) / "covers.json",
                {str(k): v for k, v in found.items()})  # fmt: skip
-        updated = catalog_loader.fill_anime_covers(c, found)
-        remaining = len(catalog_loader.missing_anime_covers(c))
+        updated = catalog_loader.apply_anime_covers(c, found)
+        remaining = catalog_loader.missing_anime_count(c)
     report = {"dag": "anilist_catalog_sync", "task": "covers", "run_date": day.isoformat(),
-              "missing": len(missing), "found": len(found), "updated": updated,
+              "requested": len(targets), "found": len(found), "updated": updated,
               "still_missing": remaining}  # fmt: skip
     _report(settings, "covers", day, report)
     logger.info("Couvertures AniList : %s", report)

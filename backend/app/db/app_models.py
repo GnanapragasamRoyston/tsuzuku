@@ -23,6 +23,7 @@ from sqlalchemy import (
     Integer,
     SmallInteger,
     Text,
+    UniqueConstraint,
     false,
     func,
 )
@@ -116,6 +117,37 @@ class ListEntry(Base):
     updated_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+COVER_SUGGESTION_STATUSES = ("pending", "approved", "rejected")
+
+
+class CoverSuggestion(Base):
+    """Jaquette proposée par un utilisateur, en attente de la validation de Royston (ADR 012)."""
+
+    __tablename__ = "cover_suggestion"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN (" + ", ".join(f"'{s}'" for s in COVER_SUGGESTION_STATUSES) + ")",
+            name="cover_suggestion_status",
+        ),
+        # Une même image ne se propose qu'une fois par personne et par œuvre.
+        UniqueConstraint("user_id", "media_id", "url", name="cover_suggestion_once"),
+        # File de modération (en attente, plus anciennes d'abord) et limite quotidienne.
+        Index("cover_suggestion_status_idx", "status", "created_at"),
+        Index("cover_suggestion_user_idx", "user_id", "created_at"),
+        {"schema": SCHEMA},
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("app.users.id", ondelete="CASCADE"))
+    media_id: Mapped[int] = mapped_column(ForeignKey("catalog.media.id", ondelete="CASCADE"))
+    url: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(Text, server_default="pending")
+    created_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    reviewed_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class OnboardingChoice(Base):

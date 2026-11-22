@@ -29,7 +29,7 @@ class ListFull(Exception):
     pass
 
 
-def _lock_account(session: Session, user_id: int) -> None:
+def lock_account(session: Session, user_id: int) -> None:
     """Verrouille la ligne du compte jusqu'à la fin de la transaction (SELECT … FOR UPDATE).
 
     Les écritures d'un même compte passent l'une après l'autre : deux PUT simultanés ne
@@ -117,7 +117,7 @@ def upsert(
                 raise InvalidEntry(f"{field} ({values[field]}) dépasse le total de l'œuvre "
                                    f"({total})")  # fmt: skip
 
-    _lock_account(session, user_id)
+    lock_account(session, user_id)
     exists = session.get(ListEntry, (user_id, media_id)) is not None
     if exists and create_only:
         # Vérifié sous le verrou du compte : pas de course avec un autre ajout simultané.
@@ -161,7 +161,7 @@ def set_onboarding(session: Session, user_id: int, media_ids: list[int], rules: 
     if missing:
         raise InvalidEntry(f"œuvres introuvables : {missing[:10]}")
     # Remplace les choix précédents (refaire l'onboarding), dans une seule transaction.
-    _lock_account(session, user_id)
+    lock_account(session, user_id)
     session.execute(delete(OnboardingChoice).where(OnboardingChoice.user_id == user_id))
     session.add_all(OnboardingChoice(user_id=user_id, media_id=m) for m in media_ids)
     session.commit()

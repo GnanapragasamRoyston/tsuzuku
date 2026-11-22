@@ -101,6 +101,14 @@ class ExportUser(BaseModel):
     profile_public: bool
 
 
+class ExportCoverSuggestion(BaseModel):
+    media_id: int
+    title: str
+    url: str
+    status: str
+    created_at: dt.datetime
+
+
 class AccountExport(BaseModel):
     """Toutes les données personnelles du compte (droit d'accès et de portabilité, RGPD art. 15
     et 20). Le hash du mot de passe et la version de jeton n'en font pas partie : ce sont des
@@ -110,3 +118,4 @@ class AccountExport(BaseModel):
     user: ExportUser
     list: list[ExportListEntry]
     onboarding: list[ExportOnboardingChoice]
+    cover_suggestions: list[ExportCoverSuggestion]

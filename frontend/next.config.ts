@@ -46,6 +46,9 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       new URL("https://s4.anilist.co/file/anilistcdn/**"),
       new URL("https://cdn.myanimelist.net/images/**"),
+      // Jaquettes proposées par les utilisateurs et validées par Royston (ADR 012) : mêmes
+      // domaines que cover_suggestion_prefixes de settings.yaml.
+      new URL("https://media.kitsu.app/**"),
     ],
   },
   async rewrites() {

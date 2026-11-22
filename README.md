@@ -134,6 +134,7 @@ d'un risque de drop chiffré.
 | POST | `/me/onboarding` | au moins 10 œuvres aimées |
 | GET | `/me/recommendations?kind=anime` | recos depuis l'onboarding et la liste (manga/manhwa : phase 10) |
 | GET | `/me/drop-risk/{media_id}` | risque de drop depuis ma liste |
+| POST | `/media/{id}/cover-suggestions` | proposer une jaquette (URL d'un domaine autorisé, modération) |
 | GET | `/users/{pseudo}` | profil public (phase 9) : chiffres, genres favoris, dernières notes ; même 404 pour un profil privé ou inconnu |
 
 Sécurité ([ADR 008](docs/decisions/008-comptes-et-listes.md)) : mots de passe hachés en argon2id,
@@ -170,8 +171,15 @@ Tests : `make web-test` (Vitest : logique et garde-fous du design) et `make web-
 375 et 1440 px). Choix de la phase 9 : [ADR 011](docs/decisions/011-front-partie-2.md).
 
 Couvertures : le dataset 2020 n'a pas d'images. `make covers` (et le DAG AniList chaque semaine)
-les récupère sur AniList par identifiant MAL : 13 779 animes sur 16 214 en ont une
-(`reports/exploration_2026-11-20.json`) ; les autres gardent une jaquette de secours.
+les récupère sur AniList par identifiant MAL, dans la plus grande taille proposée ; les
+œuvres sans image ont une jaquette de secours composée (palette « jaquette » de DESIGN.md).
+Couverture par type, source et popularité : `make covers-report` →
+`reports/covers_coverage.json`. Titres : le titre anglais d'abord (« Solo Leveling »), le romaji
+reste cherchable. Choix : [ADR 012](docs/decisions/012-qualite-des-jaquettes.md).
+
+« Proposer une jaquette » (fiche œuvre) : une URL d'image d'AniList, MyAnimeList ou Kitsu, mise en
+file de modération ; rien ne s'affiche avant validation (`make covers-review`,
+`make covers-approve ID=…`, `make covers-reject ID=…`). L'API ne télécharge jamais l'URL.
 
 ## Ingestion (phase 6)
 

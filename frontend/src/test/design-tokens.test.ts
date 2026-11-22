@@ -38,6 +38,11 @@ const ALLOWED_PAIRS: [string, string, number][] = [
   ["on-accent", "accent-hover", 4.5],
   ["chart", "bg", 3],
   ["chart", "surface", 3],
+  // Jaquettes de secours : titre (ink) et type, année (ink-2) posés sur chaque ton.
+  ...["wine", "umber", "moss", "teal", "indigo", "plum"].flatMap((t): [string, string, number][] => [
+    ["ink", `jacket-${t}`, 4.5],
+    ["ink-2", `jacket-${t}`, 4.5],
+  ]),
 ];
 
 describe("contrastes des tokens (WCAG AA)", () => {

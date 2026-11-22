@@ -69,7 +69,7 @@ def test_check_constraints_match_models(pg_url):
                 " ON n.oid = c.connamespace WHERE n.nspname = 'app' AND c.contype = 'c'"
             )
         }
-    assert found == expected and len(expected) == 7
+    assert found == expected and len(expected) == 8  # dont cover_suggestion_status (lot qualité)
 
 
 def test_migrations_go_down_and_up_without_touching_pipeline_schemas(pg_url, clean_users):

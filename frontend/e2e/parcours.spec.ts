@@ -94,6 +94,16 @@ test("inscription → onboarding → recos → ajout → +1 ép. → fiche et no
   await page.locator("label").filter({ has: eight }).click();
   await expect(eight).toBeChecked();
   await expect(page.getByText("8/10", { exact: true })).toBeVisible();
+
+  // Proposer une jaquette : adresse hors liste refusée, adresse AniList mise en file de modération
+  await page.getByRole("button", { name: "Proposer une jaquette" }).click();
+  const coverUrl = page.getByLabel("Adresse de l'image");
+  await coverUrl.fill("https://exemple.test/image.jpg");
+  await page.getByRole("button", { name: "Envoyer" }).click();
+  await expect(page.getByText(/Adresse refusée/)).toBeVisible();
+  await coverUrl.fill("https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1-e2e.jpg");
+  await page.getByRole("button", { name: "Envoyer" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "on la vérifie" })).toBeVisible();
   await checkScreen(page, "fiche");
 
   // 7. Profil public : privé par défaut, ouvert depuis Compte, la note y apparaît

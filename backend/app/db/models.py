@@ -37,6 +37,9 @@ class Media(Base):
     source: Mapped[str | None] = mapped_column(Text)
     age_rating: Mapped[str | None] = mapped_column(Text)
     cover_url: Mapped[str | None] = mapped_column(Text)
+    # Couleur dominante AniList (#rrggbb) et origine de la jaquette (lot qualité, ADR 012).
+    cover_color: Mapped[str | None] = mapped_column(Text)
+    cover_source: Mapped[str | None] = mapped_column(Text)
     popularity: Mapped[int | None] = mapped_column(Integer)
     data_source: Mapped[str] = mapped_column(Text)
 

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import AuthRules
 from app.core.security import PasswordHasher
-from app.db.app_models import ListEntry, OnboardingChoice, User
+from app.db.app_models import CoverSuggestion, ListEntry, OnboardingChoice, User
 from app.db.models import Media
 from app.schemas.auth import RegisterRequest
 
@@ -107,6 +107,12 @@ def export(session: Session, user: User) -> dict:
         .where(OnboardingChoice.user_id == user.id)
         .order_by(OnboardingChoice.media_id)
     ).all()
+    suggestions = session.execute(
+        select(CoverSuggestion, Media.title)
+        .join(Media, Media.id == CoverSuggestion.media_id)
+        .where(CoverSuggestion.user_id == user.id)
+        .order_by(CoverSuggestion.created_at)
+    ).all()
     return {
         "exported_at": dt.datetime.now(dt.UTC),
         "user": {
@@ -137,4 +143,14 @@ def export(session: Session, user: User) -> dict:
             {"media_id": c.media_id, "title": title, "created_at": c.created_at}
             for c, title in choices
         ],
+        "cover_suggestions": [
+            {
+                "media_id": c.media_id,
+                "title": title,
+                "url": c.url,
+                "status": c.status,
+                "created_at": c.created_at,
+            }
+            for c, title in suggestions
+        ],  # fmt: skip
     }

@@ -17,7 +17,7 @@ import { ApiError } from "@/lib/errors";
 import { formatInt, formatPercent, mediaMeta } from "@/lib/format";
 import type { MediaDetail } from "@/lib/types";
 
-import { DropRiskPanel, EntryPanel } from "./account-panels";
+import { CoverSuggestion, DropRiskPanel, EntryPanel } from "./account-panels";
 
 
 type Params = Promise<{ id: string }>;
@@ -77,8 +77,9 @@ async function Fiche({ params }: { params: Params }) {
   return (
     <article className={`${PAGE} flex flex-col gap-12 py-12`}>
       <header className="grid gap-8 md:grid-cols-12">
-        <div className="w-2/3 md:col-span-4 md:w-full lg:col-span-3">
+        <div className="flex w-2/3 flex-col gap-2 md:col-span-4 md:w-full lg:col-span-3">
           <Cover media={media} eager />
+          <CoverSuggestion mediaId={media.id} />
         </div>
         <div className="flex flex-col gap-4 md:col-span-8 lg:col-span-9">
           <p className="text-meta font-semibold tracking-meta text-ink-2 uppercase">

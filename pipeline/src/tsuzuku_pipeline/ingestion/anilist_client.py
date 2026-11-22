@@ -8,10 +8,11 @@ Chez AniList, `type: MANGA` couvre aussi les romans (light novels) : ils sont ex
 one-shots (histoires en un chapitre) sont des mangas et sont gardés.
 """
 
+import re
 from typing import Any
 
 from tsuzuku_pipeline.ingestion.http import HttpError, PoliteClient
-from tsuzuku_pipeline.ingestion.records import MediaRecord, as_int, clean_text
+from tsuzuku_pipeline.ingestion.records import MediaRecord, as_int, clean_text, display_titles
 
 KIND_BY_COUNTRY = {"JP": "manga", "KR": "manhwa", "CN": "manhua", "TW": "manhua"}
 # Rôles retenus comme « créateurs » (auteurs), à la place des studios des animes.
@@ -28,7 +29,7 @@ query ($page: Int, $perPage: Int) {
       genres
       tags { name rank isAdult }
       description(asHtml: false)
-      coverImage { large }
+      coverImage { extraLarge large color }
       source(version: 3)
       staff(perPage: 6, sort: RELEVANCE) { edges { role node { name { full } } } }
     }
@@ -42,7 +43,9 @@ query ($page: Int, $perPage: Int) {
 COVERS_QUERY = """
 query ($ids: [Int], $perPage: Int) {
   Page(page: 1, perPage: $perPage) {
-    media(type: ANIME, isAdult: false, idMal_in: $ids) { idMal coverImage { large } }
+    media(type: ANIME, isAdult: false, idMal_in: $ids) {
+      idMal coverImage { extraLarge large color }
+    }
   }
 }
 """
@@ -63,17 +66,35 @@ def fetch_page(client: PoliteClient, page: int, per_page: int) -> dict[str, Any]
     return _graphql(client, QUERY, {"page": page, "perPage": per_page})
 
 
-def parse_covers(page: dict[str, Any]) -> dict[int, str]:
-    """{idMal: url de couverture} ; les titres sans idMal ou sans image sont ignorés."""
+HEX_COLOR = re.compile(r"^#[0-9a-f]{6}$")
+
+
+def best_cover(cover: dict[str, Any] | None) -> str | None:
+    """La plus grande image : extraLarge (460 px de large) plutôt que large (230 px), mesuré le
+    2026-11-22. L'image par défaut d'AniList (« default.jpg ») n'est pas une jaquette."""
+    cover = cover or {}
+    url = cover.get("extraLarge") or cover.get("large")
+    if not isinstance(url, str) or url.rsplit("/", 1)[-1].startswith("default."):
+        return None
+    return url
+
+
+def cover_color(cover: dict[str, Any] | None) -> str | None:
+    color = ((cover or {}).get("color") or "").lower()
+    return color if HEX_COLOR.match(color) else None
+
+
+def parse_covers(page: dict[str, Any]) -> dict[int, dict[str, str | None]]:
+    """{idMal: {url, color}} ; les titres sans idMal ou sans vraie image sont ignorés."""
     covers = {}
     for item in page.get("media") or []:
-        url = (item.get("coverImage") or {}).get("large")
+        url = best_cover(item.get("coverImage"))
         if item.get("idMal") and url:
-            covers[int(item["idMal"])] = url
+            covers[int(item["idMal"])] = {"url": url, "color": cover_color(item.get("coverImage"))}
     return covers
 
 
-def fetch_covers(client: PoliteClient, mal_ids: list[int]) -> dict[int, str]:
+def fetch_covers(client: PoliteClient, mal_ids: list[int]) -> dict[int, dict[str, str | None]]:
     """Couvertures d'un lot d'animes (au plus 50 idMal, la taille de page maximale d'AniList)."""
     return parse_covers(_graphql(client, COVERS_QUERY, {"ids": mal_ids, "perPage": len(mal_ids)}))
 
@@ -97,7 +118,10 @@ def media_record(item: dict[str, Any], rank: int, tag_min_rank: int) -> MediaRec
     kind = KIND_BY_COUNTRY.get(item.get("countryOfOrigin") or "")
     if kind is None or is_adult(item) or item.get("format") == "NOVEL":
         return None
-    title = item.get("title") or {}
+    title, title_alt = display_titles(
+        (item.get("title") or {}).get("romaji"), (item.get("title") or {}).get("english")
+    )
+    cover_url = best_cover(item.get("coverImage"))
     tags = tuple(
         (t["name"], int(t["rank"]))
         for t in item.get("tags") or []
@@ -108,8 +132,8 @@ def media_record(item: dict[str, Any], rank: int, tag_min_rank: int) -> MediaRec
         anilist_id=int(item["id"]),
         # idMal fourni par AniList (jamais deviné, CLAUDE.md § 6).
         mal_id=as_int(item.get("idMal")),
-        title=title.get("romaji") or title.get("english") or "",
-        title_alt=title.get("english"),
+        title=title,
+        title_alt=title_alt,
         synopsis=clean_text(item.get("description")),
         chapters=as_int(item.get("chapters")),
         airing_status=item.get("status"),
@@ -117,7 +141,9 @@ def media_record(item: dict[str, Any], rank: int, tag_min_rank: int) -> MediaRec
         start_year=as_int((item.get("startDate") or {}).get("year")),
         creators=_creators(item),
         source=item.get("source"),
-        cover_url=(item.get("coverImage") or {}).get("large"),
+        cover_url=cover_url,
+        cover_color=cover_color(item.get("coverImage")) if cover_url else None,
+        cover_source="anilist" if cover_url else None,
         # Rang dans le tri par popularité (1 = le plus populaire) : même sémantique que le rang
         # MAL des animes, pour que « trier par popularité » ait un sens dans tout le catalogue.
         popularity=rank,

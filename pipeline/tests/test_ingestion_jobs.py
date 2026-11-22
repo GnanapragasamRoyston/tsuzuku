@@ -246,3 +246,28 @@ def test_anilist_quality_fails_when_too_few_titles(ing_settings, pg):
     ing_settings["ingestion"]["anilist"]["min_share_of_expected"] = 1.0  # 5 titres sur 6 attendus
     with pytest.raises(IngestionError, match="AniList"):
         _run_anilist(ing_settings, pg)
+
+
+def test_anilist_never_replaces_a_cover_approved_by_royston(ing_settings, pg):
+    from tsuzuku_pipeline.ingestion.catalog_loader import upsert_anilist_media
+    from tsuzuku_pipeline.ingestion.records import MediaRecord
+
+    cdn = "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large"
+    rec = MediaRecord(
+        kind="manhwa",
+        title="T",
+        anilist_id=7,
+        popularity=1,
+        cover_url=f"{cdn}/7.jpg",
+        cover_color="#112233",
+        cover_source="anilist",
+    )
+    upsert_anilist_media(pg, [rec])
+    pg.execute(
+        "UPDATE catalog.media SET cover_url = 'https://cdn.myanimelist.net/ok.jpg',"
+        " cover_source = 'suggestion', cover_color = NULL WHERE anilist_id = 7"
+    )
+    upsert_anilist_media(pg, [rec])  # synchro hebdomadaire suivante
+    assert pg.execute(
+        "SELECT cover_url, cover_source FROM catalog.media WHERE anilist_id = 7"
+    ).fetchone() == ("https://cdn.myanimelist.net/ok.jpg", "suggestion")

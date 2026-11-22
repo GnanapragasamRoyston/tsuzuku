@@ -23,6 +23,13 @@
   --color-on-accent: #14142B;
   --color-good: #7DB4F0;
   --color-chart: #6E7182;
+  /* Jaquettes de secours (§ 1.1) : six tons sombres, contrastes ink / ink-2 vérifiés. */
+  --color-jacket-wine: #3A1F2A;
+  --color-jacket-umber: #3A2A1C;
+  --color-jacket-moss: #26301F;
+  --color-jacket-teal: #1A2F31;
+  --color-jacket-indigo: #1F2440;
+  --color-jacket-plum: #2F2140;
   --color-transparent: transparent;
   --color-current: currentColor;
 

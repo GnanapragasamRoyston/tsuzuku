@@ -246,3 +246,34 @@ def test_connect_error_hides_password(caplog):
     assert "s3cr3t" not in str(exc.value)
     assert "s3cr3t" not in caplog.text
     assert exc.value.__cause__ is None
+
+
+def test_schema_cleans_placeholder_covers_and_records_their_source(pg):
+    """Rattrapage idempotent (lot qualité) : image par défaut d'AniList = pas de jaquette ;
+    la source des jaquettes déjà en base est déduite de leur hôte."""
+    cdn = "https://s4.anilist.co/file/anilistcdn/media/anime/cover"
+    pg.execute("ALTER TABLE catalog.media DROP CONSTRAINT media_cover_source_matches_url")
+    for mal, url in (
+        (1, f"{cdn}/medium/default.jpg"),
+        (2, f"{cdn}/medium/2.jpg"),
+        (3, "https://cdn.myanimelist.net/3.jpg"),
+        (4, None),
+    ):
+        pg.execute(
+            "INSERT INTO catalog.media (kind, mal_id, title, cover_url, data_source)"
+            " VALUES ('anime', %s, 't', %s, 'mal_kaggle_2020')",
+            (mal, url),
+        )
+    loader.apply_schemas(pg)
+    rows = dict(
+        pg.execute(
+            "SELECT mal_id, (cover_url, cover_source) FROM catalog.media ORDER BY mal_id"
+        ).fetchall()
+    )
+    assert rows[1] == (None, None)
+    assert rows[2] == (f"{cdn}/medium/2.jpg", "anilist")
+    assert rows[3] == ("https://cdn.myanimelist.net/3.jpg", "jikan")
+    assert rows[4] == (None, None)
+    # Jaquette et source vont ensemble : l'une sans l'autre est refusée.
+    with pytest.raises(psycopg.errors.CheckViolation):
+        pg.execute("UPDATE catalog.media SET cover_source = NULL WHERE mal_id = 2")

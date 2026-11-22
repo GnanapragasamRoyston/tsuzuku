@@ -14,12 +14,26 @@ from pyspark.sql import functions as F
 from tsuzuku_pipeline.db.loader import MEDIA_COLUMNS  # noqa: F401  (ré-exporté)
 
 
+def _title_key(col: str):
+    """Même règle que records.title_key : lettres et chiffres ASCII, en minuscules."""
+    return F.regexp_replace(F.lower(F.col(col)), "[^0-9a-z]", "")
+
+
+def _distinct_english():
+    """Titre anglais présent ET vraiment différent (pas seulement la ponctuation)."""
+    return F.col("english_name").isNotNull() & (_title_key("english_name") != _title_key("name"))
+
+
 def media_rows(anime: DataFrame, synopsis: DataFrame) -> DataFrame:
     return anime.join(synopsis.select("anime_id", "synopsis"), "anime_id", "left").select(
         F.lit("anime").alias("kind"),
         F.col("anime_id").alias("mal_id"),
-        F.col("name").alias("title"),
-        F.col("english_name").alias("title_alt"),
+        # Titre anglais d'abord, celui que tout le monde connaît (« Attack on Titan » et non
+        # « Shingeki no Kyojin ») ; le romaji reste en titre secondaire (cherchable). Même règle
+        # que l'ingestion (records.display_titles).
+        # Titres qui ne diffèrent que par la ponctuation ou les espaces : l'original est gardé.
+        F.when(_distinct_english(), F.col("english_name")).otherwise(F.col("name")).alias("title"),
+        F.when(_distinct_english(), F.col("name")).alias("title_alt"),
         "synopsis",
         "episodes",
         F.col("type").alias("format"),

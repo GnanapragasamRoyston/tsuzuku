@@ -24,6 +24,8 @@ export interface MediaSummary {
   chapters: number | null;
   start_year: number | null;
   cover_url: string | null;
+  /** Couleur dominante AniList : choisit le ton de la jaquette de secours, jamais affichée. */
+  cover_color?: string | null;
   popularity: number | null;
 }
 

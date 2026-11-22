@@ -502,3 +502,36 @@ une surface d'attaque et demande du stockage). Voir [ADR 011](decisions/011-fron
 3. *Pourquoi rendre la fiche côté serveur et le risque côté client ?* — Le catalogue est public et
    identique pour tous : le serveur le rend vite. Le risque dépend de la liste du compte, donc du
    cookie : il est calculé par l'API pour la personne connectée, dans un îlot client.
+
+## Lot « qualité des jaquettes » et titres (2026-11-22)
+**Ce qui a été construit :** jaquettes AniList deux fois plus grandes (460 px), image par défaut
+écartée, titre anglais affiché d'abord, jaquette de secours composée sur une palette dédiée,
+rapport de couverture, et « Proposer une jaquette » avec modération en ligne de commande.
+
+**Concepts clés :**
+- *Mesurer avant de construire* : la demande visait les manhwas « mal couverts » ; la mesure a
+  montré 100 % de couverture sur le catalogue et un vrai manque ailleurs (animes, taille des
+  images). Le chantier a été recentré sur ce qui changeait vraiment l'appli.
+- *SSRF (Server-Side Request Forgery)* : si le serveur téléchargeait une URL donnée par un
+  utilisateur, on pourrait lui faire appeler des adresses internes. Ici l'API ne télécharge
+  jamais l'URL : elle la vérifie (liste exacte d'hôtes et de chemins) et la stocke.
+- *Modération humaine* : une donnée venant d'un utilisateur n'est publiée qu'après validation ;
+  une synchro automatique ne doit jamais défaire cette décision (`cover_source = 'suggestion'`).
+- *Contraintes de design testées* : une couleur externe (AniList) n'est pas affichée brute ; elle
+  est ramenée à une palette dont les contrastes sont vérifiés par un test.
+
+**Pourquoi ce choix :** MangaUpdates mis de côté (sans élargir le catalogue, il ne remplissait
+rien). Pas d'URL d'image devinée : chaque grande image est redemandée à AniList. Pas d'envoi de
+fichiers ni de page d'administration (surface d'attaque). Voir
+[ADR 012](decisions/012-qualite-des-jaquettes.md).
+
+**3 questions d'entretien possibles :**
+1. *Comment accepter une URL d'image d'un utilisateur sans risque ?* — Liste exacte d'hôtes et
+   de chemins, HTTPS seulement, ni identifiants, ni port, ni paramètres ; on ne la télécharge
+   pas côté serveur (pas de SSRF) et rien ne s'affiche avant validation humaine.
+2. *Pourquoi ne pas afficher la couleur dominante fournie par AniList ?* — Elle est arbitraire :
+   elle casserait les contrastes (accessibilité) et l'identité visuelle. On la ramène au ton le
+   plus proche d'une palette dont les contrastes sont testés.
+3. *Comment changer une règle de données sans relancer tout le pipeline ?* — Une mise à jour SQL
+   unique, dans une transaction, qui applique exactement la nouvelle règle du code ; la prochaine
+   exécution complète produit le même résultat.
