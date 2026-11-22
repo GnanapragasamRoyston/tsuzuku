@@ -211,7 +211,7 @@ filets. Seule exception : un menu ou un dialogue ouvert reçoit
 | Pour toi | éditorial | une reco « à la une » en grand, puis des rangées ; sections numérotées N° 01, N° 02 |
 | Profil public | éditorial | grands chiffres de stats, genres favoris en liste typographique |
 | Ma liste | **stable** | toujours : onglets de statut → liste de lignes identiques ; rien ne bouge d'une visite à l'autre |
-| Fiche œuvre | **stable** | toujours dans cet ordre : en-tête (jaquette, titre, méta, ajout) → risque de drop → courbe → communauté |
+| Fiche œuvre | **stable** | toujours dans cet ordre : en-tête (jaquette, titre, méta, ajout) → risque de drop → courbe → communauté → dans le même esprit (rangée de jaquettes, phase 10) |
 | Onboarding | **stable** | filtres → grille régulière → barre de progression fixe en bas |
 | Formulaires (inscription, connexion, paramètres) | **stable** | une colonne, 480 px max, libellés au-dessus des champs |
 

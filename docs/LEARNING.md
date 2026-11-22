@@ -535,3 +535,34 @@ fichiers ni de page d'administration (surface d'attaque). Voir
 3. *Comment changer une règle de données sans relancer tout le pipeline ?* — Une mise à jour SQL
    unique, dans une transaction, qui applique exactement la nouvelle règle du code ; la prochaine
    exécution complète produit le même résultat.
+
+## Phase 10 — Recos par le contenu : embeddings et pgvector (2026-11-22)
+**Ce qui a été construit :** embeddings e5-small des 21 218 œuvres dans pgvector, recos mangas,
+manhwas et manhuas par le contenu (hybride avec la popularité) avec raison cross-média, et
+« Dans le même esprit » sur la fiche. Évalué avec le protocole de la phase 4.
+
+**Concepts clés :**
+- *Embedding* : un texte devient un vecteur ; deux œuvres proches par leur histoire ont des
+  vecteurs proches (cosinus). On compare ainsi un anime et un manhwa sans aucune note commune.
+- *Démarrage à froid côté objet* : sans interactions, l'ALS ne sait rien d'une œuvre ; le contenu,
+  lui, la décrit dès son arrivée dans le catalogue.
+- *Biais de popularité* : les œuvres que les gens aiment sont surtout connues. Une méthode qui
+  l'ignore recommande des œuvres proches mais obscures et perd en NDCG ; on ajoute un a priori
+  de popularité dont le poids est réglé sur la validation.
+- *Réglage sans fuite* : β choisi sur des utilisateurs de validation, test mesuré une fois.
+
+**Pourquoi ce choix :** e5-small plutôt que MiniLM (NDCG 4× meilleur, mesuré). Recherche exacte
+plutôt qu'un index HNSW (21 000 vecteurs ; un index approximatif perd des résultats quand on
+filtre). PyTorch hors Airflow et hors API (images légères ; l'API ne fait que des requêtes
+pgvector). Voir [ADR 013](decisions/013-recos-par-le-contenu.md).
+
+**3 questions d'entretien possibles :**
+1. *Ton modèle de contenu bat-il la popularité ?* — Non sur ce protocole (0,182 contre 0,193) :
+   le contenu seul (0,027) recommande l'obscur ; l'hybride s'approche de la popularité. Il sert
+   là où il n'y a pas d'alternative (mangas, manhwas sans historique) et pour le cross-média.
+2. *Comment as-tu choisi β ?* — Grille sur 5 000 utilisateurs de validation, règle du coude
+   (plus petit β à 1 % du meilleur), test mesuré une seule fois. J'ai aussi constaté que la
+   couverture n'augmentait pas au coude : je l'ai documenté plutôt que de le cacher.
+3. *Pourquoi pas d'index ANN dans pgvector ?* — À 21 000 vecteurs la recherche exacte prend
+   22 ms sur tout le catalogue et 4 ms pour les manhwas (mesuré, EXPLAIN ANALYZE), et HNSW filtré par type et par « déjà vu » peut renvoyer moins de
+   résultats que demandé.

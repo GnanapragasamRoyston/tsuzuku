@@ -45,6 +45,7 @@ DB_NAME = "tsuzuku_e2e"
 OUT = REPO_ROOT / "data" / "e2e"
 PORT = 8001
 N_ANIME = 16
+EMBEDDING_DIM = 384  # même dimension que catalog.media_embedding (phase 10)
 
 
 def create_database() -> str:
@@ -99,6 +100,28 @@ def seed_catalog(url: str) -> None:
                 " data_source) VALUES (%s, %s, 50, 2018, %s, 'anilist')",
                 (kind, f"{kind.capitalize()} de test", i),
             )
+        seed_embeddings(conn)
+
+
+def _axis_vector(action: float, drama: float) -> str:
+    v = [0.0] * EMBEDDING_DIM
+    v[0], v[1] = action, drama
+    norm = (action**2 + drama**2) ** 0.5
+    return "[" + ",".join(str(x / norm) for x in v) + "]"
+
+
+def seed_embeddings(conn: psycopg.Connection) -> None:
+    """Embeddings FICTIFS (phase 10) : axe « action » pour les animes 1-8 et le manhwa, axe
+    « drame » pour les animes 9-16 et le manhua, entre les deux pour le manga. Aucun modèle."""
+    conn.execute(
+        "INSERT INTO catalog.media_embedding (media_id, model, text_hash, embedding)"
+        " SELECT id, 'e2e', 'e2e', CAST(CASE"
+        "  WHEN kind = 'manhwa' OR (kind = 'anime' AND mal_id <= %(half)s) THEN %(action)s"
+        "  WHEN kind = 'manga' THEN %(mixed)s ELSE %(drama)s END AS vector)"
+        " FROM catalog.media",
+        {"half": N_ANIME // 2, "action": _axis_vector(1, 0.05), "drama": _axis_vector(0.05, 1),
+         "mixed": _axis_vector(0.6, 0.4)},
+    )  # fmt: skip
 
 
 def write_models(models: Path) -> None:

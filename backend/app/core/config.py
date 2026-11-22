@@ -57,6 +57,11 @@ class ApiRules(BaseModel):
     cover_suggestion_prefixes: list[str] = Field(min_length=1)
     cover_suggestions_per_day: int = Field(ge=1)
     cover_url_max_length: int = Field(ge=20)
+    content_neutral_score: float = Field(ge=1, le=10)
+    content_default_score: float = Field(ge=1, le=10)
+    content_popularity_beta: float = Field(ge=0)
+    similar_default_k: int = Field(ge=1)
+    similar_max_k: int = Field(ge=1)
     jikan: JikanSettings
     auth: AuthRules
 

@@ -17,4 +17,16 @@ describe("phrase d'explication des recos", () => {
       "Les animes les plus suivis, le temps d'en savoir plus sur tes goûts.",
     );
   });
+
+  it("contenu (mangas, manhwas) : œuvres aimées de tout type, et popularité du bon type", () => {
+    expect(recoReason({ strategy: "content", liked_used: 4 }, "books")).toBe(
+      "Proches de l'histoire et du ton des 4 œuvres que tu as aimées.",
+    );
+    expect(recoReason({ strategy: "content", liked_used: 1 }, "books")).toBe(
+      "Proches de l'histoire et du ton de l'œuvre que tu as aimée.",
+    );
+    expect(recoReason({ strategy: "popularity", liked_used: 0 }, "books")).toBe(
+      "Les plus lus, le temps d'en savoir plus sur tes goûts.",
+    );
+  });
 });

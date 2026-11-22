@@ -6,7 +6,7 @@ change la source du profil : la liste lue en base au lieu du corps de la requêt
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -31,7 +31,13 @@ from app.schemas.me import (
     OnboardingRequest,
     OnboardingResponse,
 )
-from app.services import auth_service, drop_service, list_service, reco_service
+from app.services import (
+    auth_service,
+    content_reco_service,
+    drop_service,
+    list_service,
+    reco_service,
+)
 
 router = APIRouter(prefix="/me", tags=["mon compte"])
 
@@ -177,16 +183,34 @@ def recommendations(
     user: CurrentUser,
     session: DbSession,
     rules: Rules,
-    engine: Annotated[reco_service.RecoEngine, Depends(get_reco_engine)],
-    kind: Literal["anime", "manga", "manhwa", "manhua"] = "anime",
+    request: Request,
+    kind: Annotated[list[Literal["anime", "manga", "manhwa", "manhua"]] | None, Query()] = None,
     k: Annotated[int | None, Query(ge=1)] = None,
 ) -> RecoResponse:
-    if kind != "anime":
-        # Recos manga/manhwa par le contenu (embeddings) : phase 10. Pas de faux résultat avant.
-        raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED,
-                            f"Recommandations {kind} : disponibles en phase 10")  # fmt: skip
+    kinds = sorted(set(kind or ["anime"]))
+    if "anime" in kinds and len(kinds) > 1:
+        # Deux moteurs différents (ALS pour les animes, contenu pour le reste) : leurs scores ne
+        # se comparent pas, on ne les mélange pas dans une même liste.
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT,
+                            "animes et mangas se demandent séparément")  # fmt: skip
     liked, exclude = list_service.reco_inputs(session, user.id)
     k = min(k or rules.default_k, rules.max_k)
+    if kinds != ["anime"]:
+        # Mangas, manhwas, manhuas : pas d'historique d'interactions, recos par le contenu
+        # (embeddings, phase 10). Le profil vient de TOUTE la liste (cross-média).
+        # Sans le modèle ALS (qu'elles n'utilisent pas) : un ALS absent ne bloque pas les livres.
+        result = content_reco_service.recommend(
+            session,
+            liked,
+            kinds,
+            k,
+            exclude,
+            rules.content_default_score,
+            rules.content_neutral_score,
+            rules.content_popularity_beta,
+        )
+        return RecoResponse.model_validate(result, from_attributes=True)
+    engine = get_reco_engine(request)  # 503 si le modèle ALS manque
     result = reco_service.recommend_for(engine, session, liked, k, exclude_media_ids=exclude)
     return RecoResponse.model_validate(result, from_attributes=True)
 

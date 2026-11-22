@@ -1,6 +1,6 @@
 /**
  * Fiche œuvre (écran STABLE, DESIGN.md § 4) : toujours dans cet ordre — en-tête (jaquette,
- * titre, méta, ajout) → risque de drop → courbe → communauté.
+ * titre, méta, ajout) → risque de drop → courbe → communauté → dans le même esprit.
  *
  * Rendu côté serveur, sans cookie (catalogue public) ; seuls l'ajout, la note et le risque de
  * drop, propres au compte, sont des îlots client (account-panels.tsx).
@@ -11,11 +11,12 @@ import { cache, Suspense } from "react";
 
 import { Cover } from "@/components/cover";
 import { DropCurve } from "@/components/drop-curve";
+import { MediaTile, MediaTileSkeleton } from "@/components/media-tile";
 import { apiFetch } from "@/lib/api";
 import { PAGE } from "@/lib/layout";
 import { ApiError } from "@/lib/errors";
 import { formatInt, formatPercent, mediaMeta } from "@/lib/format";
-import type { MediaDetail } from "@/lib/types";
+import type { MediaDetail, MediaSummary } from "@/lib/types";
 
 import { CoverSuggestion, DropRiskPanel, EntryPanel } from "./account-panels";
 
@@ -126,6 +127,12 @@ async function Fiche({ params }: { params: Params }) {
           {stats && `Note et membres : Jikan, relevé du ${new Date(stats.snapshot_date).toLocaleDateString("fr-FR", { timeZone: "UTC" })}.`}
         </p>
       </Section>
+
+      <Section id="esprit" title="Dans le même esprit">
+        <Suspense fallback={<SimilarSkeleton />}>
+          <Similar mediaId={media.id} />
+        </Suspense>
+      </Section>
     </article>
   );
 }
@@ -136,5 +143,40 @@ function Stat({ label, value }: { label: string; value: string }) {
       <dt className="text-small text-ink-2">{label}</dt>
       <dd className="font-display text-h2 font-semibold tabular-nums">{value}</dd>
     </div>
+  );
+}
+
+const SIMILAR_GRID = "grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-3 lg:grid-cols-6";
+
+function SimilarSkeleton() {
+  return (
+    <div className={SIMILAR_GRID}>
+      {Array.from({ length: 6 }, (_, i) => (
+        <MediaTileSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
+
+/** Voisins par le contenu (phase 10), tous types : un anime peut mener à un manhwa. */
+async function Similar({ mediaId }: { mediaId: number }) {
+  let items: MediaSummary[];
+  try {
+    items = (await apiFetch<{ items: MediaSummary[] }>(`/media/${mediaId}/similar`)).items;
+  } catch {
+    // Bloc de découverte : en cas d'erreur, on n'affiche simplement rien de faux.
+    return <p className="text-ink-2">Impossible de charger les œuvres proches pour l&apos;instant.</p>;
+  }
+  if (items.length === 0) {
+    return <p className="text-ink-2">Pas encore d&apos;œuvres proches de celle-ci.</p>;
+  }
+  return (
+    <ul className={SIMILAR_GRID}>
+      {items.map((m) => (
+        <li key={m.id}>
+          <MediaTile media={m} />
+        </li>
+      ))}
+    </ul>
   );
 }

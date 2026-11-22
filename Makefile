@@ -4,7 +4,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help setup up down db-check lint format test audit \
-        data spark train figures reco api api-keys api-up api-down web web-test web-e2e covers covers-report covers-review covers-approve covers-reject migrate \
+        data spark train figures reco embeddings embeddings-eval api api-keys api-up api-down web web-test web-e2e covers covers-report covers-review covers-approve covers-reject migrate \
         airflow-keys airflow-up airflow-down airflow-test airflow-trigger
 
 # packages/tsuzuku-ml : code ML partagé par le pipeline et l'API (ADR 006).
@@ -67,6 +67,12 @@ train: ## [phase 3] Modèle de drop : features Spark, 3 modèles sklearn, métri
 # facteurs) → register (mart.model_runs). Même logique de fraîcheur que `make train`.
 reco: ## [phase 4] Reco ALS : baseline popularité vs ALS explicite/implicite, fold-in, facteurs
 	cd pipeline && uv run python -m tsuzuku_pipeline.reco_cli $(ARGS)
+
+embeddings: ## [phase 10] Embeddings des œuvres (pgvector) ; ARGS=eval (choix du modèle) ou examples
+	cd pipeline && uv run --extra embeddings python -m tsuzuku_pipeline.embeddings_cli $(ARGS)
+
+embeddings-eval: ## [phase 10] Compare les modèles d'embeddings à l'ALS (mêmes utilisateurs de test)
+	cd pipeline && uv run --extra embeddings python -m tsuzuku_pipeline.embeddings_cli eval
 
 # --- Chiffres clés ------------------------------------------------------------
 # Regroupe les chiffres des rapports générés (aucun calcul, aucune saisie à la main) pour export.

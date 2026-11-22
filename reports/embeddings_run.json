@@ -1,0 +1,8 @@
+{
+  "generated_at": "2026-11-22T22:26:01Z",
+  "model": "intfloat/multilingual-e5-small|query: ",
+  "computed": 21218,
+  "total": 21218,
+  "missing_after": 0,
+  "seconds": 365.3
+}

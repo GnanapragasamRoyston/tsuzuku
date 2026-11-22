@@ -1,0 +1,540 @@
+{
+  "generated_at": "2026-11-22T22:26:03Z",
+  "model": "intfloat/multilingual-e5-small",
+  "examples": [
+    {
+      "seed": {
+        "title": "Attack on Titan",
+        "kind": "anime"
+      },
+      "neighbours": {
+        "manga": [
+          {
+            "title": "Attack on Titan",
+            "kind": "manga",
+            "cosine": 0.926
+          },
+          {
+            "title": "Attack on Titan: No Regrets",
+            "kind": "manga",
+            "cosine": 0.918
+          },
+          {
+            "title": "Attack on Titan: Before the Fall",
+            "kind": "manga",
+            "cosine": 0.907
+          },
+          {
+            "title": "The World Is Mine",
+            "kind": "manga",
+            "cosine": 0.899
+          },
+          {
+            "title": "KATSU!",
+            "kind": "manga",
+            "cosine": 0.893
+          }
+        ],
+        "manhwa/manhua": [
+          {
+            "title": "My S-Class Hunters",
+            "kind": "manhwa",
+            "cosine": 0.885
+          },
+          {
+            "title": "Being Raised by Villains",
+            "kind": "manhwa",
+            "cosine": 0.883
+          },
+          {
+            "title": "My Life as a Player",
+            "kind": "manhwa",
+            "cosine": 0.882
+          },
+          {
+            "title": "The Lady and the Beast",
+            "kind": "manhwa",
+            "cosine": 0.879
+          },
+          {
+            "title": "Let's Hide My Little Brother",
+            "kind": "manhwa",
+            "cosine": 0.879
+          }
+        ],
+        "anime": [
+          {
+            "title": "Attack on Titan Season 2",
+            "kind": "anime",
+            "cosine": 0.931
+          },
+          {
+            "title": "Attack on Titan Season 3",
+            "kind": "anime",
+            "cosine": 0.931
+          },
+          {
+            "title": "Attack on Titan Final Season",
+            "kind": "anime",
+            "cosine": 0.928
+          },
+          {
+            "title": "Attack on Titan:Junior High",
+            "kind": "anime",
+            "cosine": 0.924
+          },
+          {
+            "title": "Attack on Titan Season 3 Part 2",
+            "kind": "anime",
+            "cosine": 0.918
+          }
+        ]
+      }
+    },
+    {
+      "seed": {
+        "title": "Death Note",
+        "kind": "anime"
+      },
+      "neighbours": {
+        "manga": [
+          {
+            "title": "DEATH NOTE",
+            "kind": "manga",
+            "cosine": 0.939
+          },
+          {
+            "title": "Death Note: Taro Kagami",
+            "kind": "manga",
+            "cosine": 0.925
+          },
+          {
+            "title": "Death Note: a-Kira",
+            "kind": "manga",
+            "cosine": 0.896
+          },
+          {
+            "title": "Prophecy",
+            "kind": "manga",
+            "cosine": 0.896
+          },
+          {
+            "title": "Doku Mushi",
+            "kind": "manga",
+            "cosine": 0.888
+          }
+        ],
+        "manhwa/manhua": [
+          {
+            "title": "Hero-ga Jipchakaneun Akdangi Doeeotda",
+            "kind": "manhwa",
+            "cosine": 0.874
+          },
+          {
+            "title": "Death's Game",
+            "kind": "manhwa",
+            "cosine": 0.868
+          },
+          {
+            "title": "The God of High School",
+            "kind": "manhwa",
+            "cosine": 0.865
+          },
+          {
+            "title": "My Life as a Player",
+            "kind": "manhwa",
+            "cosine": 0.864
+          },
+          {
+            "title": "Global Examination",
+            "kind": "manhua",
+            "cosine": 0.863
+          }
+        ],
+        "anime": [
+          {
+            "title": "Noragami:Stray God",
+            "kind": "anime",
+            "cosine": 0.898
+          },
+          {
+            "title": "Claymore",
+            "kind": "anime",
+            "cosine": 0.893
+          },
+          {
+            "title": "Shaman King (2021)",
+            "kind": "anime",
+            "cosine": 0.892
+          },
+          {
+            "title": "Death Note:Relight",
+            "kind": "anime",
+            "cosine": 0.892
+          },
+          {
+            "title": "The Future Diary",
+            "kind": "anime",
+            "cosine": 0.891
+          }
+        ]
+      }
+    },
+    {
+      "seed": {
+        "title": "Fullmetal Alchemist: Brotherhood",
+        "kind": "anime"
+      },
+      "neighbours": {
+        "manga": [
+          {
+            "title": "Fullmetal Alchemist",
+            "kind": "manga",
+            "cosine": 0.939
+          },
+          {
+            "title": "Saikin, Imouto no Yousu ga Chotto Okashiinda ga.",
+            "kind": "manga",
+            "cosine": 0.888
+          },
+          {
+            "title": "The Poe Clan",
+            "kind": "manga",
+            "cosine": 0.886
+          },
+          {
+            "title": "Sun-Ken Rock",
+            "kind": "manga",
+            "cosine": 0.885
+          },
+          {
+            "title": "Maken-Ki!",
+            "kind": "manga",
+            "cosine": 0.885
+          }
+        ],
+        "manhwa/manhua": [
+          {
+            "title": "Return of the Blossoming Blade",
+            "kind": "manhwa",
+            "cosine": 0.881
+          },
+          {
+            "title": "The Academy's Genius Swordsman",
+            "kind": "manhwa",
+            "cosine": 0.877
+          },
+          {
+            "title": "Little Mushroom",
+            "kind": "manhua",
+            "cosine": 0.877
+          },
+          {
+            "title": "Global Examination",
+            "kind": "manhua",
+            "cosine": 0.876
+          },
+          {
+            "title": "Mookhyang: The Origin",
+            "kind": "manhwa",
+            "cosine": 0.875
+          }
+        ],
+        "anime": [
+          {
+            "title": "Fullmetal Alchemist",
+            "kind": "anime",
+            "cosine": 0.957
+          },
+          {
+            "title": "Fullmetal Alchemist: The Sacred Star of Milos",
+            "kind": "anime",
+            "cosine": 0.925
+          },
+          {
+            "title": "Fullmetal Alchemist:Brotherhood OVA Collection",
+            "kind": "anime",
+            "cosine": 0.911
+          },
+          {
+            "title": "Fullmetal Alchemist:The Movie - Conqueror of Shamballa",
+            "kind": "anime",
+            "cosine": 0.909
+          },
+          {
+            "title": "Berserk:The Golden Age Arc III - The Advent",
+            "kind": "anime",
+            "cosine": 0.894
+          }
+        ]
+      }
+    },
+    {
+      "seed": {
+        "title": "Solo Leveling",
+        "kind": "manhwa"
+      },
+      "neighbours": {
+        "manga": [
+          {
+            "title": "The World's Fastest Level Up",
+            "kind": "manga",
+            "cosine": 0.91
+          },
+          {
+            "title": "The World Is Mine",
+            "kind": "manga",
+            "cosine": 0.903
+          },
+          {
+            "title": "THE NEW GATE",
+            "kind": "manga",
+            "cosine": 0.902
+          },
+          {
+            "title": "Kinki no Tensei Daimadoushi",
+            "kind": "manga",
+            "cosine": 0.901
+          },
+          {
+            "title": "Saikyou de Saisoku no Mugen Level Up: Skill [Keikenchi 1000-bai] to [Level Free] de Level Jougen no Kase ga Hazureta Ore wa Musou suru",
+            "kind": "manga",
+            "cosine": 0.9
+          }
+        ],
+        "manhwa/manhua": [
+          {
+            "title": "Solo Leveling: Ragnarok",
+            "kind": "manhwa",
+            "cosine": 0.938
+          },
+          {
+            "title": "Leveling Up Alone",
+            "kind": "manhwa",
+            "cosine": 0.925
+          },
+          {
+            "title": "The Lone Necromancer",
+            "kind": "manhwa",
+            "cosine": 0.925
+          },
+          {
+            "title": "I Woke Up as the Villain",
+            "kind": "manhwa",
+            "cosine": 0.924
+          },
+          {
+            "title": "The SSS-Rank Hunter's Lucky Draw",
+            "kind": "manhwa",
+            "cosine": 0.922
+          }
+        ],
+        "anime": [
+          {
+            "title": "Xing Wushen Jue",
+            "kind": "anime",
+            "cosine": 0.887
+          },
+          {
+            "title": "Manga Aesop Monogatari",
+            "kind": "anime",
+            "cosine": 0.885
+          },
+          {
+            "title": "Magic Han War",
+            "kind": "anime",
+            "cosine": 0.884
+          },
+          {
+            "title": "Shingu:Secret of the Stellar Wars",
+            "kind": "anime",
+            "cosine": 0.884
+          },
+          {
+            "title": "Jian Wang 3: Xia Gan Yi Dan Shen Jianxin",
+            "kind": "anime",
+            "cosine": 0.883
+          }
+        ]
+      }
+    },
+    {
+      "seed": {
+        "title": "Your Name.",
+        "kind": "anime"
+      },
+      "neighbours": {
+        "manga": [
+          {
+            "title": "your name.",
+            "kind": "manga",
+            "cosine": 0.932
+          },
+          {
+            "title": "your name. Another Side:Earthbound",
+            "kind": "manga",
+            "cosine": 0.921
+          },
+          {
+            "title": "The Summer With You",
+            "kind": "manga",
+            "cosine": 0.907
+          },
+          {
+            "title": "A Town Where You Live",
+            "kind": "manga",
+            "cosine": 0.907
+          },
+          {
+            "title": "NANA",
+            "kind": "manga",
+            "cosine": 0.906
+          }
+        ],
+        "manhwa/manhua": [
+          {
+            "title": "Suyo Webtoon-ui Na Kang-Rim",
+            "kind": "manhwa",
+            "cosine": 0.878
+          },
+          {
+            "title": "It's Mine",
+            "kind": "manhwa",
+            "cosine": 0.876
+          },
+          {
+            "title": "Misughan Pyohyeon",
+            "kind": "manhwa",
+            "cosine": 0.874
+          },
+          {
+            "title": "The Heavenly Demon Wants a Quiet Life",
+            "kind": "manhwa",
+            "cosine": 0.874
+          },
+          {
+            "title": "Goodbye, In-Law!",
+            "kind": "manhwa",
+            "cosine": 0.874
+          }
+        ],
+        "anime": [
+          {
+            "title": "Tantei wa Mou, Shindeiru.",
+            "kind": "anime",
+            "cosine": 0.905
+          },
+          {
+            "title": "Suzuka",
+            "kind": "anime",
+            "cosine": 0.905
+          },
+          {
+            "title": "Kino no Tabi: The Beautiful World - Nanika wo Suru Tame ni - Life Goes On.",
+            "kind": "anime",
+            "cosine": 0.903
+          },
+          {
+            "title": "A Town Where You Live",
+            "kind": "anime",
+            "cosine": 0.902
+          },
+          {
+            "title": "Nana",
+            "kind": "anime",
+            "cosine": 0.901
+          }
+        ]
+      }
+    },
+    {
+      "seed": {
+        "title": "Monster",
+        "kind": "anime"
+      },
+      "neighbours": {
+        "manga": [
+          {
+            "title": "MONSTER",
+            "kind": "manga",
+            "cosine": 0.914
+          },
+          {
+            "title": "Iryuu: Team Medical Dragon",
+            "kind": "manga",
+            "cosine": 0.889
+          },
+          {
+            "title": "Homunculus",
+            "kind": "manga",
+            "cosine": 0.887
+          },
+          {
+            "title": "Higurashi WHEN THEY CRY: Atonement Arc",
+            "kind": "manga",
+            "cosine": 0.882
+          },
+          {
+            "title": "Higurashi WHEN THEY CRY: Time Killing Arc",
+            "kind": "manga",
+            "cosine": 0.881
+          }
+        ],
+        "manhwa/manhua": [
+          {
+            "title": "The Divine Surgeon",
+            "kind": "manhwa",
+            "cosine": 0.876
+          },
+          {
+            "title": "Doctor, Live Again",
+            "kind": "manhwa",
+            "cosine": 0.876
+          },
+          {
+            "title": "Dr. Choi Giseok Levels Up",
+            "kind": "manhwa",
+            "cosine": 0.874
+          },
+          {
+            "title": "The Holy Power of Modern Medicine",
+            "kind": "manhwa",
+            "cosine": 0.873
+          },
+          {
+            "title": "Moritat",
+            "kind": "manhwa",
+            "cosine": 0.871
+          }
+        ],
+        "anime": [
+          {
+            "title": "Brynhildr in the Darkness",
+            "kind": "anime",
+            "cosine": 0.894
+          },
+          {
+            "title": "Young Black Jack",
+            "kind": "anime",
+            "cosine": 0.892
+          },
+          {
+            "title": "Chainsaw Man",
+            "kind": "anime",
+            "cosine": 0.891
+          },
+          {
+            "title": "Inazuma Eleven Go",
+            "kind": "anime",
+            "cosine": 0.891
+          },
+          {
+            "title": "Mind Game",
+            "kind": "anime",
+            "cosine": 0.89
+          }
+        ]
+      }
+    }
+  ]
+}

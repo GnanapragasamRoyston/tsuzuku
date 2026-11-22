@@ -162,6 +162,29 @@ ingestion:
     # Couvertures des animes (phase 8) : idMal par requête (50 = taille de page max d'AniList).
     covers_batch_size: 50
 
+embeddings:
+  # Recos par le contenu (phase 10, SPEC § 6.3, ADR 013). Deux modèles multilingues légers
+  # (384 dimensions, CPU) comparés par `make embeddings-eval` sur les utilisateurs de test de la
+  # phase 4 ; le préfixe « query: » est celui que recommande e5 pour la similarité symétrique.
+  candidates:
+    - model: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+      prefix: ""
+    - model: intfloat/multilingual-e5-small
+      prefix: "query: "
+  # Modèle servi, choisi sur mesures (reports/content_reco_metrics.json, 2026-11-22) : NDCG@10
+  # test 0,027 contre 0,0065 pour MiniLM, même protocole que la phase 4. ADR 013.
+  model: intfloat/multilingual-e5-small
+  prefix: "query: "
+  # Hybride contenu + β × popularité : β réglé sur la validation (make embeddings ARGS=eval-hybrid).
+  beta_grid: [0.0, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0]
+  # Coude : plus petit β à moins de 1 % du meilleur NDCG de validation. Mesuré le 2026-11-22
+  # (reports/content_reco_metrics.json, hybrid) : courbe plate au-delà de 0,3 (0,181 contre 0,182
+  # à β = 2). Règle choisie par Royston (ADR 013).
+  beta_tolerance: 0.01
+  batch_size: 64
+  # Tags AniList gardés dans le texte, par pertinence décroissante.
+  tags_max: 10
+
 api:
   # Sous ce nombre d'animes aimés connus du modèle, l'API sert la popularité au lieu de l'ALS.
   # Mesuré en phase 4 (reports/reco_metrics.json, onboarding_test, NDCG@10 test) : avec 3 titres
@@ -202,6 +225,18 @@ api:
     - https://media.kitsu.app/
   cover_suggestions_per_day: 10
   cover_url_max_length: 500
+  # Recos par le contenu (phase 10, ADR 013) : une note au-dessus de ce neutre compte comme un
+  # goût, pondéré par l'écart (même règle que l'ALS implicite, reco.implicit_neutral_score).
+  content_neutral_score: 5
+  # Choix d'onboarding sans note : même valeur que reco.onboarding_default_score (la note la plus
+  # fréquente) ; ici pour ne pas dépendre de la fiche du modèle ALS (recos de livres sans ALS).
+  content_default_score: 8
+  # Poids de la popularité dans le score hybride (cosinus + β × 1/log2(1 + rang)) : réglé sur la
+  # validation par `make embeddings ARGS=eval-hybrid` (reports/content_reco_metrics.json, ADR 013).
+  content_popularity_beta: 0.3
+  # « Dans le même esprit » (fiche œuvre) : nombre d'œuvres voisines.
+  similar_default_k: 6
+  similar_max_k: 20
   jikan:
     # API publique sans clé (SPEC § 2.2). Limite documentée : 3 requêtes/s, 60/min.
     base_url: https://api.jikan.moe/v4

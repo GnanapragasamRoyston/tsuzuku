@@ -24,9 +24,24 @@ dependencies = [
     "tsuzuku-ml",
 ]
 
+[project.optional-dependencies]
+# Embeddings des œuvres (phase 10, ADR 013) : `make embeddings` seulement. Ni l'image Airflow
+# (installée avec --no-deps) ni l'API ne les installent ; les tests utilisent un encodeur factice.
+embeddings = [
+    "sentence-transformers>=3.0",
+    "torch>=2.4",
+]
+
 [tool.uv.sources]
 # Paquet local du monorepo, installé en mode éditable : une modification est vue tout de suite.
 tsuzuku-ml = { path = "../packages/tsuzuku-ml", editable = true }
+# PyTorch en version CPU : la version par défaut embarque CUDA (plusieurs Go) pour rien ici.
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [dependency-groups]
 dev = [

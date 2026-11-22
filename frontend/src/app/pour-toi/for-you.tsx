@@ -1,7 +1,7 @@
 /**
  * Pour toi (écran ÉDITORIAL, DESIGN.md § 4) : une reco « à la une » en grand, puis une rangée ;
- * sections numérotées N° 01, N° 02. Recos animes seulement : manga et manhwa demandent les recos
- * par le contenu (embeddings, phase 10) — l'API répond 501, la page le dit sans rien inventer.
+ * sections numérotées N° 01 (animes, ALS), N° 02 (mangas, manhwas et manhuas, recos par le
+ * contenu de la phase 10 : le profil vient de TOUTE la liste, animes compris).
  */
 "use client";
 
@@ -14,6 +14,7 @@ import { useRedirectOn401 } from "@/hooks/use-me";
 import { messageFor } from "@/lib/errors";
 import { PAGE } from "@/lib/layout";
 import { recoReason } from "@/lib/reco";
+import type { Kind, RecoItem } from "@/lib/types";
 
 
 export function ForYouPage() {
@@ -24,7 +25,7 @@ export function ForYouPage() {
   const add = useAddPlanned((e) => setError(messageFor(e, "save")));
   useRedirectOn401(recos.error);
 
-  function card(item: NonNullable<typeof recos.data>["items"][number], featured = false) {
+  function card(item: RecoItem, featured = false) {
     return (
       <RecoCard
         item={item}
@@ -76,18 +77,52 @@ export function ForYouPage() {
         )}
       </section>
 
-      <section aria-labelledby="livres" className="flex flex-col gap-4">
+      <section aria-labelledby="livres" className="flex flex-col gap-8">
         <SectionHeading id="livres" number="N° 02" title="Mangas et manhwas" />
-        <p className="max-w-prose text-ink-2">
-          Pas encore de recos ici. Pour les mangas et les manhwas, il n&apos;y a pas d&apos;historique
-          de lecteurs à comparer : les recos viendront du contenu des œuvres (genres, résumé).
-          C&apos;est la prochaine étape.
-        </p>
+        <Shelf id="mangas" title="Mangas" kinds={MANGA} card={card} />
+        <Shelf id="manhwas" title="Manhwas et manhuas" kinds={MANHWA} card={card} />
       </section>
 
       <p aria-live="polite" className="sr-only">
         {message}
       </p>
+    </div>
+  );
+}
+
+const MANGA: readonly Kind[] = ["manga"];
+const MANHWA: readonly Kind[] = ["manhwa", "manhua"];
+
+/** Une rangée de recos par le contenu (mangas, ou manhwas et manhuas). */
+function Shelf({
+  id,
+  title,
+  kinds,
+  card,
+}: {
+  id: string;
+  title: string;
+  kinds: readonly Kind[];
+  card: (item: RecoItem) => React.ReactNode;
+}) {
+  const recos = useRecos(6, kinds);
+  return (
+    <div className="flex flex-col gap-4">
+      <h3 id={id} className="font-display text-h3 font-semibold">
+        {title}
+      </h3>
+      {recos.isPending && <p className="text-ink-2">Un instant…</p>}
+      {recos.error && <p className="text-ink-2">{messageFor(recos.error)}</p>}
+      {recos.data && (
+        <>
+          <p className="text-ink-2">{recoReason(recos.data, "books")}</p>
+          <ul aria-labelledby={id} className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {recos.data.items.map((item) => (
+              <li key={item.media.id}>{card(item)}</li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }

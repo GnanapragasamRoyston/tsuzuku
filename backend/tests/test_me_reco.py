@@ -86,11 +86,6 @@ def test_list_score_overrides_onboarding_default(reco_client, catalog):
     assert body["strategy"] == "popularity" and body["reason"].startswith("4 anime")
 
 
-def test_manga_recommendations_come_in_phase_10(reco_client):
-    r = reco_client.get("/me/recommendations", params={"kind": "manhwa"})
-    assert r.status_code == 501 and "phase 10" in r.json()["detail"]
-
-
 # --- Risque de drop ------------------------------------------------------------------------------
 def test_drop_risk_uses_the_stored_list(reco_client, catalog):
     for mal, status in ((2, "completed"), (3, "dropped"), (4, "completed"), (1, "in_progress")):

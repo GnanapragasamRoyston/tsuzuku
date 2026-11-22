@@ -72,7 +72,7 @@ test("inscription → onboarding → recos → ajout → +1 ép. → fiche et no
   // Le bouton reste en place (le focus ne se perd pas) et annonce l'ajout.
   await expect(forYou.getByRole("button", { name: `${title} : dans ta liste` })).toBeVisible();
   await page.getByRole("tab", { name: /Prévu/ }).click();
-  await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  await expect(page.getByRole("tabpanel").getByRole("heading", { name: title })).toBeVisible();
   await checkScreen(page, "ma-liste");
 
   // 5. +1 épisode : la ligne passe dans « En cours », les compteurs suivent
@@ -104,6 +104,9 @@ test("inscription → onboarding → recos → ajout → +1 ép. → fiche et no
   await coverUrl.fill("https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1-e2e.jpg");
   await page.getByRole("button", { name: "Envoyer" }).click();
   await expect(page.getByRole("status").filter({ hasText: "on la vérifie" })).toBeVisible();
+  // Dans le même esprit (phase 10) : voisins par le contenu, en fin de fiche
+  const sameSpirit = page.getByRole("region", { name: "Dans le même esprit" });
+  await expect(sameSpirit.getByRole("link").first()).toBeVisible();
   await checkScreen(page, "fiche");
 
   // 7. Profil public : privé par défaut, ouvert depuis Compte, la note y apparaît
@@ -120,6 +123,11 @@ test("inscription → onboarding → recos → ajout → +1 ép. → fiche et no
   await page.goto("/pour-toi");
   await expect(page.getByRole("heading", { level: 1, name: "Pour toi" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mangas et manhwas" })).toBeVisible();
+  // Recos par le contenu (phase 10) : le profil d'animes « action » fait remonter le manhwa
+  // « action », avec la raison cross-média.
+  const manhwas = page.getByRole("list", { name: "Manhwas et manhuas" });
+  await expect(manhwas.getByRole("link", { name: "Manhwa de test" })).toBeVisible();
+  await expect(manhwas.getByText(/Parce que tu as aimé Anime de test/).first()).toBeVisible();
   await checkScreen(page, "pour-toi");
 });
 

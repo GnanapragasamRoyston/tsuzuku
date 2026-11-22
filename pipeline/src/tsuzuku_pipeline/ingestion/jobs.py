@@ -20,6 +20,7 @@ import yaml
 
 from tsuzuku_pipeline.config import REPO_ROOT, require_section, resolve_path
 from tsuzuku_pipeline.db import loader
+from tsuzuku_pipeline.embeddings import queries as embedding_queries
 from tsuzuku_pipeline.ingestion import anilist_client, catalog_loader, jikan_client
 from tsuzuku_pipeline.ingestion.catalog_loader import (
     ANILIST_SOURCE,
@@ -279,6 +280,9 @@ def anilist_quality(settings: dict[str, Any], day: dt.date, conn=None) -> dict[s
             " JOIN catalog.genre g ON g.id = mg.genre_id"
             " WHERE m.data_source = %s AND g.name = 'Hentai'", (ANILIST_SOURCE,),
         ).fetchone()[0]  # fmt: skip
+        # Informatif (ne fait pas échouer le DAG) : les embeddings se calculent hors Airflow,
+        # par `make embeddings` (ADR 013) ; ce compteur rappelle de le lancer.
+        without_embedding = embedding_queries.missing_count(c)
     checks = {
         "enough_titles": len(raw["items"]) >= cfg["min_share_of_expected"] * expected,
         "all_kept_titles_in_db": in_db == len(kept_ids) == load["loaded"],
@@ -287,7 +291,8 @@ def anilist_quality(settings: dict[str, Any], day: dt.date, conn=None) -> dict[s
     report = {
         "dag": "anilist_catalog_sync", "run_date": day.isoformat(), "pages": raw["pages"],
         "fetched": len(raw["items"]), "expected": expected, **{f"load_{k}": v for k, v in
-        load.items()}, "catalog_by_kind": by_kind, "checks": checks, "ok": all(checks.values()),
+        load.items()}, "catalog_by_kind": by_kind, "without_embedding": without_embedding,
+        "checks": checks, "ok": all(checks.values()),
     }  # fmt: skip
     _report(settings, "anilist", day, report)
     if not report["ok"]:

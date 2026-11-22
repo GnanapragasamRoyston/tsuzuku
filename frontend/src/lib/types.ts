@@ -110,7 +110,7 @@ export interface RecoItem {
 }
 
 export interface RecoResponse {
-  strategy: "als" | "popularity";
+  strategy: "als" | "popularity" | "content";
   reason: string;
   liked_used: number;
   liked_ignored: number[];

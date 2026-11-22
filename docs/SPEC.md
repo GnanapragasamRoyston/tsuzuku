@@ -197,6 +197,7 @@ Définitions à écrire dans le README :
 | GET / PATCH / DELETE | `/me`, `/me/export` | profil, réglage du profil public (phase 9), export, suppression RGPD |
 | GET | `/media/search?q=&kind=` | recherche catalogue |
 | GET | `/media/{id}` | fiche + stats + épisode critique |
+| GET | `/media/{id}/similar` | œuvres proches par le contenu, tous types (phase 10) |
 | GET / POST / PUT / DELETE | `/me/list`, `/me/list/{media_id}` | gestion de la liste (GET d'une entrée : phase 9) |
 | POST | `/me/onboarding` | choix initiaux |
 | GET | `/me/recommendations?kind=` | recos personnalisées |

@@ -30,7 +30,8 @@ class RecoItem(BaseModel):
 
 
 class RecoResponse(BaseModel):
-    strategy: Literal["als", "popularity"]
+    # « content » : recos par le contenu (embeddings, phase 10) pour manga, manhwa et manhua.
+    strategy: Literal["als", "popularity", "content"]
     reason: str
     liked_used: int
     # Titres ignorés : inconnus, pas des animes, ou absents du modèle (trop peu notés, récents).

@@ -132,8 +132,9 @@ d'un risque de drop chiffré.
 | GET | `/me/list/{media_id}` | une seule entrée (fiche œuvre), 404 si absente |
 | POST / PUT / DELETE | `/me/list/{media_id}` | ajouter (POST : jamais d'écrasement) ou modifier une œuvre (statut, progression, « lâché à l'épisode X », note, critique, dates) ; la retirer |
 | POST | `/me/onboarding` | au moins 10 œuvres aimées |
-| GET | `/me/recommendations?kind=anime` | recos depuis l'onboarding et la liste (manga/manhwa : phase 10) |
+| GET | `/me/recommendations?kind=anime` | recos depuis l'onboarding et la liste : ALS pour les animes ; `kind=manga`, `manhwa`, `manhua` (un ou plusieurs) : recos par le contenu (phase 10), profil tiré de toute la liste |
 | GET | `/me/drop-risk/{media_id}` | risque de drop depuis ma liste |
+| GET | `/media/{id}/similar?k=` | « Dans le même esprit » : voisins par le contenu, tous types (phase 10) |
 | POST | `/media/{id}/cover-suggestions` | proposer une jaquette (URL d'un domaine autorisé, modération) |
 | GET | `/users/{pseudo}` | profil public (phase 9) : chiffres, genres favoris, dernières notes ; même 404 pour un profil privé ou inconnu |
 

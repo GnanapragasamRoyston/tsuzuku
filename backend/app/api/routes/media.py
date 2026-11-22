@@ -13,7 +13,7 @@ from app.schemas.media import (
     PopularResponse,
     SearchResponse,
 )
-from app.services import catalog_service, cover_service
+from app.services import catalog_service, content_reco_service, cover_service
 
 router = APIRouter(prefix="/media", tags=["catalogue"])
 
@@ -74,6 +74,23 @@ def suggest_cover(
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS,
                             "Trop de propositions aujourd'hui") from None  # fmt: skip
     return {"status": "pending"}
+
+
+@router.get("/{media_id}/similar", response_model=PopularResponse)
+def similar_media(
+    media_id: Annotated[int, Path(gt=0)],
+    session: Annotated[Session, Depends(get_session)],
+    rules: Annotated[ApiRules, Depends(get_rules)],
+    k: Annotated[int | None, Query(ge=1)] = None,
+) -> PopularResponse:
+    """« Dans le même esprit » (fiche œuvre, phase 10) : voisins les plus proches, tous types."""
+    if k is not None and k > rules.similar_max_k:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT,
+                            f"k : {rules.similar_max_k} au maximum")  # fmt: skip
+    if catalog_service.media_by_ids(session, [media_id]) == {}:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Œuvre {media_id} introuvable")
+    items = content_reco_service.similar(session, media_id, k or rules.similar_default_k)
+    return PopularResponse(items=[MediaSummary.model_validate(m) for m in items])
 
 
 @router.get("/{media_id}", response_model=MediaDetail)

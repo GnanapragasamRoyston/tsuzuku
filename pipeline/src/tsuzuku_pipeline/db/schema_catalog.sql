@@ -119,6 +119,19 @@ CREATE TABLE IF NOT EXISTS catalog.media_tag (
 );
 CREATE INDEX IF NOT EXISTS media_tag_tag_id_idx ON catalog.media_tag (tag_id);
 
+-- Embeddings des œuvres (phase 10, ADR 013) : recos par le contenu et « Dans le même esprit ».
+-- 384 dimensions (les deux modèles candidats). text_hash = empreinte (modèle + texte embarqué) :
+-- `make embeddings` ne recalcule que ce qui a changé. Pas d'index ANN : ~21 000 lignes, la
+-- recherche exacte est rapide et ne perd aucun résultat quand on filtre (type, déjà vus).
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE TABLE IF NOT EXISTS catalog.media_embedding (
+    media_id   bigint PRIMARY KEY REFERENCES catalog.media (id) ON DELETE CASCADE,
+    model      text        NOT NULL,
+    text_hash  text        NOT NULL,
+    embedding  vector(384) NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- Statistiques quotidiennes (DAG jikan_daily_ingest, phase 6) : une ligne par œuvre et par jour.
 -- Clé (date, œuvre) : relancer le DAG le même jour met la ligne à jour au lieu de la doubler.
 CREATE TABLE IF NOT EXISTS catalog.media_daily_stats (

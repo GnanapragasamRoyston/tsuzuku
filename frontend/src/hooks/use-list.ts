@@ -23,7 +23,14 @@ import { ME_KEY } from "@/hooks/use-me";
 import { apiFetch } from "@/lib/api";
 import { ApiError } from "@/lib/errors";
 import { applySaved, type ListPages, nextOffset } from "@/lib/list-cache";
-import type { ListEntry, ListEntryUpdate, ListPage, ListStatus, RecoResponse } from "@/lib/types";
+import type {
+  Kind,
+  ListEntry,
+  ListEntryUpdate,
+  ListPage,
+  ListStatus,
+  RecoResponse,
+} from "@/lib/types";
 
 export const LIST_KEY = ["list"] as const;
 const RECOS_KEY = ["recos"] as const;
@@ -92,12 +99,16 @@ export function usePendingUpdates(): Set<number> {
   return new Set(ids.filter((id): id is number => id !== undefined));
 }
 
-/** Recos animes. `k` dans la clé : l'aside de Ma liste (6) et la page Pour toi (12) ont chacune
- *  leur cache, invalidés ensemble par le préfixe RECOS_KEY. */
-export function useRecos(k = 6) {
+/** Recos d'un ou plusieurs types (animes par défaut ; mangas et manhwas par le contenu, phase
+ *  10). `k` et les types dans la clé : chaque rangée a son cache, tous invalidés ensemble par le
+ *  préfixe RECOS_KEY. */
+export function useRecos(k = 6, kinds: readonly Kind[] = ["anime"]) {
   return useQuery({
-    queryKey: [...RECOS_KEY, k],
-    queryFn: () => apiFetch<RecoResponse>(`/me/recommendations?kind=anime&k=${k}`),
+    queryKey: [...RECOS_KEY, k, ...kinds],
+    queryFn: () => {
+      const params = new URLSearchParams([["k", String(k)], ...kinds.map((kd) => ["kind", kd])]);
+      return apiFetch<RecoResponse>(`/me/recommendations?${params}`);
+    },
   });
 }
 
