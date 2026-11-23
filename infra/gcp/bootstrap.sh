@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Mise en place Google Cloud de Tsuzuku (phase 11, ADR 014). Idempotent : relançable sans risque.
 #
-#   PROJECT_ID=… BILLING_ACCOUNT=… ALERT_EMAIL=… bash infra/gcp/bootstrap.sh <étape>
-#   Étapes, dans l'ordre : base, secrets, github, (premier déploiement), schedulers, monitoring
+#   PROJECT_ID=… bash infra/gcp/bootstrap.sh <étape>
+#   Étapes, dans l'ordre : base, budget, secrets, github, (1er déploiement), schedulers, monitoring
 #
 # À BLANC par défaut (DRY_RUN=1) : chaque commande est affichée, rien n'est exécuté. Relancer avec
 # DRY_RUN=0 pour appliquer. Aucun secret n'est jamais affiché ni passé en argument de commande
@@ -32,6 +32,10 @@ base() {
     billingbudgets.googleapis.com storage.googleapis.com
   exists gcloud artifacts repositories describe tsuzuku --location "$REGION" ||
     run gcloud artifacts repositories create tsuzuku --repository-format docker --location "$REGION"
+  # Seules les 3 dernières versions de chaque image sont gardées : le stockage (0,5 Go offert)
+  # ne grossit pas à chaque déploiement.
+  run gcloud artifacts repositories set-cleanup-policies tsuzuku --location "$REGION" \
+    --policy infra/gcp/ar-cleanup.json --no-dry-run
   # Bucket des modèles servis : accès uniforme, jamais public.
   exists gcloud storage buckets describe "gs://$BUCKET" ||
     run gcloud storage buckets create "gs://$BUCKET" --location "$REGION" \
@@ -119,13 +123,23 @@ schedulers() {  # après le premier déploiement (les jobs doivent exister)
   done
 }
 
-monitoring() {
-  : "${BILLING_ACCOUNT:?BILLING_ACCOUNT manquant (gcloud billing accounts list)}"
-  : "${ALERT_EMAIL:?ALERT_EMAIL manquant (adresse qui reçoit les alertes)}"
-  # Alerte de budget : 5 €, prévenu à 50, 90 et 100 % (l'offre gratuite doit suffire).
-  run gcloud billing budgets create --billing-account "$BILLING_ACCOUNT" \
+budget() {
+  # Alerte de budget : 5 €, e-mail aux administrateurs de facturation à 50, 90 et 100 %.
+  # Elle PRÉVIENT, elle ne coupe rien : en cas d'abus, désactiver la facturation du projet.
+  local account
+  account=$(gcloud billing projects describe "$PROJECT_ID" --format 'value(billingAccountName)' \
+    2>/dev/null | sed 's|billingAccounts/||')
+  if [[ "$DRY_RUN" != "1" ]] && gcloud billing budgets list --billing-account "$account" \
+      --format 'value(displayName)' 2>/dev/null | grep -qx tsuzuku; then
+    echo "Budget « tsuzuku » déjà en place."
+    return
+  fi
+  run gcloud billing budgets create --billing-account "${account:-COMPTE}" \
     --display-name tsuzuku --budget-amount 5EUR --filter-projects "projects/$PROJECT_ID" \
     --threshold-rule percent=0.5 --threshold-rule percent=0.9 --threshold-rule percent=1.0
+}
+
+monitoring() {
   local host
   host=$(gcloud run services describe tsuzuku-api --region "$REGION" --format 'value(status.url)' \
     2>/dev/null | sed 's|https://||' || echo HOTE_DE_L_API)
@@ -136,7 +150,7 @@ monitoring() {
 }
 
 case "${1:-}" in
-  base | secrets | github | schedulers | monitoring) "$1" ;;
-  *) echo "Usage : $0 base|secrets|github|schedulers|monitoring" >&2; exit 2 ;;
+  base | budget | secrets | github | schedulers | monitoring) "$1" ;;
+  *) echo "Usage : $0 base|budget|secrets|github|schedulers|monitoring" >&2; exit 2 ;;
 esac
 [[ "$DRY_RUN" == "1" ]] && echo "(à blanc : rien n'a été exécuté ; DRY_RUN=0 pour appliquer)"
