@@ -9,5 +9,7 @@
 !packages/tsuzuku-ml/pyproject.toml
 !packages/tsuzuku-ml/src
 !config/settings.yaml
+!pipeline/src/tsuzuku_pipeline/db/schema_catalog.sql
+!pipeline/src/tsuzuku_pipeline/db/schema_mart.sql
 **/__pycache__
 **/.venv

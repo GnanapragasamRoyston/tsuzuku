@@ -1,0 +1,88 @@
+# Déploiement de l'API et de l'ingestion sur Google Cloud (phase 11, ADR 014).
+# Déclenché quand ci-backend réussit sur main. Le front, lui, est déployé par Vercel (intégration
+# Git, dossier frontend/). Authentification sans clé : Workload Identity Federation (GitHub OIDC).
+# Variables du dépôt (Settings → Variables) posées par infra/gcp/bootstrap.sh :
+#   GCP_PROJECT, GCP_REGION, GCP_WIF_PROVIDER, GCP_DEPLOYER_SA, MODELS_URI, FRONT_ORIGIN
+name: deploy
+
+on:
+  # API (ci-backend) ET ingestion (ci-pipeline) : une modification de l'une ou l'autre redéploie.
+  # Un push qui touche les deux déploie deux fois de suite (idempotent, sérialisé ci-dessous).
+  workflow_run:
+    workflows: [ci-backend, ci-pipeline]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write  # jeton OIDC échangé contre un accès GCP de courte durée
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false  # jamais deux déploiements en même temps, ni un interrompu
+
+jobs:
+  deploy:
+    # Seulement une CI verte d'un PUSH sur main de CE dépôt (ou un lancement manuel). Sans ça, une
+    # pull request venue d'un fork, depuis une branche nommée « main », déploierait son code.
+    if: >-
+      github.event_name == 'workflow_dispatch' || (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/tsuzuku
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Images (API et ingestion)
+        run: |
+          gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
+          docker build -f backend/Dockerfile -t "$REGISTRY/api:$SHA" .
+          docker build -f infra/ingest/Dockerfile -t "$REGISTRY/ingest:$SHA" .
+          docker push "$REGISTRY/api:$SHA"
+          docker push "$REGISTRY/ingest:$SHA"
+      - name: Migration AVANT la nouvelle API (schéma du pipeline puis Alembic, ADR 012)
+        run: |
+          gcloud run jobs deploy tsuzuku-migrate --quiet \
+            --region "${{ vars.GCP_REGION }}" --image "$REGISTRY/api:$SHA" \
+            --command python --args=-m,app.migrate \
+            --service-account "tsuzuku-api@${{ vars.GCP_PROJECT }}.iam.gserviceaccount.com" \
+            --set-secrets DATABASE_URL=database-url:latest \
+            --max-retries 0 --task-timeout 300s
+          gcloud run jobs execute tsuzuku-migrate --region "${{ vars.GCP_REGION }}" --wait
+      - name: API
+        run: |
+          gcloud run deploy tsuzuku-api --quiet \
+            --region "${{ vars.GCP_REGION }}" --image "$REGISTRY/api:$SHA" --port 8000 \
+            --service-account "tsuzuku-api@${{ vars.GCP_PROJECT }}.iam.gserviceaccount.com" \
+            --min-instances 0 --max-instances 2 --memory 1Gi --cpu 1 \
+            --allow-unauthenticated \
+            --set-secrets DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,PROXY_SECRET=proxy-secret:latest \
+            --set-env-vars "MODELS_URI=${{ vars.MODELS_URI }},COOKIE_SECURE=true" \
+            --set-env-vars "^@^CORS_ORIGINS=[\"${{ vars.FRONT_ORIGIN }}\"]"
+      - name: Ingestion (jobs lancés par Cloud Scheduler)
+        run: |
+          for task in jikan-daily anilist-weekly; do
+            gcloud run jobs deploy "tsuzuku-$task" --quiet \
+              --region "${{ vars.GCP_REGION }}" --image "$REGISTRY/ingest:$SHA" --args "$task" \
+              --service-account "tsuzuku-ingest@${{ vars.GCP_PROJECT }}.iam.gserviceaccount.com" \
+              --set-secrets DATABASE_URL=database-url:latest \
+              --max-retries 1 --task-timeout 1800s
+          done
+      - name: Test de fumée
+        run: |
+          url=$(gcloud run services describe tsuzuku-api --region "${{ vars.GCP_REGION }}" --format 'value(status.url)')
+          # /health/ready : base joignable et modèles chargés (200), sinon échec du déploiement.
+          curl --fail --silent --show-error --retry 5 --retry-delay 10 "$url/health/ready"
+          # Sans le secret du relais, l'API doit refuser (ADR 014).
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$url/media/popular?kind=anime")" = 403

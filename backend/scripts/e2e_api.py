@@ -12,6 +12,7 @@ Lancement : `uv run python scripts/e2e_api.py` (depuis backend/), ou par Playwri
 N'utilise jamais la base de dev : seulement la base tsuzuku_e2e, sur le même serveur.
 """
 
+import os
 import secrets
 import sys
 from pathlib import Path
@@ -154,6 +155,8 @@ def main() -> None:
         settings_file=write_settings(OUT / "settings.yaml"),
         jwt_secret=secrets.token_urlsafe(48),  # éphémère : propre à ce lancement
         cookie_secure=True,  # Chromium accepte un cookie Secure sur http://localhost
+        # Relais de confiance comme en production (ADR 014), secret fourni par Playwright.
+        proxy_secret=os.environ.get("E2E_PROXY_SECRET") or None,
     )
     # Jikan simulé en panne (503 immédiat) : un test ne dépend jamais d'un service externe, et le
     # repli de /trending (« Jikan ne répond pas ») est exercé à chaque lancement.

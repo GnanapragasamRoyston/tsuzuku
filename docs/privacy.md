@@ -44,5 +44,10 @@ illisible par les scripts de la page et n'est envoyé qu'en HTTPS.
 Mots de passe hachés (argon2id), session dans un cookie `httpOnly` + `Secure` + `SameSite=Lax`,
 connexion limitée après plusieurs échecs, journaux sans email ni mot de passe.
 
-TODO (phase 11, mise en ligne) : hébergeur et localisation des données, contact du responsable du
-traitement.
+## Hébergement (phase 11)
+- Site : Vercel (fonctions en Europe, région de Francfort).
+- API et tâches de mise à jour du catalogue : Google Cloud Run, région de Francfort (UE).
+- Base de données : Neon (Postgres), région de Francfort (UE).
+Tes données de compte sont stockées et traitées dans l'UE (base et API à Francfort) ; le réseau de
+diffusion de Vercel, lui, est mondial. Aucun de ces services ne reçoit de données à des fins
+publicitaires. Contact du responsable : voir le dépôt GitHub du projet.

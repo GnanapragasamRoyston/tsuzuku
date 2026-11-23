@@ -1,0 +1,8 @@
+# Liste BLANCHE (contexte = racine du dépôt, qui contient data/ et models/) : seulement ce dont
+# l'image d'ingestion a besoin. Aucun secret (.env) ne peut entrer dans l'image.
+*
+!pipeline/pyproject.toml
+!pipeline/src
+!config/settings.yaml
+!config/watchlist.yaml
+**/__pycache__

@@ -26,15 +26,23 @@ COPY config/settings.yaml /app/config/settings.yaml
 # Migrations du schéma app (service api-migrate : `alembic upgrade head`).
 COPY backend/alembic.ini ./alembic.ini
 COPY backend/migrations ./migrations
+# Job de migration de production (`python -m app.migrate`, ADR 014) : schéma du pipeline PUIS
+# Alembic. Fichiers SQL du pipeline copiés tels quels (une seule source, ADR 003).
+COPY pipeline/src/tsuzuku_pipeline/db/schema_catalog.sql pipeline/src/tsuzuku_pipeline/db/schema_mart.sql /app/pipeline-schema/
+# Dossier des modèles accessible en écriture à l'utilisateur de l'API : en production, les
+# modèles y sont copiés depuis Cloud Storage au démarrage (MODELS_URI).
+RUN mkdir -p /models && chown api /models
 ENV PATH=/app/backend/.venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     MODELS_DIR=/models \
+    PIPELINE_SCHEMA_DIR=/app/pipeline-schema \
+    ALEMBIC_CONFIG=/app/backend/alembic.ini \
     SETTINGS_FILE=/app/config/settings.yaml
 USER api
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
-# --no-proxy-headers : X-Forwarded-For est ignoré. Le relais du front le transmet tel que le
-# client l'a écrit (il ne pose pas l'IP réelle) : s'y fier permettrait de contourner la limite de
-# tentatives par IP. Limite globale en attendant un en-tête de confiance (phase 11, ADR 009).
+# --no-proxy-headers : X-Forwarded-For est toujours ignoré (un client peut l'écrire). En production,
+# l'IP du visiteur arrive par X-Tsuzuku-Client-IP, crue seulement avec le secret du relais
+# (TrustedProxyMiddleware, ADR 014) ; sans secret (dev), l'IP de la connexion (ADR 009).
 CMD ["uvicorn", "app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-proxy-headers"]

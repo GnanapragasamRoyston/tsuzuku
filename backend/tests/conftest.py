@@ -244,10 +244,11 @@ def make_client(pg_url, catalog, models_dir, jikan):
     clients = []
 
     def factory(models=None, transport=None, database_url=None, jwt_secret=TEST_JWT_SECRET,
-                rules=None, **rule_changes):  # fmt: skip
+                rules=None, proxy_secret=None, **rule_changes):  # fmt: skip
         settings = Settings(database_url=database_url or pg_url, models_dir=models or models_dir,
                             settings_file=REPO_ROOT / "config" / "settings.yaml",
-                            jwt_secret=jwt_secret, cookie_secure=True)  # fmt: skip
+                            jwt_secret=jwt_secret, cookie_secure=True,
+                            proxy_secret=proxy_secret)  # fmt: skip
         rules = rules or load_rules(settings.settings_file)
         if rule_changes:
             rules = rules.model_copy(update=rule_changes)

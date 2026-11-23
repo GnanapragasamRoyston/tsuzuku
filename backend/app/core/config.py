@@ -71,12 +71,19 @@ class Settings(BaseSettings):
 
     database_url: str
     models_dir: Path = REPO_ROOT / "models"
+    # Production (ADR 014) : gs://bucket/préfixe des modèles servis, copiés dans models_dir au
+    # démarrage. Absent : models_dir est lu tel quel (local, tests).
+    models_uri: str | None = None
     settings_file: Path = REPO_ROOT / "config" / "settings.yaml"
     # Origines autorisées à appeler l'API depuis un navigateur (le front Next.js en phase 8).
     cors_origins: list[str] = ["http://localhost:3000"]
     # Clé de signature des jetons de session (make api-keys). Absente : l'API démarre quand même,
     # mais les routes de compte répondent 503 (la CI construit l'image sans secret).
     jwt_secret: SecretStr | None = None
+    # Secret partagé avec le front (production, ADR 014) : défini, l'API refuse toute requête
+    # qui ne vient pas du relais du front (sauf /health) et croit alors l'IP du visiteur qu'il
+    # transmet. Absent (dev, tests, E2E) : comportement d'avant, l'IP de la connexion.
+    proxy_secret: SecretStr | None = None
     # Cookie `Secure` : envoyé seulement en HTTPS. À désactiver UNIQUEMENT en local, en http.
     cookie_secure: bool = True
 

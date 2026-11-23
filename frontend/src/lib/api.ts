@@ -6,6 +6,7 @@
  *   SameSite=Lax) part tout seul. Le JavaScript ne voit jamais le jeton.
  * - Sur le serveur Next (pages publiques) : appel direct à API_URL, sans cookie.
  */
+import { serverProxyHeader } from "@/lib/client-ip";
 import { ApiError } from "@/lib/errors";
 
 const SERVER_API_URL = process.env.API_URL ?? "http://127.0.0.1:8000";
@@ -22,7 +23,11 @@ interface ApiOptions {
 
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { method = "GET", body, signal } = options;
-  const headers: Record<string, string> = { Accept: "application/json" };
+  // Côté serveur (pages publiques), appel direct à l'API : il porte lui aussi le secret du relais.
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...(typeof window === "undefined" ? serverProxyHeader() : {}),
+  };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   const response = await fetch(`${baseUrl()}${path}`, {
     method,

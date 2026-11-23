@@ -23,6 +23,8 @@ from app.api.deps import AuthState
 from app.api.routes import auth, demo, health, me, media, trending, users
 from app.clients.jikan import JikanClient
 from app.core.config import ApiRules, Settings, get_settings, load_rules
+from app.core.model_store import download_models
+from app.core.trusted_proxy import TrustedProxyMiddleware
 from app.db.session import make_engine, make_sessionmaker
 from app.services.drop_service import DropEngine
 from app.services.reco_service import RecoEngine
@@ -36,6 +38,13 @@ def _load_models(
     """Charge et vérifie les modèles. Un modèle absent ou invalide n'empêche pas l'API de
     démarrer : ses routes répondent 503 et /health le signale."""
     reco = drop = None
+    if settings.models_uri:
+        try:
+            download_models(settings.models_uri, settings.models_dir)
+            logger.info("Modèles copiés depuis %s", settings.models_uri)
+        except Exception as exc:  # noqa: BLE001
+            # Même règle que ci-dessous : l'API démarre en « degraded » plutôt que de boucler.
+            logger.error("Copie des modèles impossible (%s) : %s", type(exc).__name__, exc)
     # Exception large, volontairement : un pickle corrompu peut lever presque n'importe quoi
     # (UnpicklingError, AttributeError, EOFError…). Planter ici ferait boucler le conteneur au
     # redémarrage ; on préfère une API qui démarre en « degraded ».
@@ -130,6 +139,9 @@ def create_app(
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Content-Type"],
     )
+    if settings.proxy_secret is not None:
+        # Ajouté APRÈS CORS : il s'exécute donc avant lui (Starlette empile à l'envers).
+        app.add_middleware(TrustedProxyMiddleware, secret=settings.proxy_secret.get_secret_value())
     app.add_exception_handler(OperationalError, _database_unavailable)
     app.add_exception_handler(RequestValidationError, _invalid_request)
     for router in (health.router, media.router, trending.router, demo.router, auth.router,

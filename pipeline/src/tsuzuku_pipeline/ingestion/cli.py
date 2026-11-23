@@ -1,6 +1,8 @@
-"""Lancer une tâche d'ingestion hors d'Airflow (make covers, make covers-report).
+"""Lancer une tâche d'ingestion hors d'Airflow.
 
-Les DAG restent le chemin normal ; cette commande sert au premier remplissage et au dépannage.
+- `covers`, `covers-report` : make covers, make covers-report (remplissage, dépannage) ;
+- `jikan-daily`, `anilist-weekly` : production (Cloud Run Job lancé par Cloud Scheduler, ADR 014),
+  mêmes tâches et même ordre que les DAG Airflow, qui restent l'orchestrateur de dev et de démo.
 """
 
 import argparse
@@ -11,13 +13,37 @@ import logging
 from tsuzuku_pipeline.config import load_settings
 from tsuzuku_pipeline.ingestion import covers_report, jobs
 
+CHAINS = {
+    "jikan-daily": (
+        ("collect", jobs.jikan_collect),
+        ("fetch_stats", jobs.jikan_fetch_stats),
+        ("load", jobs.jikan_load),
+        ("quality_check", jobs.jikan_quality),
+    ),
+    "anilist-weekly": (
+        ("fetch_pages", jobs.anilist_fetch),
+        ("load", jobs.anilist_load),
+        ("quality_check", jobs.anilist_quality),
+        ("anime_covers", jobs.anilist_covers),
+    ),
+}
+
+
+def run_chain(task: str, settings: dict, day: dt.date) -> None:
+    """Une étape en échec lève et arrête la chaîne (code de sortie ≠ 0, le job est marqué en
+    échec), comme une tâche en échec arrête le DAG. Les rapports partent dans les journaux."""
+    for name, step in CHAINS[task]:
+        result = step(settings, day)
+        print(json.dumps({"task": task, "step": name, "result": result}, ensure_ascii=False,
+                         default=str), flush=True)  # fmt: skip
+
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="tsuzuku-ingest")
     parser.add_argument(
         "task",
-        choices=["covers", "covers-report"],
-        help="covers : jaquettes des animes (AniList) ; covers-report : rapport de couverture",
+        choices=["covers", "covers-report", *CHAINS],
+        help="covers, covers-report (dépannage) ; jikan-daily, anilist-weekly (production)",
     )
     parser.add_argument(
         "--include-small",
@@ -27,7 +53,9 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     day = dt.datetime.now(dt.UTC).date()
-    if args.task == "covers":
+    if args.task in CHAINS:
+        run_chain(args.task, load_settings(), day)
+    elif args.task == "covers":
         print(
             json.dumps(
                 jobs.anilist_covers(load_settings(), day, include_small=args.include_small),

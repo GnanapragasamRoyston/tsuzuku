@@ -27,7 +27,11 @@ DbSession = Annotated[Session, Depends(get_session)]
 
 
 def _client_ip(request: Request) -> str:
-    # Derrière un proxy (Cloud Run, phase 11), ce sera l'IP du proxy : à revoir alors (ADR 008).
+    # IP du visiteur posée par le middleware du relais de confiance (production, ADR 014) ;
+    # sinon l'IP de la connexion (dev : X-Forwarded-For n'est jamais cru, ADR 009).
+    trusted = getattr(request.state, "client_ip", None)
+    if trusted:
+        return trusted
     return request.client.host if request.client else "unknown"
 
 

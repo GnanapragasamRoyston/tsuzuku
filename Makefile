@@ -4,7 +4,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help setup up down db-check lint format test audit \
-        data spark train figures reco embeddings embeddings-eval api api-keys api-up api-down web web-test web-e2e covers covers-report covers-review covers-approve covers-reject migrate \
+        data spark train figures reco embeddings embeddings-eval db-publish api api-keys api-up api-down web web-test web-e2e covers covers-report covers-review covers-approve covers-reject migrate \
         airflow-keys airflow-up airflow-down airflow-test airflow-trigger
 
 # packages/tsuzuku-ml : code ML partagé par le pipeline et l'API (ADR 006).
@@ -73,6 +73,10 @@ embeddings: ## [phase 10] Embeddings des œuvres (pgvector) ; ARGS=eval (choix d
 
 embeddings-eval: ## [phase 10] Compare les modèles d'embeddings à l'ALS (mêmes utilisateurs de test)
 	cd pipeline && uv run --extra embeddings python -m tsuzuku_pipeline.embeddings_cli eval
+
+db-publish: ## [phase 11] Copie catalogue + marts + embeddings locaux vers la prod (TARGET_DATABASE_URL)
+	@docker image inspect tsuzuku-api:test >/dev/null 2>&1 || docker build -q -f backend/Dockerfile -t tsuzuku-api:test .
+	bash infra/deploy/db_publish.sh
 
 # --- Chiffres clés ------------------------------------------------------------
 # Regroupe les chiffres des rapports générés (aucun calcul, aucune saisie à la main) pour export.
