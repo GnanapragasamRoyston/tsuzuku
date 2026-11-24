@@ -11,6 +11,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 
+import { ProgressControl } from "@/components/progress-control";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { LIST_KEY, useAddPlanned, useEntry, useUpdateEntry } from "@/hooks/use-list";
@@ -18,7 +19,7 @@ import { useMe } from "@/hooks/use-me";
 import { apiFetch } from "@/lib/api";
 import { ApiError, messageFor } from "@/lib/errors";
 import { formatPercent, STATUS_LABEL } from "@/lib/format";
-import { progressLabel, toUpdate } from "@/lib/progress";
+import { progressLabel, setProgress, toUpdate } from "@/lib/progress";
 import type { DropRisk, ListEntry } from "@/lib/types";
 import { useOnline } from "@/hooks/use-online";
 
@@ -80,9 +81,15 @@ function InList({ entry, title }: { entry: ListEntry; title: string }) {
   const client = useQueryClient();
   const update = useUpdateEntry(entry.status, {
     onSaved: (saved) => {
-      // Sans ça, les boutons montrent l'ancienne note le temps du rechargement de l'entrée.
+      // L'annonce dit ce qui a vraiment changé (note ou progression), même si les deux
+      // enregistrements se croisent ; `entry` est encore l'état d'avant (cache pas encore relu).
+      if (saved.score !== entry.score) {
+        setMessage(saved.score ? `Note enregistrée : ${saved.score}/10.` : "Note retirée.");
+      } else {
+        setMessage(`Progression enregistrée : ${progressLabel(saved)}`);
+      }
+      // Sans ça, les boutons montrent l'ancienne valeur le temps du rechargement de l'entrée.
       client.setQueryData([...LIST_KEY, "entry", saved.media.id], saved);
-      setMessage(saved.score ? `Note enregistrée : ${saved.score}/10.` : "Note retirée.");
     },
     onError: (e) => setError(messageFor(e, "save")),
   });
@@ -95,16 +102,29 @@ function InList({ entry, title }: { entry: ListEntry; title: string }) {
     update.mutate({ mediaId: entry.media.id, update: { ...toUpdate(entry), score } });
   }
 
+  function saveProgress(value: number) {
+    setError(null);
+    update.mutate({ mediaId: entry.media.id, update: setProgress(entry, value) });
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <p>
-        Dans ta liste : <span className="font-semibold">{STATUS_LABEL[entry.status]}</span>
-        {" · "}
-        <span className="tabular-nums">{progressLabel(entry)}</span>{" "}
+        Dans ta liste : <span className="font-semibold">{STATUS_LABEL[entry.status]}</span>{" "}
         <Link href="/ma-liste" prefetch={false} className="text-ink-2 underline">
           Gérer dans Ma liste
         </Link>
       </p>
+      {/* Même commande que Ma liste (DESIGN.md § 5.2), largeur d'un formulaire. */}
+      <div className="max-w-form">
+        <ProgressControl
+          entry={entry}
+          editable={entry.status === "in_progress" || entry.status === "planning"}
+          disabled={!online}
+          busy={update.isPending}
+          onCommit={saveProgress}
+        />
+      </div>
       <fieldset className="flex flex-col gap-2" aria-describedby="note-etat">
         <legend className="mb-2 text-small font-semibold text-ink-2">Ta note</legend>
         <div className="flex flex-wrap">

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import ApiRules
 from app.db.app_models import LIST_STATUSES, ListEntry, OnboardingChoice, User
-from app.db.models import Media
+from app.db.models import CriticalEpisode, Media
 from app.schemas.demo import LikedItem, ListEntryIn
 from app.schemas.me import ListEntryUpdate
 
@@ -53,8 +53,11 @@ def page(
         where.append(ListEntry.status == status)
     total = session.scalar(select(func.count()).select_from(ListEntry).where(*where)) or 0
     rows = session.execute(
-        select(ListEntry, Media)
+        select(ListEntry, Media, CriticalEpisode.critical_episode)
         .join(Media, Media.id == ListEntry.media_id)
+        # Jointure externe : la plupart des œuvres (mangas, animes récents) n'ont pas d'épisode
+        # critique, elles restent dans la liste avec None.
+        .outerjoin(CriticalEpisode, CriticalEpisode.media_id == ListEntry.media_id)
         .where(*where)
         # Dernières modifications d'abord, puis id : ordre stable entre deux pages.
         .order_by(ListEntry.updated_at.desc(), ListEntry.media_id)
@@ -67,14 +70,23 @@ def page(
         .group_by(ListEntry.status)
     ).all())  # fmt: skip
     counts = {s: by_status.get(s, 0) for s in LIST_STATUSES}
-    return {"total": total, "counts": counts, "items": [_out(e, m) for e, m in rows]}
+    items = [_out(e, m, critical) for e, m, critical in rows]
+    return {"total": total, "counts": counts, "items": items}
 
 
-def _out(entry: ListEntry, media: Media) -> dict[str, Any]:
+def _critical_episode(session: Session, media_id: int) -> int | None:
+    return session.scalar(
+        select(CriticalEpisode.critical_episode).where(CriticalEpisode.media_id == media_id)
+    )
+
+
+def _out(entry: ListEntry, media: Media, critical_episode: int | None) -> dict[str, Any]:
     return {
         "media": media,
         **{c: getattr(entry, c) for c in ("status", "progress", "dropped_at", "score", "review",
                                           "started_at", "finished_at", "updated_at")},
+        # Épisode où la plupart lâchent (mart, phase 3) : repère sur la barre de progression.
+        "critical_episode": critical_episode,
     }  # fmt: skip
 
 
@@ -82,7 +94,7 @@ def entry(session: Session, user_id: int, media_id: int) -> dict[str, Any] | Non
     found = session.get(ListEntry, (user_id, media_id))
     if found is None:
         return None
-    return _out(found, session.get(Media, media_id))
+    return _out(found, session.get(Media, media_id), _critical_episode(session, media_id))
 
 
 class AlreadyInList(Exception):
@@ -139,7 +151,7 @@ def upsert(
     # valeurs écrites, au lieu de renvoyer l'ancienne version gardée en mémoire par la session.
     entry = session.scalars(stmt, execution_options={"populate_existing": True}).one()
     session.commit()
-    return _out(entry, media)
+    return _out(entry, media, _critical_episode(session, media_id))
 
 
 def remove(session: Session, user_id: int, media_id: int) -> bool:

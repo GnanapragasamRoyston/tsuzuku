@@ -69,6 +69,17 @@ def test_put_validates_entries(user_client, catalog, body):
     assert _put(user_client, catalog["anime"][2], **body).status_code == 422
 
 
+def test_entries_carry_the_critical_episode_for_the_progress_bar(user_client, catalog):
+    # Anime 1 a un épisode critique (3) dans mart.critical_episode, Anime 2 n'en a pas : le
+    # front marque l'épisode sur la barre glissable de Ma liste et de la fiche.
+    with_mark, without = catalog["anime"][1], catalog["anime"][2]
+    assert _put(user_client, with_mark, progress=1).json()["critical_episode"] == 3
+    assert _put(user_client, without, progress=1).json()["critical_episode"] is None
+    items = {i["media"]["id"]: i for i in user_client.get("/me/list").json()["items"]}
+    assert items[with_mark]["critical_episode"] == 3 and items[without]["critical_episode"] is None
+    assert user_client.get(f"/me/list/{with_mark}").json()["critical_episode"] == 3
+
+
 def test_progress_is_not_capped_when_total_is_unknown(user_client, catalog):
     # Le manga de test n'a pas de nombre de chapitres connu (série en cours) : pas de plafond.
     assert _put(user_client, catalog["manga"], progress=250).status_code == 200

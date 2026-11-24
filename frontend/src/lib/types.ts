@@ -82,10 +82,13 @@ export interface ListEntry {
   started_at: string | null;
   finished_at: string | null;
   updated_at: string;
+  /** Épisode où la plupart lâchent (mart) : repère sur la barre ; absent sans données. */
+  critical_episode?: number | null;
 }
 
-/** Corps de PUT /me/list/{media_id} : l'entrée ENTIÈRE (un champ absent est remis à vide). */
-export type ListEntryUpdate = Omit<ListEntry, "media" | "updated_at">;
+/** Corps de PUT /me/list/{media_id} : l'entrée ENTIÈRE (un champ absent est remis à vide).
+ *  Lecture seule exclue : l'API refuse tout champ inconnu (422). */
+export type ListEntryUpdate = Omit<ListEntry, "media" | "updated_at" | "critical_episode">;
 
 export interface ListPage {
   total: number;

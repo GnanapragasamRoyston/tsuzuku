@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   canPlusOne,
+  criticalAlert,
+  criticalMark,
   markDropped,
+  parseProgress,
   plusOne,
   progressLabel,
   progressShare,
+  setProgress,
   toUpdate,
   totalUnits,
 } from "@/lib/progress";
@@ -96,5 +100,82 @@ describe("affichage de la progression", () => {
     expect(Object.keys(toUpdate(entry(anime(12)))).sort()).toEqual(
       ["dropped_at", "finished_at", "progress", "review", "score", "started_at", "status"],
     );
+  });
+});
+
+describe("épisode choisi directement (barre glissable ou champ)", () => {
+  it("garde les autres champs et passe en cours", () => {
+    expect(setProgress(entry(anime(12)), 9)).toEqual({
+      status: "in_progress", progress: 9, dropped_at: null, score: 8, review: "Bien",
+      started_at: "2026-11-01", finished_at: null,
+    });
+  });
+
+  it("le dernier épisode termine l'œuvre, comme « +1 » ; au-delà, ramené au total", () => {
+    expect(setProgress(entry(anime(12)), 12)).toMatchObject({ status: "completed", progress: 12 });
+    expect(setProgress(entry(anime(12)), 40)).toMatchObject({ status: "completed", progress: 12 });
+  });
+
+  it("une œuvre prévue passe en cours dès le premier épisode, reste prévue à 0", () => {
+    expect(setProgress(entry(anime(12), { status: "planning", progress: 0 }), 3).status).toBe("in_progress");
+    expect(setProgress(entry(anime(12), { status: "planning", progress: 0 }), 0).status).toBe("planning");
+  });
+
+  it("revenir en arrière reste possible (erreur de saisie), jamais sous 0", () => {
+    expect(setProgress(entry(anime(12), { progress: 9 }), 2)).toMatchObject({ progress: 2 });
+    expect(setProgress(entry(anime(12)), -4)).toMatchObject({ progress: 0 });
+  });
+
+  it("total inconnu (manga en cours) : pas de plafond, jamais terminé automatiquement", () => {
+    expect(setProgress(entry(manga(null)), 312)).toMatchObject({ status: "in_progress", progress: 312 });
+  });
+});
+
+describe("saisie du champ « Épisode atteint »", () => {
+  it("accepte un entier entre 0 et le total, espaces et zéros en tête compris", () => {
+    expect(parseProgress(" 07 ", 12)).toEqual({ ok: true, value: 7 });
+    expect(parseProgress("0", 12)).toEqual({ ok: true, value: 0 });
+    expect(parseProgress("12", 12)).toEqual({ ok: true, value: 12 });
+  });
+
+  it("refuse le reste avec un message qui dit quoi faire (DESIGN.md § 7)", () => {
+    for (const bad of ["", "abc", "1.5", "-1", "13", "1e2"]) {
+      expect(parseProgress(bad, 12)).toEqual({ ok: false, error: "Entre un nombre entre 0 et 12." });
+    }
+  });
+
+  it("sans total connu : tout entier positif ou nul, dans la limite de l'API", () => {
+    expect(parseProgress("1500", null)).toEqual({ ok: true, value: 1500 });
+    expect(parseProgress("100001", null)).toEqual({ ok: false, error: "Entre un nombre entier, 0 ou plus." });
+  });
+});
+
+describe("repère de l'épisode critique sur la barre", () => {
+  it("position sur la barre, et passé ou non", () => {
+    expect(criticalMark(entry(anime(12), { progress: 4, critical_episode: 9 }))).toEqual({
+      episode: 9, share: 0.75, passed: false, next: false,
+    });
+    expect(criticalMark(entry(anime(12), { progress: 9, critical_episode: 9 }))?.passed).toBe(true);
+  });
+
+  it("« prochain » seulement quand l'épisode suivant est le critique (seul cas en corail, § 1.3)", () => {
+    expect(criticalMark(entry(anime(12), { progress: 8, critical_episode: 9 }))?.next).toBe(true);
+    expect(criticalMark(entry(anime(12), { progress: 7, critical_episode: 9 }))?.next).toBe(false);
+    expect(criticalMark(entry(anime(12), { progress: 9, critical_episode: 9 }))?.next).toBe(false);
+  });
+
+  it("message de la ligne de liste (DESIGN.md § 7), seulement avant l'épisode critique", () => {
+    expect(criticalAlert(entry(anime(12), { progress: 8, critical_episode: 9 }))).toBe(
+      "Prochain épisode : le 9. C'est là que la plupart lâchent No Game No Life.",
+    );
+    expect(criticalAlert(entry(anime(12), { progress: 4, critical_episode: 9 }))).toBeNull();
+  });
+
+  it("aucun repère sans donnée, sans total, ou hors de la barre", () => {
+    expect(criticalMark(entry(anime(12)))).toBeNull();
+    expect(criticalMark(entry(anime(12), { critical_episode: null }))).toBeNull();
+    expect(criticalMark(entry(anime(null), { critical_episode: 3 }))).toBeNull();
+    expect(criticalMark(entry(anime(12), { critical_episode: 0 }))).toBeNull(); // avant le 1er ép.
+    expect(criticalMark(entry(anime(12), { critical_episode: 30 }))).toBeNull();
   });
 });

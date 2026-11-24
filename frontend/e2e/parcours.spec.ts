@@ -74,6 +74,8 @@ test("inscription → onboarding → recos → ajout → +1 ép. → fiche et no
   await expect(forYou.getByRole("button", { name: `${title} : dans ta liste` })).toBeVisible();
   await page.getByRole("tab", { name: /Prévu/ }).click();
   await expect(page.getByRole("tabpanel").getByRole("heading", { name: title })).toBeVisible();
+  // Épisode critique = le prochain (ép. 1, vu plus bas sur la fiche) : alerte de la ligne (§ 7).
+  await expect(page.getByText(`Prochain épisode : le 1. C'est là que la plupart lâchent ${title}.`)).toBeVisible();
   await checkScreen(page, "ma-liste");
 
   // 5. +1 épisode : la ligne passe dans « En cours », les compteurs suivent
@@ -81,6 +83,28 @@ test("inscription → onboarding → recos → ajout → +1 ép. → fiche et no
   await expect(page.getByRole("tab", { name: /En cours\s*·\s*1/ })).toBeVisible();
   await page.getByRole("tab", { name: /En cours/ }).click();
   await expect(page.getByText("1 / 12 ép.")).toBeVisible();
+
+  // 5 bis. Choisir l'épisode directement (DESIGN.md § 5.2) : barre au clavier, puis champ.
+  const slider = page.getByRole("slider", { name: `Épisode atteint, ${title}` });
+  await slider.focus();
+  for (let i = 0; i < 4; i++) await slider.press("ArrowRight");
+  await expect(page.getByText("5 / 12 ép.")).toBeVisible();
+  await expect(slider).toHaveAttribute("aria-valuetext", "5 épisodes sur 12");
+  // Enregistré une seule fois après la dernière touche : toujours là après rechargement.
+  await expect(page.locator("[aria-live=polite]").filter({ hasText: `${title} : 5 / 12 ép.` })).toBeAttached();
+  await page.reload();
+  await expect(page.getByText("5 / 12 ép.")).toBeVisible();
+  await page.getByRole("button", { name: new RegExp(`Changer l'épisode atteint pour ${title}`) }).click();
+  const field = page.getByLabel("Épisode atteint", { exact: true });
+  await field.fill("13");
+  await page.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Entre un nombre entre 0 et 12." })).toBeVisible();
+  await field.fill("8");
+  await field.press("Enter");
+  await expect(page.getByText("8 / 12 ép.")).toBeVisible();
+  // Le focus revient sur le compteur (§ 5.2).
+  await expect(page.getByRole("button", { name: new RegExp(`^8 / 12 ép\\. Changer`) })).toBeFocused();
+  await checkScreen(page, "ma-liste-progression");
 
   // 6. Fiche œuvre (phase 9) : le titre mène à la fiche ; risque, courbe, note
   await page.getByRole("link", { name: title }).first().click();

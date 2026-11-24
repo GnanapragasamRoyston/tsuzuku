@@ -25,9 +25,9 @@ import { useMe, useRedirectOn401 } from "@/hooks/use-me";
 import { messageFor } from "@/lib/errors";
 import { STATUS_LABEL } from "@/lib/format";
 import { ONBOARDING_MIN, needsOnboarding } from "@/lib/onboarding";
-import { markDropped, plusOne, progressLabel } from "@/lib/progress";
+import { markDropped, plusOne, progressLabel, setProgress } from "@/lib/progress";
 import { recoReason } from "@/lib/reco";
-import type { ListEntry, ListStatus } from "@/lib/types";
+import type { ListEntry, ListEntryUpdate, ListStatus } from "@/lib/types";
 import { LIST_STATUSES } from "@/lib/types";
 import { InstallInvite } from "@/components/install-invite";
 
@@ -71,9 +71,8 @@ function StatusPanel({ status, announce }: StatusPanelProps) {
     onError: (e) => setError(messageFor(e, "save")),
   });
 
-  function act(entry: ListEntry, kind: "plus" | "drop") {
+  function save(entry: ListEntry, next: ListEntryUpdate) {
     setError(null);
-    const next = kind === "plus" ? plusOne(entry) : markDropped(entry);
     update.mutate({ mediaId: entry.media.id, update: next });
   }
 
@@ -111,8 +110,9 @@ function StatusPanel({ status, announce }: StatusPanelProps) {
               key={entry.media.id}
               entry={entry}
               busy={pending.has(entry.media.id)}
-              onPlusOne={() => act(entry, "plus")}
-              onDrop={() => act(entry, "drop")}
+              onPlusOne={() => save(entry, plusOne(entry))}
+              onDrop={() => save(entry, markDropped(entry))}
+              onSetProgress={(value) => save(entry, setProgress(entry, value))}
             />
           ))}
         </ul>

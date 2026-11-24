@@ -1,16 +1,17 @@
 /**
- * Ligne de « Ma liste » (DESIGN.md § 5.2) : jaquette 88 px, titre, progression écrite + barre,
- * actions « +1 ép. » et « J'ai lâché ». La ligne entière n'est pas cliquable.
+ * Ligne de « Ma liste » (DESIGN.md § 5.2) : jaquette 88 px, titre, progression (compteur
+ * modifiable + barre glissable, components/progress-control.tsx), actions « +1 ép. » et
+ * « J'ai lâché ». La ligne entière n'est pas cliquable.
  */
 "use client";
 
 import Link from "next/link";
 
 import { Cover } from "@/components/cover";
+import { ProgressControl } from "@/components/progress-control";
 import { Button } from "@/components/ui/button";
-import { ProgressBar } from "@/components/ui/progress-bar";
 import { mediaMeta } from "@/lib/format";
-import { canPlusOne, progressLabel, progressShare, totalUnits, unitLabel } from "@/lib/progress";
+import { canPlusOne, totalUnits, unitLabel } from "@/lib/progress";
 import type { ListEntry } from "@/lib/types";
 import { useOnline } from "@/hooks/use-online";
 
@@ -19,9 +20,10 @@ interface ListRowProps {
   busy: boolean;
   onPlusOne: () => void;
   onDrop: () => void;
+  onSetProgress: (value: number) => void;
 }
 
-export function ListRow({ entry, busy, onPlusOne, onDrop }: ListRowProps) {
+export function ListRow({ entry, busy, onPlusOne, onDrop, onSetProgress }: ListRowProps) {
   const { media } = entry;
   const online = useOnline();
   const active = entry.status === "in_progress" || entry.status === "planning";
@@ -43,8 +45,13 @@ export function ListRow({ entry, busy, onPlusOne, onDrop }: ListRowProps) {
         <p className="text-meta font-semibold tracking-meta text-ink-2 uppercase">
           {mediaMeta(media)}
         </p>
-        <p className="tabular-nums">{progressLabel(entry)}</p>
-        <ProgressBar share={progressShare(entry)} muted={entry.status === "dropped"} />
+        <ProgressControl
+          entry={entry}
+          editable={active}
+          disabled={!online}
+          busy={busy}
+          onCommit={onSetProgress}
+        />
       {active && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {canPlusOne(entry) && (

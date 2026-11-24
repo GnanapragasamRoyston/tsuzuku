@@ -52,6 +52,9 @@ class ListEntryOut(BaseModel):
     started_at: dt.date | None
     finished_at: dt.date | None
     updated_at: dt.datetime
+    # Épisode où la plupart des gens lâchent cette œuvre (mart.critical_episode) ; None sans
+    # données (mangas, animes récents). Repère sur la barre de progression du front.
+    critical_episode: int | None = None
 
 
 class ListPage(BaseModel):

@@ -78,7 +78,9 @@ Le corail sert à **signaler**. Sur un écran, il n'apparaît que pour :
 2. **l'élément actif** de la navigation : un trait de 2 px sous l'onglet, pas un fond ;
 3. **le risque de drop « à risque »** : le libellé et son marqueur. Le chiffre, lui, reste en
    `ink` ;
-4. **l'épisode critique** sur la courbe ;
+4. **l'épisode critique** sur la courbe, et sur la barre de progression **seulement quand c'est le
+   prochain épisode** (repère + alerte de la ligne, § 5.2) : sinon le repère est neutre, sans quoi
+   une liste de dix séries dépasserait le budget ;
 5. **les erreurs** (message de champ, échec d'enregistrement).
 
 Jamais en corail : titres, mots mis en valeur, numéros de section, grands chiffres éditoriaux,
@@ -258,6 +260,22 @@ Un écran stable n'utilise ni asymétrie, ni chiffre `figure` décoratif, ni ban
   `ink-2`). Lâché : barre figée, libellé « Lâché à l'ép. 3 ».
 - Actions : « +1 ép. » (bouton secondaire, une seule frappe) et « J'ai lâché » (bouton discret).
   Au dernier épisode, « +1 ép. » propose « Marquer comme terminé ».
+- **Choisir l'épisode directement** (en cours et prévu ; même contrôle sur la fiche œuvre) :
+  - **barre glissable** quand le total est connu : même piste de 4 px, poignée ronde de 16 px
+    `ink` ; zone tactile de 44 px de haut. Le compteur suit pendant le glissement ;
+    enregistrement au relâchement (doigt, souris) ou 600 ms après la dernière touche (clavier :
+    flèches ±1, Page haut/bas ±10, Début/Fin). Focus : contour `ink` de 2 px autour de la piste ;
+  - **champ** : le compteur est un bouton (« 7 / 24 ép. · Changer ») qui ouvre « Épisode atteint
+    [ 7 ] / 24 » + « Enregistrer » (secondaire) et « Annuler » (discret) ; Entrée enregistre,
+    Échap annule, le focus revient sur le compteur. Seul moyen (avec « +1 ») si le total est
+    inconnu ;
+  - mêmes règles que « +1 » : le dernier épisode termine l'œuvre, le premier fait passer une
+    œuvre prévue en cours ; revenir en arrière est permis ;
+  - **repère de l'épisode critique** : trait vertical de 4 × 12 px sur la piste. `ink` tant
+    qu'il est loin, `good` une fois passé, `accent` quand c'est le prochain épisode, avec alors
+    l'alerte de la ligne en `small` `accent` sous la barre (§ 7). Jamais la couleur seule : la
+    barre annonce « épisode critique : 9 » aux lecteurs d'écran.
+  - Hors ligne : barre et champ désactivés, comme les autres actions (§ 5.10).
 - Rappel facultatif sous la progression, en `small` : « Encore 3 épisodes avant le point de non-retour. »
   (en `good` une fois le point passé).
 - Survol de la ligne : fond `hover`. Ligne entière jamais cliquable : le titre est le lien.
@@ -379,6 +397,9 @@ Exemples de micro-textes :
 | accueil, haut de page, connecté | Voir mes recos · Ma liste (discret) ; onboarding pas fait : Choisir mes 10 titres · Ma liste |
 | bouton, ligne de liste | +1 ép. |
 | bouton, ligne de liste | J'ai lâché |
+| compteur, ligne de liste | 7 / 24 ép. · Changer |
+| champ, ligne de liste | Épisode atteint (Chapitre atteint pour un manga) |
+| champ, saisie refusée | Entre un nombre entre 0 et 24. |
 | état vide, Ma liste › Lâché | Rien de lâché pour l'instant. Tu tiens bon. |
 | état vide, Ma liste › En cours | Rien en cours. Trouve ta prochaine série dans Pour toi. |
 | onboarding, compteur | Encore 4 titres et tes recos sont prêtes. |
