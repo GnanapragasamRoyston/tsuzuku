@@ -219,7 +219,8 @@ export function ProgressControl({ entry, editable, disabled, busy, onCommit }: P
             value={shown}
             disabled={disabled}
             aria-label={`${unitName}, ${media.title}`}
-            aria-valuetext={`${shown} ${anime ? "épisodes" : "chapitres"} sur ${total}`}
+            // Singulier pour 0 et 1, comme en français (« 1 épisode sur 12 »).
+            aria-valuetext={`${shown} ${anime ? "épisode" : "chapitre"}${shown > 1 ? "s" : ""} sur ${total}`}
             aria-describedby={mark ? descriptionId : undefined}
             onChange={(e) => setDraft(Number(e.currentTarget.value))}
             onPointerUp={(e) => commit(Number(e.currentTarget.value))}
