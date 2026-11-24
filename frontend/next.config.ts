@@ -1,3 +1,4 @@
+import { withSerwist } from "@serwist/turbopack";
 import type { NextConfig } from "next";
 
 // API FastAPI vue par le SERVEUR Next (jamais exposée au navigateur, qui passe par /api).
@@ -71,4 +72,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Service worker (phase 12, ADR 015) : compilé par la route app/serwist/[path].
+export default withSerwist(nextConfig);

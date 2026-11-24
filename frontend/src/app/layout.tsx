@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/site-header";
 import { THEME_COLOR } from "@/lib/tokens";
 
 import "./globals.css";
+import { OfflineBanner } from "@/components/offline-banner";
 
 // Polices auto-hébergées par next/font (téléchargées au build) : aucune requête vers Google côté
 // visiteur, donc pas de traceur tiers (DESIGN.md § 2).
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Suspense fallback={<div aria-hidden="true" className="min-h-16 border-b border-line lg:min-h-18" />}>
             <SiteHeader />
           </Suspense>
+          <OfflineBanner />
           <main id="contenu" className="flex-1">
             {children}
           </main>

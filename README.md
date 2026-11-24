@@ -11,8 +11,8 @@ Next.js.
 Run, base Neon (Francfort). Le premier chargement après une période sans visite prend environ
 5 s (l'API et la base se réveillent : 0 € au repos).
 
-🚧 **En construction** — phases 0 à 11 terminées (pipeline, modèles, API, appli, recos par le
-contenu, mise en ligne). Voir [docs/SPEC.md](docs/SPEC.md) pour le cahier des charges et
+🚧 **En construction** — phases 0 à 12 terminées (pipeline, modèles, API, appli, recos par le
+contenu, mise en ligne, PWA installable et lisible hors ligne : [/installer](https://tsuzuku-eight.vercel.app/installer)). Voir [docs/SPEC.md](docs/SPEC.md) pour le cahier des charges et
 [docs/architecture.md](docs/architecture.md) pour l'architecture.
 
 ## Démarrage

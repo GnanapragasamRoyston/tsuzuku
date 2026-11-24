@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 import { ApiError } from "@/lib/errors";
 import type { Me } from "@/lib/types";
+import { purgePrivateData } from "@/lib/offline-cache";
 
 export const ME_KEY = ["me"] as const;
 
@@ -15,7 +16,10 @@ async function fetchMe(): Promise<Me | null> {
   try {
     return await apiFetch<Me>("/me");
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) return null;
+    if (error instanceof ApiError && error.status === 401) {
+      await purgePrivateData(); // session expirée ou révoquée : rien ne reste hors ligne
+      return null;
+    }
     throw error;
   }
 }
@@ -42,8 +46,12 @@ export function useLogout() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: () => apiFetch<null>("/auth/logout", { method: "POST" }),
-    onSettled: () => {
-      // Plus aucune donnée du compte en mémoire après la déconnexion.
+    onSettled: async () => {
+      // Plus aucune donnée du compte en mémoire après la déconnexion, ni dans le cache hors
+      // ligne du service worker (téléphone partagé, ADR 015). Requêtes annulées d'abord : une
+      // réponse arrivée après le vidage recréerait le cache privé.
+      await client.cancelQueries();
+      await purgePrivateData();
       client.clear();
       client.setQueryData(ME_KEY, null);
     },

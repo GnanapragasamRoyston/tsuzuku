@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Confidentialité" };
 
 const DATA: [string, string][] = [
   ["Email", "Te connecter. Jamais affiché publiquement, jamais partagé."],
-  ["Pseudo", "T'identifier dans l'appli (profil public à venir)."],
+  ["Pseudo", "T'identifier dans l'appli, et sur ton profil public si tu l'ouvres."],
   ["Mot de passe", "Jamais stocké en clair : seulement son empreinte argon2id, qui ne permet pas de le retrouver."],
   ["Ta liste", "Statut, progression, épisode ou chapitre de drop, note, critique, dates : ta liste, tes recos, ton risque de drop."],
   ["Tes choix d'onboarding", "Tes premières recos."],

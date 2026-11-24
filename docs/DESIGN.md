@@ -213,7 +213,7 @@ filets. Seule exception : un menu ou un dialogue ouvert reçoit
 | Ma liste | **stable** | toujours : onglets de statut → liste de lignes identiques ; rien ne bouge d'une visite à l'autre |
 | Fiche œuvre | **stable** | toujours dans cet ordre : en-tête (jaquette, titre, méta, ajout) → risque de drop → courbe → communauté → dans le même esprit (rangée de jaquettes, phase 10) |
 | Onboarding | **stable** | filtres → grille régulière → barre de progression fixe en bas |
-| Formulaires (inscription, connexion, paramètres) | **stable** | une colonne, 480 px max, libellés au-dessus des champs |
+| Formulaires (inscription, connexion, paramètres), `/installer`, `/hors-ligne` | **stable** | une colonne, 480 px max, libellés au-dessus des champs |
 
 Un écran stable n'utilise ni asymétrie, ni chiffre `figure` décoratif, ni bandeau d'affiche.
 
@@ -329,6 +329,23 @@ Hauteur min 44 px, padding horizontal 16 à 24 px. Bouton icône seule : 44 × 4
   page : le logo complet à 36 px de haut (l'icône seule sous 360 px de large).
 - Lien d'évitement « Aller au contenu » en premier élément focusable.
 
+### 5.10 Hors ligne et installation (phase 12, PWA)
+- **Bandeau hors ligne** : sous l'en-tête, pleine largeur, fond `surface`, filet `line` en bas,
+  texte `small` `ink` ; ni corail, ni icône d'alerte (ce n'est pas une erreur). Annoncé une fois
+  (`role="status"`). Texte : « Hors ligne. Ta liste et les fiches déjà vues restent
+  consultables ; les modifications reviendront avec le réseau. » + « Dernière synchro : il y a
+  2 h » en `ink-2` quand elle est connue. Disparaît au retour du réseau.
+- **Actions désactivées hors ligne** (+1 ép., J'ai lâché, note, ajout, proposer une jaquette) :
+  état « désactivé » du § 5 (`disabled`, texte et bord `disabled`) ; la raison est le bandeau.
+- **Invitation à installer** (jamais à la première visite : après l'onboarding ou un premier
+  ajout) : bloc discret en haut de « Ma liste », fond `surface`, rayon `lg`, titre `ui` 600,
+  une phrase en `ink-2`. Android : bouton **secondaire** « Installer l'appli » (le corail reste à
+  l'action principale de l'écran) + bouton discret « Plus tard ». iPhone : mini-guide en deux
+  étapes numérotées (« Touche Partager », « Puis Sur l'écran d'accueil »), lien « Tout savoir »
+  vers `/installer`. « Plus tard » le masque 14 jours.
+- **Pages `/installer` et `/hors-ligne`** : écrans *stables* de type formulaire (une colonne,
+  480 px max) ; titre `h1`, étapes en liste numérotée, aucun visuel décoratif.
+
 ---
 
 ## 6. Mouvement
@@ -366,6 +383,8 @@ Exemples de micro-textes :
 | trop de tentatives | Trop d'essais. Réessaie dans 5 minutes. |
 | risque sans données | Pas encore assez de données pour les manhwas. On ne va pas inventer un chiffre. |
 | fiche, sous la jaquette | Proposer une jaquette |
+| hors ligne, bandeau | Hors ligne. Ta liste et les fiches déjà vues restent consultables ; les modifications reviendront avec le réseau. |
+| invitation à installer | Garde Tsuzuku sur ton écran d'accueil : il s'ouvre comme une appli, même sans réseau. |
 | proposition envoyée | Merci, on la vérifie avant de l'afficher. |
 
 ---

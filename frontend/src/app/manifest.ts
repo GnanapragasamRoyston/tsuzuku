@@ -9,6 +9,9 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Tsuzuku",
     description: "Ton journal d'animes, de mangas et de manhwas.",
     lang: "fr",
+    // Identité stable de l'appli installée, et portée = tout le site (phase 12, SPEC § 8.1).
+    id: "/",
+    scope: "/",
     start_url: "/",
     display: "standalone",
     background_color: THEME_COLOR,
@@ -16,6 +19,14 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       { src: "/brand/tsuzuku-icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/brand/tsuzuku-icon-512.png", sizes: "512x512", type: "image/png" },
+      // Android découpe la forme lui-même : fond plein, symbole dans la zone de sécurité
+      // (scripts/maskable-icon.mjs).
+      {
+        src: "/brand/tsuzuku-maskable-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
     ],
   };
 }

@@ -12,6 +12,7 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import { mediaMeta } from "@/lib/format";
 import { canPlusOne, progressLabel, progressShare, totalUnits, unitLabel } from "@/lib/progress";
 import type { ListEntry } from "@/lib/types";
+import { useOnline } from "@/hooks/use-online";
 
 interface ListRowProps {
   entry: ListEntry;
@@ -22,6 +23,7 @@ interface ListRowProps {
 
 export function ListRow({ entry, busy, onPlusOne, onDrop }: ListRowProps) {
   const { media } = entry;
+  const online = useOnline();
   const active = entry.status === "in_progress" || entry.status === "planning";
   const total = totalUnits(media);
   const last = total !== null && entry.progress + 1 >= total;
@@ -48,7 +50,7 @@ export function ListRow({ entry, busy, onPlusOne, onDrop }: ListRowProps) {
           {canPlusOne(entry) && (
             <Button
               onClick={onPlusOne}
-              disabled={busy}
+              disabled={busy || !online}
               aria-label={
                 last
                   ? `Marquer ${media.title} comme terminé`
@@ -61,7 +63,7 @@ export function ListRow({ entry, busy, onPlusOne, onDrop }: ListRowProps) {
           <Button
             variant="quiet"
             onClick={onDrop}
-            disabled={busy}
+            disabled={busy || !online}
             aria-label={`J'ai lâché ${media.title}`}
           >
             J&apos;ai lâché

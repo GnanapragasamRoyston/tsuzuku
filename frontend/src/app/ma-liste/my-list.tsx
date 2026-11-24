@@ -29,6 +29,7 @@ import { markDropped, plusOne, progressLabel } from "@/lib/progress";
 import { recoReason } from "@/lib/reco";
 import type { ListEntry, ListStatus } from "@/lib/types";
 import { LIST_STATUSES } from "@/lib/types";
+import { InstallInvite } from "@/components/install-invite";
 
 
 // Micro-textes de DESIGN.md § 7.
@@ -215,6 +216,7 @@ export function MyList() {
             </ButtonLink>
           </div>
         )}
+        <InstallInvite />
         <Tabs value={tab} onValueChange={(v) => setTab(v as ListStatus)}>
           <TabsList aria-label="Statut">
             {LIST_STATUSES.map((s) => (

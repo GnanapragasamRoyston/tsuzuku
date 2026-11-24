@@ -16,12 +16,15 @@ import { ME_KEY, useLogout, useMe } from "@/hooks/use-me";
 import { apiFetch } from "@/lib/api";
 import { ApiError, messageFor } from "@/lib/errors";
 import type { Me } from "@/lib/types";
+import { purgePrivateData } from "@/lib/offline-cache";
+import { useOnline } from "@/hooks/use-online";
 
 export function Account() {
   const router = useRouter();
   const client = useQueryClient();
   const me = useMe();
   const logout = useLogout();
+  const online = useOnline();
   // Vrai dès que le compte est supprimé : la session disparaît alors volontairement, il ne faut
   // pas la traiter comme expirée (test de la phase 8 : on finissait sur /connexion?suivant=/compte).
   const deleted = useRef(false);
@@ -53,8 +56,10 @@ export function Account() {
 
   const remove = useMutation({
     mutationFn: (password: string) => apiFetch("/me", { method: "DELETE", body: { password } }),
-    onSuccess: () => {
+    onSuccess: async () => {
       deleted.current = true;
+      await client.cancelQueries(); // pas de réponse tardive qui recréerait le cache privé
+      await purgePrivateData();
       client.clear();
       router.replace("/");
     },
@@ -89,6 +94,7 @@ export function Account() {
         <Button
           className="self-start"
           loading={logout.isPending}
+          disabled={!online}
           onClick={() => logout.mutate(undefined, { onSettled: () => router.push("/") })}
         >
           Me déconnecter

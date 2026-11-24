@@ -11,6 +11,7 @@ import { Cover } from "@/components/cover";
 import { Button } from "@/components/ui/button";
 import { mediaMeta } from "@/lib/format";
 import type { RecoItem } from "@/lib/types";
+import { useOnline } from "@/hooks/use-online";
 
 interface RecoCardProps {
   item: RecoItem;
@@ -23,6 +24,7 @@ interface RecoCardProps {
 
 export function RecoCard({ item: { media, because }, done, pending, onAdd, layout = "row" }: RecoCardProps) {
   const featured = layout === "featured";
+  const online = useOnline();
   return (
     <div className={clsx("flex gap-4", featured && "flex-col md:flex-row md:gap-8")}>
       {featured ? (
@@ -57,7 +59,7 @@ export function RecoCard({ item: { media, because }, done, pending, onAdd, layou
           variant="quiet"
           className="self-start"
           aria-disabled={done || undefined}
-          disabled={pending}
+          disabled={pending || !online}
           aria-label={done ? `${media.title} : dans ta liste` : `Ajouter ${media.title} à ma liste`}
           onClick={() => {
             if (!done) onAdd();

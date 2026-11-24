@@ -147,3 +147,46 @@ test("connexion refusée : message neutre, sans dire ce qui est faux", async ({ 
     "Email ou mot de passe incorrect.",
   );
 });
+
+
+test("PWA : installable, et « Ma liste » reste lisible hors ligne (phase 12)", async ({ page, context }) => {
+  const manifest = await (await page.request.get("/manifest.webmanifest")).json();
+  expect(manifest).toMatchObject({ display: "standalone", scope: "/", id: "/" });
+  expect(manifest.icons.some((i: { purpose?: string }) => i.purpose === "maskable")).toBe(true);
+
+  const pseudo = `pwa_${Date.now().toString(36)}`;
+  await page.goto("/inscription");
+  await page.getByLabel("Email").fill(`${pseudo}@example.com`);
+  await page.getByLabel("Pseudo").fill(pseudo);
+  await page.getByLabel("Mot de passe").fill("une phrase de passe solide");
+  await page.getByRole("button", { name: "Créer mon compte" }).click();
+  await expect(page).toHaveURL(/\/onboarding$/);
+  for (const n of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+    await page.getByRole("button", { name: new RegExp(`Anime de test ${String(n).padStart(2, "0")}`) }).click();
+  }
+  await page.getByRole("button", { name: "Voir mes recos" }).click();
+  await expect(page).toHaveURL(/\/ma-liste$/);
+  // Le service worker contrôle la page, puis « Ma liste » est rechargée en ligne (cache rempli).
+  await page.evaluate(async () => (await navigator.serviceWorker.ready).active?.state);
+  await page.reload();
+  await page.getByRole("button", { name: /^Ajouter .* à ma liste$/ }).first().click();
+  await page.getByRole("tab", { name: /Prévu/ }).click();
+  await expect(page.getByRole("tabpanel").getByRole("heading").first()).toBeVisible();
+
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByRole("status").filter({ hasText: "Hors ligne." })).toBeVisible();
+  await page.getByRole("tab", { name: /Prévu/ }).click();
+  await expect(page.getByRole("tabpanel").getByRole("heading").first()).toBeVisible();
+  // Une page jamais ouverte : la page de secours.
+  await page.goto("/confidentialite");
+  await expect(page.getByRole("heading", { name: "Pas de réseau" })).toBeVisible();
+  await context.setOffline(false);
+
+  // Déconnexion : le cache privé du service worker est vidé (téléphone partagé).
+  await page.goto("/compte");
+  await page.getByRole("button", { name: "Me déconnecter" }).click();
+  // Déconnecté (accueil, ou connexion si la page Compte voit la session disparaître d'abord).
+  await expect(page.getByRole("link", { name: "Connexion" }).first()).toBeVisible();
+  expect(await page.evaluate(() => caches.has("tsuzuku-private"))).toBe(false);
+});

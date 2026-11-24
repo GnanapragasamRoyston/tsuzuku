@@ -597,3 +597,29 @@ pgvector gratuit ; clé JSON écartée au profit de Workload Identity. Voir
    partagé ; vérifié en production (429 au 6e échec, aucune IP manquante).
 3. *Que se passe-t-il si une migration casse ?* — Le job de migration tourne avant l'API ; s'il
    échoue, le déploiement s'arrête et l'ancienne version reste en ligne.
+
+## Phase 12 — PWA : installable et hors ligne (2026-11-24)
+**Ce qui a été construit :** service worker (Serwist, compatible Turbopack), règles de cache
+testées, « Ma liste » lisible hors ligne avec bandeau et actions désactivées, invitation à
+installer (Android et iPhone), pages `/installer` et `/hors-ligne`, icône « maskable ».
+
+**Concepts clés :**
+- *Service worker* : un script que le navigateur place entre la page et le réseau ; il décide,
+  requête par requête, de répondre depuis un cache ou depuis le réseau.
+- *Stratégies* : cache d'abord (fichiers qui ne changent pas), réseau d'abord (données qui doivent
+  être fraîches), cache puis rafraîchi (catalogue : rapide, mis à jour en arrière-plan).
+- *Données privées hors ligne* : un cache à part, vidé à la déconnexion et quand la session est
+  refusée, pour qu'un téléphone partagé ne montre jamais la liste de quelqu'un d'autre.
+
+**Pourquoi ce choix :** PWA plutôt que stores (ADR 010) ; Serwist plutôt qu'un service worker écrit
+à la main ; réseau d'abord pour « Ma liste » (une session révoquée ne doit plus rien afficher).
+Voir [ADR 015](decisions/015-pwa.md).
+
+**3 questions d'entretien possibles :**
+1. *Pourquoi pas « cache puis rafraîchi » pour la liste de l'utilisateur ?* — La réponse en cache
+   s'afficherait même si la session a expiré : on prend le réseau d'abord et le cache seulement
+   hors ligne.
+2. *Comment tester un mode hors ligne ?* — Playwright coupe le réseau (`setOffline`), recharge, et
+   vérifie la liste, le bandeau et la page de secours.
+3. *Pourquoi ne pas proposer l'installation dès l'arrivée ?* — Une invite avant toute valeur perçue
+   est refusée par réflexe ; on attend une action utile et on respecte « Plus tard ».

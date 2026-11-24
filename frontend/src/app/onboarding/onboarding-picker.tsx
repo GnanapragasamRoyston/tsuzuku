@@ -22,6 +22,7 @@ import { messageFor } from "@/lib/errors";
 import { mediaMeta } from "@/lib/format";
 import { ONBOARDING_MIN, counterLabel, toggle } from "@/lib/onboarding";
 import type { MediaSummary } from "@/lib/types";
+import { markUsefulAction } from "@/components/install-invite";
 
 type Tab = "anime" | "manga" | "manhwa";
 const TABS: { value: Tab; label: string; kinds: string[] }[] = [
@@ -126,6 +127,7 @@ export function OnboardingPicker() {
     mutationFn: () =>
       apiFetch("/me/onboarding", { method: "POST", body: { media_ids: [...selected] } }),
     onSuccess: async () => {
+      markUsefulAction(); // l'invitation à installer peut maintenant apparaître
       // Le profil de reco vient de changer : recos et liste à recharger.
       await Promise.all([ME_KEY, ["recos"], ["list"]].map((queryKey) =>
         client.invalidateQueries({ queryKey })));

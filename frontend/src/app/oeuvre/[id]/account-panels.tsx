@@ -20,6 +20,7 @@ import { ApiError, messageFor } from "@/lib/errors";
 import { formatPercent, STATUS_LABEL } from "@/lib/format";
 import { progressLabel, toUpdate } from "@/lib/progress";
 import type { DropRisk, ListEntry } from "@/lib/types";
+import { useOnline } from "@/hooks/use-online";
 
 const SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
@@ -37,6 +38,7 @@ export function EntryPanel({ mediaId, title }: { mediaId: number; title: string 
   const entry = useEntry(mediaId, Boolean(me.data));
   const [error, setError] = useState<string | null>(null);
   const add = useAddPlanned((e) => setError(messageFor(e, "save")));
+  const online = useOnline();
 
   if (me.isPending || (me.data && entry.isPending)) return <Skeleton className="h-11 w-40" />;
   if (!me.data) {
@@ -53,6 +55,7 @@ export function EntryPanel({ mediaId, title }: { mediaId: number; title: string 
         <Button
           variant="primary"
           loading={add.isPending}
+          disabled={!online}
           onClick={() => {
             setError(null);
             add.mutate(mediaId);
@@ -83,7 +86,8 @@ function InList({ entry, title }: { entry: ListEntry; title: string }) {
     },
     onError: (e) => setError(messageFor(e, "save")),
   });
-  const saving = update.isPending;
+  const online = useOnline();
+  const saving = update.isPending || !online; // hors ligne : note non modifiable
 
   function rate(score: number | null) {
     setError(null);
@@ -227,6 +231,7 @@ function suggestionError(error: unknown): string {
 export function CoverSuggestion({ mediaId }: { mediaId: number }) {
   const me = useMe();
   const [open, setOpen] = useState(false);
+  const online = useOnline();
   const [error, setError] = useState<string | null>(null);
   const send = useMutation({
     mutationFn: (url: string) =>
@@ -271,7 +276,7 @@ export function CoverSuggestion({ mediaId }: { mediaId: number }) {
         error={error}
       />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" loading={send.isPending}>
+        <Button type="submit" loading={send.isPending} disabled={!online}>
           Envoyer
         </Button>
         <Button

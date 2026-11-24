@@ -31,6 +31,8 @@ import type {
   ListStatus,
   RecoResponse,
 } from "@/lib/types";
+import { markSynced } from "@/lib/offline-cache";
+import { markUsefulAction } from "@/components/install-invite";
 
 export const LIST_KEY = ["list"] as const;
 const RECOS_KEY = ["recos"] as const;
@@ -42,13 +44,15 @@ export function useListPages(status: ListStatus) {
   return useInfiniteQuery({
     queryKey: [...LIST_KEY, status],
     initialPageParam: 0,
-    queryFn: ({ pageParam }) => {
+    queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams({
         status,
         limit: String(PAGE_LIMIT),
         offset: String(pageParam),
       });
-      return apiFetch<ListPage>(`/me/list?${params}`);
+      const page = await apiFetch<ListPage>(`/me/list?${params}`);
+      markSynced(); // « Dernière synchro » du bandeau hors ligne
+      return page;
     },
     getNextPageParam: (_last, pages) => nextOffset(pages),
   });
@@ -153,6 +157,7 @@ export function useAddPlanned(onError: (error: unknown) => void) {
       return mediaId;
     },
     onSuccess: () => {
+      markUsefulAction(); // l'invitation à installer peut maintenant apparaître
       client.invalidateQueries({ queryKey: LIST_KEY });
       client.invalidateQueries({ queryKey: ME_KEY });
       // Les recos ne sont PAS rechargées tout de suite (la ligne « Ajouté » disparaîtrait sous le
