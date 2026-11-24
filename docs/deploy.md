@@ -8,8 +8,9 @@ dans quel ordre**. Aucun secret n'est jamais écrit dans un fichier, un commit o
    facturation (carte demandée ; l'offre gratuite doit suffire, une alerte à 5 € est posée).
 2. **Neon** : créer un projet, région **AWS Europe Central (Francfort)**, Postgres 16. Garder
    l'URL de connexion (bouton « Connect ») pour l'étape 2, sans la coller nulle part.
-3. **Vercel** : se connecter avec GitHub, importer le dépôt, **Root Directory = `frontend`**,
-   nom du projet `tsuzuku` (→ `tsuzuku.vercel.app`). Ne pas déployer tout de suite.
+3. **Vercel** : se connecter avec GitHub, importer le dépôt, **Root Directory = `frontend`**.
+   L'adresse vient du nom du projet ; `tsuzuku.vercel.app` étant déjà pris par un autre site,
+   Vercel a attribué `tsuzuku-eight.vercel.app` (renommable dans Settings → Domains).
 4. Installer `gcloud` puis `gcloud auth login`, et `gh auth login` (variables du dépôt).
 
 ## 1. Infrastructure GCP
@@ -18,6 +19,7 @@ Toujours à blanc d'abord, puis pour de vrai :
 export PROJECT_ID=tsuzuku-prod
 bash infra/gcp/bootstrap.sh base            # affiche les commandes
 DRY_RUN=0 bash infra/gcp/bootstrap.sh base  # les exécute
+DRY_RUN=0 bash infra/gcp/bootstrap.sh budget    # alerte e-mail à 50, 90, 100 % de 5 €
 DRY_RUN=0 bash infra/gcp/bootstrap.sh secrets   # URL Neon saisie masquée ; JWT et relais générés
 DRY_RUN=0 bash infra/gcp/bootstrap.sh github    # variables du dépôt pour deploy.yml
 ```
@@ -39,12 +41,13 @@ Puis, pour les œuvres ajoutées plus tard en production :
 Pousser sur `main` (ou lancer `deploy` à la main dans l'onglet Actions), puis :
 ```bash
 DRY_RUN=0 bash infra/gcp/bootstrap.sh schedulers   # ingestion quotidienne et hebdomadaire
-BILLING_ACCOUNT=… ALERT_EMAIL=… DRY_RUN=0 bash infra/gcp/bootstrap.sh monitoring
+DRY_RUN=0 bash infra/gcp/bootstrap.sh monitoring   # sonde /health/ready toutes les 15 min
+bash infra/gcp/uptime_alert.sh                      # e-mail si la sonde échoue (5 min)
 ```
-Dans la console Monitoring : canal d'alerte e-mail + règle « sonde tsuzuku-api-ready en échec ».
+
 
 ## Vérifications après chaque mise en ligne
-- `https://tsuzuku.vercel.app` : accueil, inscription, recos, fiche ;
+- `https://tsuzuku-eight.vercel.app` : accueil, inscription, recos, fiche ;
 - `curl <URL API>/media/popular?kind=anime` doit répondre **403** (appel direct refusé) ;
 - journaux : `gcloud run services logs read tsuzuku-api --region europe-west3`.
 

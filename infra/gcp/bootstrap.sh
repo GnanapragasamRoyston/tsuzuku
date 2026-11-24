@@ -12,7 +12,7 @@ set -euo pipefail
 : "${PROJECT_ID:?PROJECT_ID manquant (projet GCP créé par Royston)}"
 REGION="${REGION:-europe-west3}"                    # Francfort, près de Neon eu-central-1
 GITHUB_REPO="${GITHUB_REPO:-GnanapragasamRoyston/tsuzuku}"
-FRONT_ORIGIN="${FRONT_ORIGIN:-https://tsuzuku.vercel.app}"
+FRONT_ORIGIN="${FRONT_ORIGIN:-https://tsuzuku-eight.vercel.app}"
 DRY_RUN="${DRY_RUN:-1}"
 BUCKET="${PROJECT_ID}-tsuzuku-models"
 cd "$(dirname "$0")/../.."

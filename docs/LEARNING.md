@@ -566,3 +566,34 @@ pgvector). Voir [ADR 013](decisions/013-recos-par-le-contenu.md).
 3. *Pourquoi pas d'index ANN dans pgvector ?* — À 21 000 vecteurs la recherche exacte prend
    22 ms sur tout le catalogue et 4 ms pour les manhwas (mesuré, EXPLAIN ANALYZE), et HNSW filtré par type et par « déjà vu » peut renvoyer moins de
    résultats que demandé.
+
+## Phase 11 — Déploiement : Vercel, Cloud Run, Neon (2026-11-24)
+**Ce qui a été construit :** Tsuzuku en ligne (tsuzuku-eight.vercel.app) : front Vercel, API et
+ingestion planifiée sur Cloud Run, base Neon avec pgvector, modèles sur Cloud Storage. Déploiement
+automatique après une CI verte, sans clé, avec migration avant l'API et test de fumée.
+
+**Concepts clés :**
+- *Workload Identity Federation* : GitHub prouve son identité à Google avec un jeton OIDC de courte
+  durée ; aucune clé de compte de service n'est stockée, et seul ce dépôt peut déployer.
+- *Relais de confiance* : l'API est publique, mais n'accepte que les requêtes portant le secret
+  du front ; elle ne croit l'IP du visiteur que si ce secret est valide. Un en-tête
+  `X-Forwarded-For` venu d'un client ne se croit jamais.
+- *Ordre de déploiement* : la base doit être migrée AVANT que la nouvelle API la lise ; un job de
+  migration dédié passe en premier, sinon l'API répondrait 500 pendant la fenêtre de mise à jour.
+- *Scale to zero* : 0 instance au repos = 0 € de calcul, au prix d'un démarrage à froid (2,9 à
+  3,5 s mesurés pour l'application, ~5 s au premier chargement).
+
+**Pourquoi ce choix :** Cloud Run (conteneur existant, gratuit au repos) plutôt qu'une VM ; Cloud
+Run Jobs + Scheduler plutôt qu'Airflow en production (une VM permanente coûterait) ; Neon pour
+pgvector gratuit ; clé JSON écartée au profit de Workload Identity. Voir
+[ADR 014](decisions/014-deploiement.md).
+
+**3 questions d'entretien possibles :**
+1. *Comment ton CI/CD déploie-t-il sans clé ?* — Workload Identity Federation : GitHub Actions
+   échange son jeton OIDC contre un jeton Google de courte durée, limité à ce dépôt et à un compte
+   de service qui ne peut que déployer.
+2. *Comment évites-tu qu'on contourne ta limite de connexion en changeant d'IP ?* — L'API ignore
+   `X-Forwarded-For` ; l'IP vient d'un en-tête posé par le front, cru seulement avec un secret
+   partagé ; vérifié en production (429 au 6e échec, aucune IP manquante).
+3. *Que se passe-t-il si une migration casse ?* — Le job de migration tourne avant l'API ; s'il
+   échoue, le déploiement s'arrête et l'ancienne version reste en ligne.

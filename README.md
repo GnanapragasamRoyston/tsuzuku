@@ -4,10 +4,16 @@
 
 Sous le capot : un pipeline Big Data sur 109 M d'interactions MyAnimeList (PySpark), une ingestion
 quotidienne (Airflow), un modèle de churn (« risque de drop », scikit-learn), une recommandation
-ALS (Spark MLlib), une API FastAPI et un front Next.js.
+ALS (Spark MLlib), des recos par le contenu (embeddings, pgvector), une API FastAPI et un front
+Next.js.
 
-🚧 **En construction** — phase 8 terminée (front, partie 1 : accueil, comptes, onboarding, ma liste). Voir [docs/SPEC.md](docs/SPEC.md) pour le
-cahier des charges et [docs/architecture.md](docs/architecture.md) pour l'architecture.
+**En ligne : [tsuzuku-eight.vercel.app](https://tsuzuku-eight.vercel.app)** — front sur Vercel, API sur Google Cloud
+Run, base Neon (Francfort). Le premier chargement après une période sans visite prend environ
+5 s (l'API et la base se réveillent : 0 € au repos).
+
+🚧 **En construction** — phases 0 à 11 terminées (pipeline, modèles, API, appli, recos par le
+contenu, mise en ligne). Voir [docs/SPEC.md](docs/SPEC.md) pour le cahier des charges et
+[docs/architecture.md](docs/architecture.md) pour l'architecture.
 
 ## Démarrage
 
@@ -181,6 +187,27 @@ reste cherchable. Choix : [ADR 012](docs/decisions/012-qualite-des-jaquettes.md)
 « Proposer une jaquette » (fiche œuvre) : une URL d'image d'AniList, MyAnimeList ou Kitsu, mise en
 file de modération ; rien ne s'affiche avant validation (`make covers-review`,
 `make covers-approve ID=…`, `make covers-reject ID=…`). L'API ne télécharge jamais l'URL.
+
+## Production (phase 11)
+
+| Brique | Service |
+|---|---|
+| Front | Vercel (fonctions à Francfort) |
+| API, migrations, ingestion planifiée | Google Cloud Run (service + jobs), Cloud Scheduler, Francfort |
+| Base | Neon, Postgres 16 + pgvector, Francfort |
+| Modèles servis | Cloud Storage (bucket privé), copiés au démarrage de l'API |
+
+- Déploiement à chaque CI verte sur `main` (`.github/workflows/deploy.yml`) : images, **migration
+  avant l'API**, API, jobs d'ingestion, test de fumée. GitHub → Google Cloud sans clé (Workload
+  Identity Federation).
+- L'API refuse tout appel qui ne vient pas du front (secret partagé, 403) ; la limite de
+  connexion compte par visiteur, avec l'IP transmise par le relais (vérifié en production).
+- Démarrage de l'API mesuré dans les journaux de Cloud Run : 2,9 à 3,5 s, dont 1,4 à 1,9 s de
+  copie des modèles.
+- Surveillance : sonde `/health/ready` toutes les 15 min avec alerte e-mail, alerte de budget à 5 €.
+
+Mise en place et dépannage : [docs/deploy.md](docs/deploy.md) ; choix :
+[ADR 014](docs/decisions/014-deploiement.md).
 
 ## Ingestion (phase 6)
 
