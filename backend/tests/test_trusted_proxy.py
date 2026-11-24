@@ -66,3 +66,11 @@ def test_a_missing_client_ip_behind_the_proxy_is_logged(proxied, caplog):
     with caplog.at_level("WARNING", logger="tsuzuku_api"):
         _login(proxied, "e@example.com", ip=None)
     assert any("IP du visiteur absente" in r.getMessage() for r in caplog.records)
+
+
+def test_server_side_calls_without_client_ip_do_not_flood_the_logs(proxied, caplog):
+    # Les pages rendues par le serveur Next n'ont pas de visiteur, donc pas d'IP : c'est normal
+    # hors des routes de compte (mesuré en production : 36 avertissements en 10 minutes).
+    with caplog.at_level("WARNING", logger="tsuzuku_api"):
+        proxied.get("/media/popular?kind=anime", headers={"X-Tsuzuku-Proxy": SECRET})
+    assert not any("IP du visiteur absente" in r.getMessage() for r in caplog.records)

@@ -48,9 +48,11 @@ class TrustedProxyMiddleware:
         ip = _valid_ip(headers.get(CLIENT_IP_HEADER, b"").decode("latin-1"))
         if ip:
             scope.setdefault("state", {})["client_ip"] = ip
-        else:
+        elif scope["path"].startswith("/auth/"):
             # Relais hors Vercel ou en-tête perdu : la limite de connexion redevient globale
-            # (IP du frontal Google). On le signale, sans l'adresse (aucune donnée personnelle).
+            # (IP du frontal Google). Signalé seulement là où l'IP sert (connexion, inscription) :
+            # les pages rendues par le serveur Next n'ont pas de visiteur, c'est normal (36
+            # avertissements inutiles en 10 minutes, mesuré en production). Sans l'adresse.
             logger.warning("IP du visiteur absente ou invalide derrière le relais (%s)",
                            scope["path"])  # fmt: skip
         await self.app(scope, receive, send)
