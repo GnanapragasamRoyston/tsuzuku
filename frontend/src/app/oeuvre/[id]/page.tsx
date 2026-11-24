@@ -79,7 +79,7 @@ async function Fiche({ params }: { params: Params }) {
     <article className={`${PAGE} flex flex-col gap-12 py-12`}>
       <header className="grid gap-8 md:grid-cols-12">
         <div className="flex w-2/3 flex-col gap-2 md:col-span-4 md:w-full lg:col-span-3">
-          <Cover media={media} eager />
+          <Cover media={media} eager largeSlot />
           <CoverSuggestion mediaId={media.id} />
         </div>
         <div className="flex flex-col gap-4 md:col-span-8 lg:col-span-9">

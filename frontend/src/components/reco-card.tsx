@@ -30,7 +30,7 @@ export function RecoCard({ item: { media, because }, done, pending, onAdd, layou
       {featured ? (
         // Largeur portée par l'enveloppe : la jaquette « fluid » remplit sa colonne.
         <div className="w-2/3 shrink-0 md:w-1/3">
-          <Cover media={media} eager />
+          <Cover media={media} eager largeSlot />
         </div>
       ) : (
         <Cover media={media} size="list" />

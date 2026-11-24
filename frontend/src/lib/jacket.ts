@@ -57,6 +57,18 @@ function hash(text: string): number {
   return h;
 }
 
+/**
+ * Petite image AniList (chemin /cover/medium/, 230 px de large) : pour 7 003 animes, AniList n'a
+ * rien de plus grand (ADR 012). Agrandie à 400 px (reco à la une, fiche), elle devient floue :
+ * la jaquette ne dépasse alors pas la taille d'une rangée (DESIGN.md § 5.1).
+ */
+const SMALL_ANILIST_COVER =
+  /^https:\/\/s4\.anilist\.co\/file\/anilistcdn\/media\/(anime|manga)\/cover\/medium\//;
+
+export function isSmallCover(url: string | null | undefined): boolean {
+  return SMALL_ANILIST_COVER.test(url ?? "");
+}
+
 export function jacketTone({
   title,
   cover_color,

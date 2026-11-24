@@ -115,7 +115,7 @@ async function Books() {
       {/* Tête de rangée en 3 colonnes : les couvertures AniList font ~230 px de large, plus grand
           elles seraient floues. */}
       <div className="flex flex-col gap-3 md:col-span-4 lg:col-span-3">
-        <Cover media={lead} />
+        <Cover media={lead} largeSlot />
         <p className="font-display text-h3 font-semibold">{lead.title}</p>
         <p className="text-meta font-semibold tracking-meta text-ink-2 uppercase">
           {mediaMeta(lead)}

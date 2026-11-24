@@ -246,6 +246,10 @@ Un écran stable n'utilise ni asymétrie, ni chiffre `figure` décoratif, ni ban
 - Survol (si c'est un lien) : bord `line-strong`, titre souligné sous la jaquette.
 - Chargement : squelette `surface` 2:3.
 - Tailles : 160 px de large en rangée desktop, 2 colonnes sur mobile, 88 px dans une ligne de liste.
+- **Jamais agrandie au-delà de sa source** : dans un emplacement plus large qu'une rangée (reco
+  à la une de Pour toi, en-tête de fiche, tête de rangée de l'accueil), une petite image AniList
+  (230 px, seule image connue pour ~7 000 animes, ADR 012) reste à 160 px au lieu d'être étirée et
+  floue. Le titre et le texte gardent leur taille « à la une ». Les grilles ne sont pas touchées.
 
 ### 5.2 Ligne de liste (Ma liste)
 - Grille : jaquette 88 px · titre et méta · progression, actions sous la progression (toutes les

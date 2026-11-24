@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { JACKET_CLASS, jacketTone } from "@/lib/jacket";
+import { JACKET_CLASS, isSmallCover, jacketTone } from "@/lib/jacket";
 
 // Couleur « #rrggbb » construite à partir de ses composantes : le garde-fou du design refuse
 // toute couleur hexadécimale écrite en dur dans src/, tests compris.
@@ -34,5 +34,26 @@ describe("ton de la jaquette de secours (DESIGN.md § 1.1, § 5.1)", () => {
 
   it("chaque ton a sa classe de token (aucune couleur en dur dans les composants)", () => {
     expect(Object.values(JACKET_CLASS).every((c) => /^bg-jacket-[a-z]+$/.test(c))).toBe(true);
+  });
+});
+
+describe("petite image AniList (230 px) : jamais agrandie au-delà d'une jaquette en rangée", () => {
+  const CDN = "https://s4.anilist.co/file/anilistcdn/media";
+
+  it("reconnaît l'image moyenne d'AniList, anime ou manga", () => {
+    // Tokyo Ghoul en production (2026-11-24) : AniList n'a que cette image, 230 × 325 px.
+    expect(isSmallCover(`${CDN}/anime/cover/medium/b20605-k665mVkSug8D.jpg`)).toBe(true);
+    expect(isSmallCover(`${CDN}/manga/cover/medium/b30002-abc.jpg`)).toBe(true);
+  });
+
+  it("la grande image AniList (460 px), une proposition validée ou l'absence d'image : non", () => {
+    expect(isSmallCover(`${CDN}/anime/cover/large/bx1-abc.jpg`)).toBe(false);
+    expect(isSmallCover("https://media.kitsu.app/anime/poster_images/1/large.jpg")).toBe(false);
+    expect(isSmallCover(null)).toBe(false);
+    expect(isSmallCover(undefined)).toBe(false);
+  });
+
+  it("le motif doit être dans le chemin du CDN, pas n'importe où dans l'adresse", () => {
+    expect(isSmallCover("https://media.kitsu.app/x/cover/medium/1.jpg")).toBe(false);
   });
 });

@@ -10,7 +10,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 import { kindLabel } from "@/lib/format";
-import { JACKET_CLASS, jacketTone } from "@/lib/jacket";
+import { JACKET_CLASS, isSmallCover, jacketTone } from "@/lib/jacket";
 import type { MediaSummary } from "@/lib/types";
 
 type CoverSize = "row" | "list" | "fluid";
@@ -30,18 +30,27 @@ interface CoverProps {
   /** Chargement immédiat (au-dessus de la ligne de flottaison ; « priority » est déprécié en
    *  Next 16). */
   eager?: boolean;
+  /** Emplacement plus large qu'une rangée (reco à la une, fiche, tête de rangée) : une petite
+   *  image n'y est pas agrandie au-delà de 160 px (DESIGN.md § 5.1). */
+  largeSlot?: boolean;
   className?: string;
 }
 
-export function Cover({ media, size = "fluid", eager = false, className }: CoverProps) {
+export function Cover({ media, size = "fluid", eager = false, largeSlot = false, className }: CoverProps) {
   const [failed, setFailed] = useState(false);
   const showImage = Boolean(media.cover_url) && !failed;
+  // Jaquette en grand (largeSlot) avec une petite image (230 px) : plafonnée à la taille d'une
+  // rangée, sinon floue une fois agrandie. Pas dans les grilles : leurs tuiles (~170 px) doivent
+  // garder toutes la même largeur. Seulement avec l'image : la jaquette de secours, composée en
+  // CSS, reste nette à toute taille.
+  const capped = largeSlot && size === "fluid" && showImage && isSmallCover(media.cover_url);
   return (
     <div
       className={clsx(
         "relative aspect-2/3 shrink-0 overflow-hidden rounded-md border border-line",
         showImage ? "bg-surface" : JACKET_CLASS[jacketTone(media)],
         WIDTH[size],
+        capped && "max-w-40",
         className,
       )}
     >
@@ -51,7 +60,7 @@ export function Cover({ media, size = "fluid", eager = false, className }: Cover
           // Décorative : le titre est toujours écrit à côté (sinon il serait lu deux fois).
           alt=""
           fill
-          sizes={SIZES[size]}
+          sizes={capped ? SIZES.row : SIZES[size]}
           loading={eager ? "eager" : "lazy"}
           className="object-cover"
           onError={() => setFailed(true)}
