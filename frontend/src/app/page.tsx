@@ -7,9 +7,9 @@
 import { cache, Suspense } from "react";
 
 import { Cover } from "@/components/cover";
+import { HomeActions } from "@/components/home-actions";
 import { MediaTile, MediaTileSkeleton } from "@/components/media-tile";
 import { SectionHeading } from "@/components/section-heading";
-import { ButtonLink } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
 import { PAGE } from "@/lib/layout";
 import { messageFor } from "@/lib/errors";
@@ -184,14 +184,8 @@ export default function HomePage() {
             Tes recos viennent de 109 millions d&apos;entrées de listes MyAnimeList. Et pour chaque série, on sait à
             quel épisode les gens lâchent.
           </p>
-          <div className="flex flex-wrap items-center gap-6">
-            <ButtonLink href="/inscription" variant="primary">
-              Commencer avec 10 titres
-            </ButtonLink>
-            <ButtonLink href="/connexion" variant="quiet">
-              J&apos;ai déjà un compte
-            </ButtonLink>
-          </div>
+          {/* Selon la session : « J'ai déjà un compte » ne s'affiche plus à une personne connectée. */}
+          <HomeActions />
         </div>
       </section>
 

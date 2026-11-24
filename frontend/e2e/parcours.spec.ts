@@ -28,6 +28,7 @@ test("un visiteur voit l'accueil, avec le catalogue de l'API", async ({ page }) 
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Note ce que tu regardes");
   await expect(page.getByText("Anime de test 01").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "J'ai déjà un compte" })).toBeVisible();
   await checkScreen(page, "accueil");
 });
 
@@ -129,6 +130,13 @@ test("inscription → onboarding → recos → ajout → +1 ép. → fiche et no
   await expect(manhwas.getByRole("link", { name: "Manhwa de test" })).toBeVisible();
   await expect(manhwas.getByText(/Parce que tu as aimé Anime de test/).first()).toBeVisible();
   await checkScreen(page, "pour-toi");
+
+  // 9. Retour à l'accueil connecté : plus de « J'ai déjà un compte » (bug de prod du 2026-11-24,
+  // la personne se croyait déconnectée), mais ses recos et sa liste.
+  await page.getByRole("link", { name: "Tsuzuku, accueil" }).click();
+  await expect(page.getByRole("link", { name: "Voir mes recos" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: "Ma liste" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "J'ai déjà un compte" })).toHaveCount(0);
 });
 
 test("un profil privé ou inconnu est introuvable, comme une page qui n'existe pas", async ({ page }) => {

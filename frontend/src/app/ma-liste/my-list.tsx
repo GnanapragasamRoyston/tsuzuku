@@ -24,7 +24,7 @@ import {
 import { useMe, useRedirectOn401 } from "@/hooks/use-me";
 import { messageFor } from "@/lib/errors";
 import { STATUS_LABEL } from "@/lib/format";
-import { ONBOARDING_MIN } from "@/lib/onboarding";
+import { ONBOARDING_MIN, needsOnboarding } from "@/lib/onboarding";
 import { markDropped, plusOne, progressLabel } from "@/lib/progress";
 import { recoReason } from "@/lib/reco";
 import type { ListEntry, ListStatus } from "@/lib/types";
@@ -198,7 +198,7 @@ export function MyList() {
   const counts = useListCounts();
   const [tab, setTab] = useState<ListStatus>("in_progress");
   const [message, setMessage] = useState("");
-  const needsOnboarding = me.data && me.data.list_size === 0 && !me.data.onboarding_done;
+  const showOnboarding = Boolean(me.data && needsOnboarding(me.data));
 
   return (
     <div className="mx-auto grid max-w-page gap-12 px-5 py-12 md:px-8 lg:grid-cols-12 lg:px-10">
@@ -206,7 +206,7 @@ export function MyList() {
           grille et toute la page déborde sur mobile. */}
       <div className="flex min-w-0 flex-col gap-8 lg:col-span-8">
         <h1 className="font-display text-h1 font-bold">Ma liste</h1>
-        {needsOnboarding && (
+        {showOnboarding && (
           <div className="flex flex-col items-start gap-4 border-y border-line py-6">
             <p className="text-lead">
               Commence par choisir {ONBOARDING_MIN} œuvres que tu as aimées.

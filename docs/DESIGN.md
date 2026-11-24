@@ -371,6 +371,8 @@ Exemples de micro-textes :
 | Où | Texte |
 |---|---|
 | bouton principal, fiche | Ajouter à ma liste |
+| accueil, haut de page, visiteur | Commencer avec 10 titres · J'ai déjà un compte (discret) |
+| accueil, haut de page, connecté | Voir mes recos · Ma liste (discret) ; onboarding pas fait : Choisir mes 10 titres · Ma liste |
 | bouton, ligne de liste | +1 ép. |
 | bouton, ligne de liste | J'ai lâché |
 | état vide, Ma liste › Lâché | Rien de lâché pour l'instant. Tu tiens bon. |
