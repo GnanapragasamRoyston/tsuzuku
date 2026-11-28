@@ -4,7 +4,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help setup up down db-check lint format test audit \
-        data spark train figures reco embeddings embeddings-eval db-publish api api-keys api-up api-down web web-test web-e2e covers covers-report covers-review covers-approve covers-reject migrate \
+        data spark train figures reco embeddings embeddings-eval db-publish api api-keys api-up api-down web web-test web-e2e covers anime-tags bi-report bi-role covers-report covers-review covers-approve covers-reject migrate \
         airflow-keys airflow-up airflow-down airflow-test airflow-trigger
 
 # packages/tsuzuku-ml : code ML partagé par le pipeline et l'API (ADR 006).
@@ -142,6 +142,15 @@ NODE := command -v node >/dev/null || . "$$HOME/.nvm/nvm.sh";
 
 covers: ## [phase 8] Jaquettes des animes depuis AniList (idMal) : manquantes et petites, sans Airflow
 	cd pipeline && uv run python -m tsuzuku_pipeline.ingestion.cli covers $(ARGS)
+
+anime-tags: ## [phase 13] Tags AniList des animes du mart (segment Isekai de Power BI), puis make embeddings
+	cd pipeline && uv run python -m tsuzuku_pipeline.ingestion.cli anime-tags
+
+bi-report: ## [phase 13] Chiffres des vues Power BI → reports/powerbi_summary.json (source du README)
+	cd pipeline && uv run python -m tsuzuku_pipeline.bi_report
+
+bi-role: ## [phase 13] Crée (ou met à jour) le rôle Postgres lecture seule de Power BI (BI_DB_PASSWORD du .env)
+	cd backend && uv run python -m app.bi_role
 
 covers-report: ## [jaquettes] Couverture par source, type et popularité → reports/covers_coverage.json
 	cd pipeline && uv run python -m tsuzuku_pipeline.ingestion.cli covers-report

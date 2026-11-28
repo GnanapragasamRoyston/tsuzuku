@@ -68,6 +68,7 @@ def pg(pg_url):
     table, et le TRUNCATE du loader (autre connexion) attend ce verrou indéfiniment.
     """
     with psycopg.connect(pg_url, autocommit=True) as conn:
+        conn.execute("DROP SCHEMA IF EXISTS bi CASCADE")  # vues Power BI (phase 13)
         conn.execute("DROP SCHEMA IF EXISTS mart CASCADE")
         conn.execute("DROP SCHEMA IF EXISTS catalog CASCADE")
         loader.apply_schemas(conn)

@@ -623,3 +623,38 @@ Voir [ADR 015](decisions/015-pwa.md).
    vérifie la liste, le bandeau et la page de secours.
 3. *Pourquoi ne pas proposer l'installation dès l'arrivée ?* — Une invite avant toute valeur perçue
    est refusée par réflexe ; on attend une action utile et on respecte « Plus tard ».
+
+## Phase 13 — Power BI : vues SQL, rôle lecture seule, anonymat (2026-11-28)
+**Ce qui a été construit :** un schéma `bi` de 15 vues (drop, courbes, segments Isekai / Shounen,
+studios, genres, saison Jikan, métriques des modèles, activité anonyme des comptes), un rôle
+Postgres lecture seule, les tags AniList des 3 339 animes du mart, les mesures DAX, un thème et le
+guide pas à pas du `.pbix`.
+
+**Concepts clés :**
+- *Couche sémantique* : des vues pensées pour l'outil de BI, avec des noms stables et des
+  définitions écrites une seule fois. Le tableau de bord ne dépend plus des tables internes.
+- *Mode Import et DirectQuery* : en Import, Power BI copie les données et calcule en local ; en
+  DirectQuery, chaque clic interroge la base. Sur une base facturée au temps d'éveil (Neon),
+  l'Import coûte quelques secondes par rafraîchissement.
+- *k-anonymat* : on n'affiche aucun agrégat calculé sur moins de k personnes (ici 5), sinon un
+  « 1 compte a lâché X à l'épisode 3 » décrit quelqu'un. Les lignes trop petites sont masquées
+  dans la vue elle-même, pas dans le rapport.
+- *Moindre privilège* : le rôle de Power BI ne voit que les vues. Une vue s'exécute avec les
+  droits de son propriétaire, donc le rôle lit des agrégats sans jamais pouvoir lire les comptes.
+
+**Pourquoi ce choix :** vues plutôt que tables brutes (stabilité, aucune donnée personnelle
+accessible) ; Import plutôt que DirectQuery (coût Neon) ; tags AniList plutôt que mots du
+synopsis pour « Isekai » (le dataset MAL 2020 ne connaît pas ce genre ; un tag se vérifie, un
+mot-clé non). Voir [ADR 016](decisions/016-power-bi.md).
+
+**3 questions d'entretien possibles :**
+1. *Pourquoi recalculer le taux de drop au lieu de faire la moyenne des taux ?* — Une moyenne de
+   taux donne le même poids à un anime de 50 statuts et à un de 500 000 ; on additionne les
+   lâchés et les terminés, puis on divise.
+2. *Comment empêcher un tableau de bord de révéler une personne ?* — Pas d'identifiant dans les
+   vues (vérifié par un test sur le catalogue des colonnes), et un seuil de 5 comptes appliqué
+   dans le SQL : la donnée fine n'arrive jamais jusqu'à Power BI.
+3. *Que se passe-t-il pour Power BI quand le pipeline recharge les marts ?* — Rien de cassé :
+   les marts sont vidés par `TRUNCATE` dans une transaction (les vues restent valides), et
+   `CREATE OR REPLACE VIEW` garde les droits du rôle lecture seule. Un test le vérifie après un
+   redéploiement.

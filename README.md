@@ -12,7 +12,8 @@ Run, base Neon (Francfort). Le premier chargement après une période sans visit
 5 s (l'API et la base se réveillent : 0 € au repos).
 
 🚧 **En construction** — phases 0 à 12 terminées (pipeline, modèles, API, appli, recos par le
-contenu, mise en ligne, PWA installable et lisible hors ligne : [/installer](https://tsuzuku-eight.vercel.app/installer)). Voir [docs/SPEC.md](docs/SPEC.md) pour le cahier des charges et
+contenu, mise en ligne, PWA installable et lisible hors ligne : [/installer](https://tsuzuku-eight.vercel.app/installer)) ;
+phase 13 (Power BI) : vues SQL et guide prêts, tableau de bord en construction. Voir [docs/SPEC.md](docs/SPEC.md) pour le cahier des charges et
 [docs/architecture.md](docs/architecture.md) pour l'architecture.
 
 ## Démarrage
@@ -208,6 +209,37 @@ file de modération ; rien ne s'affiche avant validation (`make covers-review`,
 
 Mise en place et dépannage : [docs/deploy.md](docs/deploy.md) ; choix :
 [ADR 014](docs/decisions/014-deploiement.md).
+
+## Power BI (phase 13)
+
+Tableau de bord en 6 pages (SPEC § 11) : vue d'ensemble, courbes de drop, studios et genres,
+saison en cours, modèles, activité Tsuzuku. Le dépôt fournit la couche de données, le `.pbix` se
+construit avec [powerbi/GUIDE.md](powerbi/GUIDE.md).
+
+- **Schéma `bi`** : 15 vues, seule surface lue par Power BI (noms stables, définitions écrites
+  une fois). Vues sur `catalog` et `mart` dans le pipeline
+  ([views_powerbi.sql](pipeline/src/tsuzuku_pipeline/db/views_powerbi.sql)), vues sur l'activité
+  des comptes en migration Alembic.
+- **Rôle `tsuzuku_bi`** (`make bi-role`) : lecture seule des vues `bi`, refusé sur les comptes et
+  les tables brutes (testé). **Mode Import** : un rafraîchissement réveille Neon quelques
+  secondes, au lieu d'une requête par clic en DirectQuery.
+- **Anonymat** : aucune identité dans les vues, et aucune ligne calculée sur moins de 5 comptes.
+- **Isekai vs Shonen** : « Isekai » n'existe pas dans le dataset MAL 2020 ; `make anime-tags` a
+  récupéré les tags AniList des animes du mart (3 236 sur 3 339 en ont au moins un).
+- [measures.dax](powerbi/measures.dax) (taux toujours recalculés à partir des comptes),
+  [theme.json](powerbi/theme.json) (couleurs du site).
+
+Taux de drop par segment (lâchés / (lâchés + terminés), animes du mart,
+[reports/powerbi_summary.json](reports/powerbi_summary.json)) :
+
+| Segment | Animes | Taux de drop |
+|---|---|---|
+| Isekai (tag AniList) | 200 | 6,8 % |
+| Shounen (genre MAL) | 690 | 7,0 % |
+| Ni l'un ni l'autre | 2 478 | 7,9 % |
+| Tous | 3 339 | 7,5 % |
+
+Choix : [ADR 016](docs/decisions/016-power-bi.md).
 
 ## Ingestion (phase 6)
 

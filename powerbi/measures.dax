@@ -1,0 +1,132 @@
+// Tsuzuku — mesures du tableau de bord Power BI (phase 13, ADR 016).
+//
+// Utilisation : Power BI Desktop → vue « Requête DAX » → coller tout ce fichier → au-dessus de
+// chaque MEASURE, cliquer « Mettre à jour le modèle : ajouter une nouvelle mesure » (ou « Mettre à
+// jour le modèle avec les modifications » pour tout ajouter). Détails : powerbi/GUIDE.md § 4.
+// Les tables portent le nom des vues du schéma bi, sans le préfixe « bi » (GUIDE § 2).
+//
+// Règle unique du projet (README § Définitions) : taux de drop = lâchés / (lâchés + terminés),
+// toujours RECALCULÉ à partir des comptes. Jamais une moyenne de taux : un anime de 50 statuts
+// pèserait autant qu'un anime de 500 000.
+
+DEFINE
+
+    // --- Page 1 · Vue d'ensemble -------------------------------------------------------------
+    MEASURE anime_drop[Lâchés] = SUM ( anime_drop[nb_drops] )
+    MEASURE anime_drop[Terminés] = SUM ( anime_drop[nb_completed] )
+    MEASURE anime_drop[Lâchés + terminés] = SUM ( anime_drop[nb_finished] )
+    MEASURE anime_drop[Taux de drop] = DIVIDE ( [Lâchés], [Lâchés + terminés] )
+    MEASURE anime_drop[Animes] = DISTINCTCOUNT ( anime_drop[media_id] )
+    // Classements « les plus lâchés / les plus tenus » : un anime n'est classé que s'il a assez
+    // de statuts, sinon 3 personnes sur 4 qui lâchent un film obscur arrivent en tête.
+    MEASURE anime_drop[Seuil de volume] = 1000
+    MEASURE anime_drop[Taux de drop (classé)] =
+        IF ( [Lâchés + terminés] >= [Seuil de volume], [Taux de drop] )
+    MEASURE anime_drop[Taux de complétion (classé)] =
+        IF ( [Lâchés + terminés] >= [Seuil de volume], 1 - [Taux de drop] )
+
+    // --- Page 2 · Courbes de drop (un anime choisi dans le segment) --------------------------
+    MEASURE anime_drop[Épisode critique] = SELECTEDVALUE ( anime_drop[critical_episode] )
+    MEASURE anime_drop[Point de non-retour] = SELECTEDVALUE ( anime_drop[point_of_no_return] )
+    MEASURE anime_drop[Part des drops à l'épisode critique] =
+        SELECTEDVALUE ( anime_drop[critical_drop_share] )
+    MEASURE drop_curve[Part des drops] = SUM ( drop_curve[share] )
+    MEASURE drop_curve[Part cumulée] = MAX ( drop_curve[cumulative_share] )
+    // Couleur des barres (mise en forme conditionnelle « valeur du champ ») : corail pour
+    // l'épisode critique, bleu pour le point de non-retour, gris sinon (DESIGN.md § 1.1). Toujours
+    // doublée d'un libellé : les deux couleurs ne se distinguent pas du gris par la couleur seule.
+    // (Comptage de lignes plutôt que MAX : MAX n'accepte pas les colonnes booléennes.)
+    MEASURE drop_curve[Couleur de barre] =
+        SWITCH (
+            TRUE (),
+            CALCULATE ( COUNTROWS ( drop_curve ), drop_curve[is_critical] = TRUE () ) > 0,
+                "#FF6B57",
+            CALCULATE ( COUNTROWS ( drop_curve ), drop_curve[is_point_of_no_return] = TRUE () ) > 0,
+                "#7DB4F0",
+            "#6E7182"
+        )
+    MEASURE anime_drop[Phrase épisode critique] =
+        VAR ep = [Épisode critique]
+        RETURN
+            IF (
+                NOT ISBLANK ( ep ),
+                "Épisode " & ep & " — critique : "
+                    & FORMAT ( [Part des drops à l'épisode critique], "0 %" )
+                    & " des drops tombent ici."
+            )
+
+    // --- Page 3 · Studios et genres ----------------------------------------------------------
+    MEASURE segment_retention[Taux de drop du segment] =
+        DIVIDE (
+            SUM ( segment_retention[nb_drops] ),
+            SUM ( segment_retention[nb_drops] ) + SUM ( segment_retention[nb_completed] )
+        )
+    MEASURE segment_retention[Écart au taux global (points)] =
+        ( [Taux de drop du segment] - CALCULATE ( [Taux de drop], REMOVEFILTERS () ) ) * 100
+    MEASURE retention_by_studio[Taux de drop du studio] =
+        DIVIDE (
+            SUM ( retention_by_studio[nb_dropped] ),
+            SUM ( retention_by_studio[nb_dropped] ) + SUM ( retention_by_studio[nb_completed] )
+        )
+    MEASURE retention_by_genre[Taux de drop du genre] =
+        DIVIDE (
+            SUM ( retention_by_genre[nb_dropped] ),
+            SUM ( retention_by_genre[nb_dropped] ) + SUM ( retention_by_genre[nb_completed] )
+        )
+
+    // --- Page 4 · Saison en cours (Jikan) ----------------------------------------------------
+    MEASURE daily_stats[Membres] = SUM ( daily_stats[members] )
+    MEASURE daily_stats[Lâchés (MAL)] = SUM ( daily_stats[dropped] )
+    MEASURE daily_stats[Dernier jour] = MAX ( daily_stats[snapshot_date] )
+    MEASURE daily_stats[Membres gagnés sur 7 jours] =
+        VAR last_day = [Dernier jour]
+        VAR week_before =
+            CALCULATE ( [Membres], daily_stats[snapshot_date] = last_day - 7 )
+        RETURN
+            IF ( NOT ISBLANK ( week_before ),
+                 CALCULATE ( [Membres], daily_stats[snapshot_date] = last_day ) - week_before )
+    MEASURE daily_stats[Message saison vide] =
+        IF (
+            ISBLANK ( [Dernier jour] ),
+            "Pas encore de données : l'API Jikan est en panne. La page se remplira toute seule."
+        )
+
+    // --- Page 5 · Modèles (dernier entraînement de chaque modèle) ----------------------------
+    MEASURE model_metrics[Valeur] =
+        CALCULATE ( MAX ( model_metrics[value] ), model_metrics[is_latest] = TRUE () )
+    MEASURE model_metrics[ROC AUC (drop)] =
+        CALCULATE ( [Valeur], model_metrics[model_name] = "drop",
+                    model_metrics[metric] = "test.roc_auc" )
+    MEASURE model_metrics[PR AUC (drop)] =
+        CALCULATE ( [Valeur], model_metrics[model_name] = "drop",
+                    model_metrics[metric] = "test.pr_auc" )
+    MEASURE model_metrics[Prévalence (drop)] =
+        CALCULATE ( [Valeur], model_metrics[model_name] = "drop",
+                    model_metrics[metric] = "test.prevalence" )
+    MEASURE model_metrics[NDCG@10 (ALS)] =
+        CALCULATE ( [Valeur], model_metrics[model_name] = "reco",
+                    model_metrics[metric] = "test.at_k.10.ndcg" )
+    MEASURE model_metrics[Précision@10 (ALS)] =
+        CALCULATE ( [Valeur], model_metrics[model_name] = "reco",
+                    model_metrics[metric] = "test.at_k.10.precision" )
+
+    // --- Page 6 · Activité Tsuzuku (agrégée, anonyme : rien sous 5 comptes) ------------------
+    MEASURE app_totals[Comptes] = SUM ( app_totals[nb_accounts] )
+    MEASURE app_totals[Comptes passés par l'onboarding] = SUM ( app_totals[nb_onboarded] )
+    // Entrées : seulement les statuts affichés (chacun partagé par au moins 5 comptes). Pas de
+    // total global : il permettrait de retrouver un statut masqué par soustraction (ADR 016).
+    MEASURE app_status_counts[Entrées (statuts affichés)] = SUM ( app_status_counts[nb_entries] )
+    MEASURE app_status_counts[Drops déclarés] =
+        CALCULATE ( SUM ( app_status_counts[nb_entries] ), app_status_counts[status] = "dropped" )
+    MEASURE app_top_added[Comptes qui l'ont ajouté] = SUM ( app_top_added[nb_accounts] )
+    MEASURE app_declared_drops[Écart au critique MAL (épisodes)] =
+        SELECTEDVALUE ( app_declared_drops[median_dropped_at] )
+            - SELECTEDVALUE ( app_declared_drops[critical_episode] )
+    MEASURE app_totals[Message anonymat] =
+        IF (
+            ISBLANK ( [Comptes] ),
+            "Moins de 5 comptes : rien n'est affiché, pour qu'aucun chiffre ne décrive une personne (ADR 016)."
+        )
+
+EVALUATE
+    { [Taux de drop] }

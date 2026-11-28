@@ -27,8 +27,9 @@ COPY config/settings.yaml /app/config/settings.yaml
 COPY backend/alembic.ini ./alembic.ini
 COPY backend/migrations ./migrations
 # Job de migration de production (`python -m app.migrate`, ADR 014) : schéma du pipeline PUIS
-# Alembic. Fichiers SQL du pipeline copiés tels quels (une seule source, ADR 003).
-COPY pipeline/src/tsuzuku_pipeline/db/schema_catalog.sql pipeline/src/tsuzuku_pipeline/db/schema_mart.sql /app/pipeline-schema/
+# Alembic. Fichiers SQL du pipeline copiés tels quels (une seule source, ADR 003), vues Power BI
+# comprises (phase 13, ADR 016).
+COPY pipeline/src/tsuzuku_pipeline/db/schema_catalog.sql pipeline/src/tsuzuku_pipeline/db/schema_mart.sql pipeline/src/tsuzuku_pipeline/db/views_powerbi.sql /app/pipeline-schema/
 # Dossier des modèles accessible en écriture à l'utilisateur de l'API : en production, les
 # modèles y sont copiés depuis Cloud Storage au démarrage (MODELS_URI).
 RUN mkdir -p /models && chown api /models

@@ -1,6 +1,8 @@
 """Lancer une tâche d'ingestion hors d'Airflow.
 
 - `covers`, `covers-report` : make covers, make covers-report (remplissage, dépannage) ;
+- `anime-tags` : make anime-tags, tags AniList des animes du mart (ponctuel, phase 13 : les
+  animes du mart viennent tous du dataset 2020, aucun nouveau n'y entre chaque semaine) ;
 - `jikan-daily`, `anilist-weekly` : production (Cloud Run Job lancé par Cloud Scheduler, ADR 014),
   mêmes tâches et même ordre que les DAG Airflow, qui restent l'orchestrateur de dev et de démo.
 """
@@ -42,8 +44,9 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="tsuzuku-ingest")
     parser.add_argument(
         "task",
-        choices=["covers", "covers-report", *CHAINS],
-        help="covers, covers-report (dépannage) ; jikan-daily, anilist-weekly (production)",
+        choices=["covers", "covers-report", "anime-tags", *CHAINS],
+        help="covers, covers-report, anime-tags (ponctuel) ; "
+        "jikan-daily, anilist-weekly (production)",
     )
     parser.add_argument(
         "--include-small",
@@ -62,6 +65,8 @@ def main(argv: list[str] | None = None) -> None:
                 ensure_ascii=False,
             )
         )
+    elif args.task == "anime-tags":
+        print(json.dumps(jobs.anilist_anime_tags(load_settings(), day), ensure_ascii=False))
     elif args.task == "covers-report":
         settings = load_settings()
         with jobs.connection() as conn:

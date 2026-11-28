@@ -51,6 +51,20 @@ query ($ids: [Int], $perPage: Int) {
 """
 
 
+# Tags des animes du dataset MAL 2020 (phase 13) : le genre « Isekai » n'existait pas chez MAL en
+# 2020, seul le tag AniList permet de mesurer la rétention des isekai (page 3 de Power BI). Même
+# recherche par idMal ; l'identifiant AniList est gardé (fourni par AniList, jamais deviné).
+ANIME_TAGS_QUERY = """
+query ($ids: [Int], $perPage: Int) {
+  Page(page: 1, perPage: $perPage) {
+    media(type: ANIME, isAdult: false, idMal_in: $ids) {
+      id idMal tags { name rank isAdult }
+    }
+  }
+}
+"""
+
+
 def _graphql(client: PoliteClient, query: str, variables: dict[str, Any]) -> dict[str, Any]:
     body = client.post_json("", json={"query": query, "variables": variables})
     if body.get("errors"):
@@ -99,6 +113,36 @@ def fetch_covers(client: PoliteClient, mal_ids: list[int]) -> dict[int, dict[str
     return parse_covers(_graphql(client, COVERS_QUERY, {"ids": mal_ids, "perPage": len(mal_ids)}))
 
 
+def kept_tags(tags: list[dict[str, Any]] | None, tag_min_rank: int) -> tuple[tuple[str, int], ...]:
+    """Tags gardés : pertinents (rang AniList ≥ tag_min_rank) et jamais adultes."""
+    return tuple(
+        (t["name"], int(t["rank"]))
+        for t in tags or []
+        if t.get("name") and not t.get("isAdult") and (t.get("rank") or 0) >= tag_min_rank
+    )
+
+
+def parse_anime_tags(page: dict[str, Any], tag_min_rank: int) -> dict[int, dict[str, Any]]:
+    """{idMal: {anilist_id, tags}} ; un titre sans idMal ou sans identifiant AniList est ignoré
+    (impossible à rattacher sans deviner). Un titre connu mais sans tag garde son identifiant."""
+    found = {}
+    for item in page.get("media") or []:
+        if item.get("idMal") and item.get("id"):
+            found[int(item["idMal"])] = {
+                "anilist_id": int(item["id"]),
+                "tags": list(kept_tags(item.get("tags"), tag_min_rank)),
+            }
+    return found
+
+
+def fetch_anime_tags(
+    client: PoliteClient, mal_ids: list[int], tag_min_rank: int
+) -> dict[int, dict[str, Any]]:
+    """Tags d'un lot d'animes (au plus 50 idMal, la taille de page maximale d'AniList)."""
+    page = _graphql(client, ANIME_TAGS_QUERY, {"ids": mal_ids, "perPage": len(mal_ids)})
+    return parse_anime_tags(page, tag_min_rank)
+
+
 def is_adult(item: dict[str, Any]) -> bool:
     return bool(item.get("isAdult")) or "Hentai" in (item.get("genres") or [])
 
@@ -122,11 +166,7 @@ def media_record(item: dict[str, Any], rank: int, tag_min_rank: int) -> MediaRec
         (item.get("title") or {}).get("romaji"), (item.get("title") or {}).get("english")
     )
     cover_url = best_cover(item.get("coverImage"))
-    tags = tuple(
-        (t["name"], int(t["rank"]))
-        for t in item.get("tags") or []
-        if t.get("name") and not t.get("isAdult") and (t.get("rank") or 0) >= tag_min_rank
-    )
+    tags = kept_tags(item.get("tags"), tag_min_rank)
     return MediaRecord(
         kind=kind,
         anilist_id=int(item["id"]),

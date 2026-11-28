@@ -24,6 +24,7 @@ REPORT_FILES = {
     "marts_summary": "marts_summary.json",
     "drop_metrics": "drop_metrics.json",
     "reco_metrics": "reco_metrics.json",
+    "powerbi_summary": "powerbi_summary.json",  # phase 13, make bi-report
 }
 
 
@@ -194,6 +195,16 @@ def collect(settings: dict[str, Any]) -> dict[str, Any]:
         figures["drop_model"] = _drop_model_section(loaded["drop_metrics"])
     if loaded["reco_metrics"]:
         figures["reco"] = _reco_section(loaded["reco_metrics"])
+    if loaded["powerbi_summary"]:
+        pb = loaded["powerbi_summary"]
+        figures["powerbi"] = {
+            "database": pb["database"],
+            "anime_with_drop_data": pb["anime_with_drop_data"],
+            "anime_with_tags": pb["anime_with_tags"],
+            "global_drop_rate": pb["global_drop_rate"],
+            "statuses_finished": pb["statuses_finished"],
+            "segments": pb["segments"],
+        }
     figures["exploration"] = [
         {"file": f"reports/{p.name}", **json.loads(p.read_text(encoding="utf-8"))}
         for p in sorted(reports.glob("exploration_*.json"))
@@ -227,7 +238,8 @@ def render_markdown(fig: dict[str, Any]) -> str:
     out += [f"- `{s['file']}` (généré le {s['generated_at']})" for s in fig["sources"].values()]
     for key, title in (("data", "Données (phase 1)"), ("marts", "Marts (phase 2)"),
                        ("drop_model", "Modèle de drop (phase 3)"),
-                       ("reco", "Recommandation ALS (phase 4)")):  # fmt: skip
+                       ("reco", "Recommandation ALS (phase 4)"),
+                       ("powerbi", "Power BI (phase 13)")):  # fmt: skip
         if key not in fig:
             continue
         out += ["", f"## {title}", ""]

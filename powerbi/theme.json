@@ -1,0 +1,44 @@
+{
+  "name": "Tsuzuku",
+  "dataColors": [
+    "#6E7182",
+    "#7DB4F0",
+    "#A6A4A0",
+    "#ECEAE4",
+    "#FF6B57",
+    "#707282",
+    "#2F2140",
+    "#1A2F31"
+  ],
+  "background": "#15161D",
+  "foreground": "#ECEAE4",
+  "tableAccent": "#7DB4F0",
+  "good": "#7DB4F0",
+  "neutral": "#6E7182",
+  "bad": "#FF6B57",
+  "maximum": "#7DB4F0",
+  "center": "#6E7182",
+  "minimum": "#15161D",
+  "textClasses": {
+    "callout": { "fontFace": "Segoe UI Semibold", "fontSize": 32, "color": "#ECEAE4" },
+    "title": { "fontFace": "Segoe UI Semibold", "fontSize": 14, "color": "#ECEAE4" },
+    "header": { "fontFace": "Segoe UI Semibold", "fontSize": 12, "color": "#ECEAE4" },
+    "label": { "fontFace": "Segoe UI", "fontSize": 10, "color": "#A6A4A0" }
+  },
+  "visualStyles": {
+    "page": {
+      "*": {
+        "background": [{ "color": { "solid": { "color": "#0D0E13" } }, "transparency": 0 }],
+        "outspace": [{ "color": { "solid": { "color": "#0D0E13" } }, "transparency": 0 }]
+      }
+    },
+    "*": {
+      "*": {
+        "background": [{ "show": true, "color": { "solid": { "color": "#15161D" } }, "transparency": 0 }],
+        "border": [{ "show": false }],
+        "dropShadow": [{ "show": false }],
+        "title": [{ "fontColor": { "solid": { "color": "#ECEAE4" } } }]
+      }
+    }
+  }
+}

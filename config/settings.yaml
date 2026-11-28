@@ -265,3 +265,10 @@ api:
     register_limit:
       max_attempts: 5
       window_s: 3600
+
+# Tableau de bord Power BI (phase 13, ADR 016).
+powerbi:
+  # Anonymat de la page « Activité Tsuzuku » : aucune ligne n'est calculée sur moins de k comptes
+  # (masquée sinon). Recopié dans la migration Alembic 0004 (une vue SQL ne lit pas ce fichier) ;
+  # backend/tests/test_bi.py vérifie que les deux restent égaux.
+  min_group_size: 5

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-20T15:23:44Z",
+  "generated_at": "2026-11-28T19:49:26Z",
   "sources": {
     "data_quality": {
       "file": "reports/data_quality.json",
@@ -16,6 +16,10 @@
     "reco_metrics": {
       "file": "reports/reco_metrics.json",
       "generated_at": "2026-11-16T22:58:02Z"
+    },
+    "powerbi_summary": {
+      "file": "reports/powerbi_summary.json",
+      "generated_at": "2026-11-28T19:49:26Z"
     }
   },
   "data": {
@@ -1333,6 +1337,36 @@
       "shared_with_popularity": 5
     }
   },
+  "powerbi": {
+    "database": "locale",
+    "anime_with_drop_data": 3339,
+    "anime_with_tags": 3236,
+    "global_drop_rate": 0.07520648275949049,
+    "statuses_finished": 51379108,
+    "segments": [
+      {
+        "segment": "Autres",
+        "nb_anime": 2478,
+        "nb_drops": 2691812,
+        "nb_completed": 31545739,
+        "drop_rate": 0.07862162804810426
+      },
+      {
+        "segment": "Isekai",
+        "nb_anime": 200,
+        "nb_drops": 274605,
+        "nb_completed": 3782317,
+        "drop_rate": 0.06768801569268525
+      },
+      {
+        "segment": "Shounen",
+        "nb_anime": 690,
+        "nb_drops": 934264,
+        "nb_completed": 12500856,
+        "drop_rate": 0.0695389397340701
+      }
+    ]
+  },
   "exploration": [
     {
       "file": "reports/exploration_2026-11-16.json",
@@ -1622,6 +1656,18 @@
             "collect_attempts_failed": 2,
             "cause": "jikan_unreachable_timeout",
             "dag_verified_with_simulated_responses_only": true
+          }
+        },
+        {
+          "id": "anime_covers_first_run",
+          "phase": 8,
+          "source": "make covers le 2026-11-21 (jobs.anilist_covers, AniList par idMal) : sortie de la commande et rapport reports/ingestion/covers_2026-11-21.json ; voir ADR 009",
+          "values": {
+            "anime_missing_cover": 16214,
+            "covers_found_on_anilist": 13779,
+            "covers_written": 13779,
+            "still_without_cover": 2435,
+            "batch_size": 50
           }
         }
       ]

@@ -1,11 +1,12 @@
 # Chiffres clés — Tsuzuku
 
-Généré le 2026-11-20T15:23:44Z par `make figures`.
+Généré le 2026-11-28T19:49:26Z par `make figures`.
 Sources :
 - `reports/data_quality.json` (généré le 2026-11-16T11:16:43Z)
 - `reports/marts_summary.json` (généré le 2026-11-16T11:18:57Z)
 - `reports/drop_metrics.json` (généré le 2026-11-16T21:20:13Z)
 - `reports/reco_metrics.json` (généré le 2026-11-16T22:58:02Z)
+- `reports/powerbi_summary.json` (généré le 2026-11-28T19:49:26Z)
 
 ## Données (phase 1)
 
@@ -306,6 +307,24 @@ Sources :
 |---|---|---|---|---|---|---|
 | ['Naruto', 'Death Note', 'Fullmetal Alchemist: Brotherhood', 'Steins;Gate', 'Sword Art Online', 'Shingeki no Kyojin'] | [20, 1535, 5114, 9253, 11757, 16498] | 8 | ['Fullmetal Alchemist', 'One Punch Man', 'Angel Beats!', 'Code Geass: Hangyaku no Lelouch', 'Tokyo Ghoul', 'Code Geass: Hangyaku no Lelouch R2', 'No Game No Life', 'Shingeki no Kyojin Season 2', 'Sword Art Online II', 'Hunter x Hunter (2011)'] | [121, 30276, 6547, 1575, 22319, 2904, 19815, 25777, 21881, 11061] | ['Code Geass: Hangyaku no Lelouch', 'One Punch Man', 'Sen to Chihiro no Kamikakushi', 'Kimi no Na wa.', 'Code Geass: Hangyaku no Lelouch R2', 'Toradora!', 'Angel Beats!', 'No Game No Life', 'Koe no Katachi', 'Boku no Hero Academia'] | 5 |
 
+## Power BI (phase 13)
+
+| indicateur | valeur |
+|---|---|
+| database | locale |
+| anime_with_drop_data | 3 339 |
+| anime_with_tags | 3 236 |
+| global_drop_rate | 0.0752 |
+| statuses_finished | 51 379 108 |
+
+### segments
+
+| segment | nb_anime | nb_drops | nb_completed | drop_rate |
+|---|---|---|---|---|
+| Autres | 2 478 | 2 691 812 | 31 545 739 | 0.0786 |
+| Isekai | 200 | 274 605 | 3 782 317 | 0.0677 |
+| Shounen | 690 | 934 264 | 12 500 856 | 0.0695 |
+
 ## Mesures d'exploration (ponctuelles)
 
 - **phase2_drop_profile** (phase 2) — script d'exploration phase 2 (profil des drops, lignes Completed/Dropped jointes au catalogue) ; voir ADR 003 — `reports/exploration_2026-11-16.json`
@@ -318,3 +337,4 @@ Sources :
 - **api_real_data_smoke** (phase 5) — scratchpad smoke_api.py (TestClient sur la base de dev et les vrais modèles, runs 1263a415 reco et 3e8b164f drop) ; voir ADR 006 — `reports/exploration_2026-11-20.json`
 - **anilist_first_runs** (phase 6) — reports/ingestion/anilist_2026-11-16.json puis anilist_2026-11-20.json (DAG anilist_catalog_sync dans Airflow, le 2026-11-20 : exécution planifiée, relance sur le même intervalle, puis 3e exécution après la revue de code : romans exclus, date = jour réel) + requêtes SQL sur catalog ; voir ADR 007 — `reports/exploration_2026-11-20.json`
 - **jikan_first_run** (phase 6) — DAG jikan_daily_ingest dans Airflow le 2026-11-20 (airflow tasks states-for-dag-run) : tâche collect en échec à ses 2 premiers essais (Jikan injoignable : timeout, aussi hors WSL), statut up_for_retry ; curl api.jikan.moe toujours en échec à 15:2x UTC ; voir ADR 007 — `reports/exploration_2026-11-20.json`
+- **anime_covers_first_run** (phase 8) — make covers le 2026-11-21 (jobs.anilist_covers, AniList par idMal) : sortie de la commande et rapport reports/ingestion/covers_2026-11-21.json ; voir ADR 009 — `reports/exploration_2026-11-20.json`

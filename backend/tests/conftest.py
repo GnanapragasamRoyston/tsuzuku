@@ -33,6 +33,7 @@ from tsuzuku_ml.artifacts import (
 from tsuzuku_ml.drop_features import CATEGORICAL_COLUMNS, feature_columns, prepare_x
 from tsuzuku_ml.fold_in import FoldInModel, fold_in, recommend
 
+from app import migrate
 from app.core.config import REPO_ROOT, Settings, load_rules
 from app.main import create_app
 
@@ -82,8 +83,10 @@ def pg_url():
     # Format URL (et non « clé=valeur ») : lisible à la fois par psycopg et par SQLAlchemy.
     url = make_url(base).set(database=TEST_DB).render_as_string(hide_password=False)
     with psycopg.connect(url, autocommit=True) as conn:
-        for f in ("schema_catalog.sql", "schema_mart.sql"):
+        # Mêmes fichiers, même ordre que le job de migration, vues Power BI comprises.
+        for f in migrate.SCHEMA_ORDER:
             conn.execute((SCHEMA_DIR / f).read_text(encoding="utf-8"))
+        migrate.apply_views(conn, (SCHEMA_DIR / migrate.VIEWS_FILE).read_text(encoding="utf-8"))
     # Schéma app : créé par les VRAIES migrations, comme en dev et en production.
     command.upgrade(alembic_config(url), "head")
     yield url

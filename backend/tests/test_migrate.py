@@ -28,3 +28,14 @@ def test_migrate_is_idempotent_and_reaches_the_alembic_head(pg_url, catalog):
 
 def test_schema_files_come_in_dependency_order():
     assert [p.name for p in migrate.schema_files()] == ["schema_catalog.sql", "schema_mart.sql"]
+
+
+def test_a_redeploy_never_waits_for_a_power_bi_refresh(pg_url, catalog):
+    """Vues inchangées : le job de migration ne les réapplique pas, donc ne demande aucun verrou
+    sur une vue qu'un rafraîchissement Power BI est en train de lire (revue de la phase 13)."""
+    migrate.run(pg_url)
+    with psycopg.connect(pg_url) as reader, psycopg.connect(pg_url) as conn:
+        reader.execute("SELECT count(*) FROM bi.anime_drop").fetchone()  # transaction ouverte
+        conn.execute("SET lock_timeout = '300ms'")
+        text = (migrate._schema_dir() / migrate.VIEWS_FILE).read_text(encoding="utf-8")
+        assert migrate.apply_views(conn, text) is False

@@ -12,6 +12,7 @@ Règles :
 import datetime as dt
 import logging
 from collections.abc import Sequence
+from typing import Any
 
 import psycopg
 from psycopg import sql
@@ -253,6 +254,61 @@ def apply_anime_covers(conn: psycopg.Connection, covers: dict[int, dict[str, str
         ).rowcount
     logger.info("catalog.media : %d jaquette(s) d'anime ajoutée(s) ou agrandie(s)", updated)
     return updated
+
+
+def anime_tag_targets(conn: psycopg.Connection) -> list[int]:
+    """idMal des animes à demander pour leurs tags (phase 13) : ceux qui ont des données de drop
+    (mart.critical_episode, la rétention par segment de Power BI) et pas encore d'identifiant
+    AniList. Un anime rattaché n'est plus redemandé ; ceux qu'AniList ne connaît pas (27 sur
+    3 339 le 2026-11-28) le sont à chaque relance, sans rien écrire : quelques requêtes
+    perdues, aucun effet sur les données."""
+    rows = conn.execute(
+        "SELECT m.mal_id FROM catalog.media m JOIN mart.critical_episode c ON c.media_id = m.id"
+        " WHERE m.kind = 'anime' AND m.mal_id IS NOT NULL AND m.anilist_id IS NULL"
+        " ORDER BY m.popularity NULLS LAST, m.mal_id"
+    ).fetchall()
+    return [r[0] for r in rows]
+
+
+def apply_anime_tags(conn: psycopg.Connection, found: dict[int, dict[str, Any]]) -> int:
+    """Tags AniList des animes ({idMal: {anilist_id, tags}}) → catalog.media_tag, et anilist_id.
+
+    Les tags de ces animes sont remplacés (relancer donne le même résultat). L'identifiant AniList
+    n'est écrit que s'il n'appartient à aucune autre œuvre (colonne unique) : jamais d'erreur de
+    clé ni de rattachement deviné. Renvoie le nombre d'animes qui ont reçu au moins un tag."""
+    if not found:
+        return 0
+    with conn.transaction():
+        conn.execute("CREATE TEMP TABLE tmp_anime (mal_id integer, anilist_id integer)"
+                     " ON COMMIT DROP")  # fmt: skip
+        conn.execute("CREATE TEMP TABLE tmp_anime_tag (mal_id integer, name text, rank smallint)"
+                     " ON COMMIT DROP")  # fmt: skip
+        _copy(conn, "tmp_anime", ("mal_id", "anilist_id"),
+              ((mal, v["anilist_id"]) for mal, v in found.items()))  # fmt: skip
+        tag_rows = ((mal, name, rank) for mal, v in found.items() for name, rank in v["tags"])
+        _copy(conn, "tmp_anime_tag", ("mal_id", "name", "rank"), tag_rows)
+        conn.execute(
+            "UPDATE catalog.media m SET anilist_id = t.anilist_id, updated_at = now()"
+            " FROM tmp_anime t WHERE m.kind = 'anime' AND m.mal_id = t.mal_id"
+            " AND m.anilist_id IS NULL AND NOT EXISTS"
+            " (SELECT 1 FROM catalog.media o WHERE o.anilist_id = t.anilist_id)"
+        )
+        conn.execute("INSERT INTO catalog.tag (name) SELECT DISTINCT name FROM tmp_anime_tag"
+                     " ON CONFLICT (name) DO NOTHING")  # fmt: skip
+        conn.execute(
+            "DELETE FROM catalog.media_tag x USING catalog.media m, tmp_anime t"
+            " WHERE x.media_id = m.id AND m.kind = 'anime' AND m.mal_id = t.mal_id"
+        )
+        tagged = conn.execute(
+            "INSERT INTO catalog.media_tag (media_id, tag_id, rank)"
+            " SELECT m.id, g.id, max(t.rank) FROM tmp_anime_tag t"
+            " JOIN catalog.media m ON m.kind = 'anime' AND m.mal_id = t.mal_id"
+            " JOIN catalog.tag g ON g.name = t.name GROUP BY m.id, g.id"
+            " RETURNING media_id"
+        ).fetchall()
+    count = len({r[0] for r in tagged})
+    logger.info("catalog.media_tag : tags AniList ajoutés à %d anime(s)", count)
+    return count
 
 
 def upsert_anilist_media(

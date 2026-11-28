@@ -9,8 +9,10 @@ Principes :
 - l'URL de connexion n'apparaît jamais dans les logs ni les erreurs (elle contient le mot de passe).
 """
 
+import hashlib
 import logging
 import os
+import re
 from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Any
@@ -48,6 +50,11 @@ SCHEMA_FILES = (
     Path(__file__).with_name("schema_catalog.sql"),
     Path(__file__).with_name("schema_mart.sql"),
 )
+# Vues Power BI (phase 13, ADR 016), après les tables qu'elles lisent. Appliquées SEULEMENT si le
+# fichier a changé ou si une vue manque : CREATE OR REPLACE VIEW pose un verrou exclusif même
+# sans changement, et un rafraîchissement Power BI en cours ferait échouer le job du jour.
+VIEWS_FILE = Path(__file__).with_name("views_powerbi.sql")
+VIEWS_MARKER = "views_powerbi sha256:"
 
 # Marts connus : colonnes dans l'ordre des lignes fournies, et clé de rattachement au catalogue.
 # Liste blanche : les noms de tables ne viennent jamais d'une entrée extérieure.
@@ -138,6 +145,27 @@ def apply_schemas(conn: psycopg.Connection, lock_timeout: str = "30s") -> None:
         _set_lock_timeout(conn, lock_timeout)
         for path in SCHEMA_FILES:
             conn.execute(path.read_text(encoding="utf-8"))
+        apply_views(conn, VIEWS_FILE.read_text(encoding="utf-8"))
+
+
+def apply_views(conn: psycopg.Connection, text: str) -> bool:
+    """Applique les vues bi si leur fichier a changé ou si l'une d'elles manque ; sinon ne fait
+    rien (aucun verrou). L'empreinte du fichier appliqué est gardée en commentaire du schéma bi.
+    Renvoie True si les vues ont été (ré)appliquées. Même règle dans backend/app/migrate.py."""
+    marker = VIEWS_MARKER + hashlib.sha256(text.encode("utf-8")).hexdigest()
+    names = re.findall(r"CREATE OR REPLACE VIEW bi\.(\w+)", text)
+    current = conn.execute(
+        "SELECT obj_description(oid, 'pg_namespace') FROM pg_namespace WHERE nspname = 'bi'"
+    ).fetchone()
+    present = conn.execute(
+        "SELECT count(*) FROM pg_views WHERE schemaname = 'bi' AND viewname = ANY(%s)", (names,)
+    ).fetchone()[0]
+    if current and current[0] == marker and present == len(names):
+        return False
+    conn.execute(text)
+    conn.execute(sql.SQL("COMMENT ON SCHEMA bi IS {}").format(sql.Literal(marker)))
+    logger.info("Vues Power BI (schéma bi) appliquées")
+    return True
 
 
 def _set_lock_timeout(conn: psycopg.Connection, value: str) -> None:

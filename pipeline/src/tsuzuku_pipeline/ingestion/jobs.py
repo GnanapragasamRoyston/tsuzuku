@@ -331,3 +331,44 @@ def anilist_covers(settings: dict[str, Any], day: dt.date, transport=None, sleep
     _report(settings, "covers", day, report)
     logger.info("Couvertures AniList : %s", report)
     return report
+
+
+# --- AniList : tags des animes (phase 13) -------------------------------------------------------
+
+
+def anilist_anime_tags(settings: dict[str, Any], day: dt.date, transport=None, sleep=None,
+                       conn=None) -> dict[str, Any]:  # fmt: skip
+    """Tags AniList des animes qui ont des données de drop, par lots d'idMal → catalog.media_tag.
+
+    Le dataset MAL 2020 ne connaît pas « Isekai » : sans les tags AniList, la rétention des
+    isekai (page 3 de Power BI, SPEC § 11) est impossible à mesurer. Mêmes requêtes polies que les
+    jaquettes ; les réponses sont gardées dans anime_tags.json pour rejouer ou auditer. Relancer
+    ne redemande rien (un anime rattaché à AniList n'est plus une cible).
+    Les tags entrent dans le texte des embeddings (ADR 013) : `make embeddings` ensuite.
+    """
+    cfg = require_section(settings, "ingestion")["anilist"]
+    size, min_rank = int(cfg["covers_batch_size"]), int(cfg["tag_min_rank"])
+    raw_path = raw_dir(settings, ANILIST_SOURCE, day) / "anime_tags.json"
+    with _connection(conn) as c:
+        targets = catalog_loader.anime_tag_targets(c)
+        # Lecture terminée : la transaction implicite est fermée AVANT les requêtes AniList
+        # (plusieurs minutes), sinon elle garderait un verrou sur le mart et bloquerait son
+        # rechargement (revue de la phase 13).
+        c.commit()
+        found: dict[int, dict[str, Any]] = {}
+        tagged = 0
+        with _client(cfg, cfg["url"], transport, sleep) as client:
+            for start in range(0, len(targets), size):
+                batch = anilist_client.fetch_anime_tags(
+                    client, targets[start : start + size], min_rank)  # fmt: skip
+                # Chaque lot est enregistré dès réception : un échec plus loin ne perd rien, et
+                # relancer ne redemande que les animes restants.
+                tagged += catalog_loader.apply_anime_tags(c, batch)
+                found.update(batch)
+                _write(raw_path, {str(k): v for k, v in found.items()})
+    # Tâche lancée à la main (make anime-tags), pas par un DAG.
+    report = {"dag": None, "task": "anime_tags", "source": "cli", "run_date": day.isoformat(),
+              "requested": len(targets), "found": len(found), "tagged": tagged}  # fmt: skip
+    _report(settings, "anime_tags", day, report)
+    logger.info("Tags AniList des animes : %s", report)
+    return report

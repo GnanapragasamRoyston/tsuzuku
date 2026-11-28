@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-11-28T19:49:26Z",
+  "database": "locale",
+  "anime_with_drop_data": 3339,
+  "anime_with_tags": 3236,
+  "global_drop_rate": 0.07520648275949049,
+  "statuses_finished": 51379108,
+  "segments": [
+    {
+      "segment": "Autres",
+      "nb_anime": 2478,
+      "nb_drops": 2691812,
+      "nb_completed": 31545739,
+      "drop_rate": 0.07862162804810426
+    },
+    {
+      "segment": "Isekai",
+      "nb_anime": 200,
+      "nb_drops": 274605,
+      "nb_completed": 3782317,
+      "drop_rate": 0.06768801569268525
+    },
+    {
+      "segment": "Shounen",
+      "nb_anime": 690,
+      "nb_drops": 934264,
+      "nb_completed": 12500856,
+      "drop_rate": 0.0695389397340701
+    }
+  ],
+  "view_rows": {
+    "anime_drop": 3339,
+    "anime_genre": 13540,
+    "anime_studio": 3627,
+    "anime_segment": 3368,
+    "segment_retention": 3,
+    "drop_curve": 97100,
+    "retention_by_genre": 41,
+    "retention_by_studio": 220,
+    "daily_stats": 0,
+    "model_metrics": 79,
+    "app_totals": 0,
+    "app_signups_weekly": 0,
+    "app_status_counts": 0,
+    "app_top_added": 0,
+    "app_declared_drops": 0
+  }
+}

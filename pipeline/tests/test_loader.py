@@ -179,6 +179,9 @@ def test_apply_schemas_does_not_wait_for_readers(pg, pg_url):
 def test_schema_upgrade_fails_fast_when_readers_hold_the_table(pg, pg_url):
     # Base « ancienne version » : la colonne ajoutée plus tard manque, donc le DDL doit faire un
     # vrai ALTER TABLE (verrou exclusif). Un lecteur resté ouvert ne doit pas le bloquer à vie.
+    # Une base de cette époque n'avait pas encore les vues Power BI (phase 13), qui lisent la
+    # colonne : elles sont retirées d'abord, apply_schemas les recrée.
+    pg.execute("DROP SCHEMA bi CASCADE")
     pg.execute("ALTER TABLE mart.critical_episode DROP COLUMN initial_drop_risk")
     with psycopg.connect(pg_url) as reader:
         reader.execute("SELECT count(*) FROM mart.critical_episode").fetchone()

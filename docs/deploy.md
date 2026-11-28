@@ -46,6 +46,19 @@ bash infra/gcp/uptime_alert.sh                      # e-mail si la sonde échoue
 ```
 
 
+## 5. Power BI (phase 13, ADR 016)
+Les vues du schéma `bi` arrivent toutes seules : le job de migration applique
+`views_powerbi.sql` puis la migration Alembic `0004`. Le reste se fait une fois, depuis WSL, URL
+Neon saisie masquée (jamais `db-publish` : il viderait les listes des comptes) :
+```bash
+NEON="$(read -rsp 'URL Neon : ' u; echo "$u")"
+DATABASE_URL="$NEON" make anime-tags   # tags AniList des animes du mart (segment Isekai)
+DATABASE_URL="$NEON" make embeddings   # les tags entrent dans le texte embarqué (ADR 013)
+DATABASE_URL="$NEON" make bi-role      # rôle tsuzuku_bi, mot de passe BI_DB_PASSWORD du .env
+DATABASE_URL="$NEON" make bi-report    # reports/powerbi_summary.json (« database »: production)
+```
+Puis construire le tableau de bord : [powerbi/GUIDE.md](../powerbi/GUIDE.md).
+
 ## Vérifications après chaque mise en ligne
 - `https://tsuzuku-eight.vercel.app` : accueil, inscription, recos, fiche ;
 - `curl <URL API>/media/popular?kind=anime` doit répondre **403** (appel direct refusé) ;
