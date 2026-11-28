@@ -1,12 +1,12 @@
 # Chiffres clés — Tsuzuku
 
-Généré le 2026-11-28T19:49:26Z par `make figures`.
+Généré le 2026-11-28T20:03:22Z par `make figures`.
 Sources :
 - `reports/data_quality.json` (généré le 2026-11-16T11:16:43Z)
 - `reports/marts_summary.json` (généré le 2026-11-16T11:18:57Z)
 - `reports/drop_metrics.json` (généré le 2026-11-16T21:20:13Z)
 - `reports/reco_metrics.json` (généré le 2026-11-16T22:58:02Z)
-- `reports/powerbi_summary.json` (généré le 2026-11-28T19:49:26Z)
+- `reports/powerbi_summary.json` (généré le 2026-11-28T20:03:09Z)
 
 ## Données (phase 1)
 
@@ -311,7 +311,7 @@ Sources :
 
 | indicateur | valeur |
 |---|---|
-| database | locale |
+| database | production |
 | anime_with_drop_data | 3 339 |
 | anime_with_tags | 3 236 |
 | global_drop_rate | 0.0752 |

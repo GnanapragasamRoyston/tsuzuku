@@ -148,6 +148,16 @@ def test_the_password_never_reaches_the_server_in_clear(conn, test_role):
     assert stored.startswith("SCRAM-SHA-256$") and TEST_PASSWORD not in stored
 
 
+@pytest.mark.parametrize(("host", "hashed"), [
+    ("localhost", True), ("127.0.0.1", True), ("db", True),
+    # Neon refuse un mot de passe déjà haché (« Neon only supports being given plaintext
+    # passwords », mesuré le 2026-11-28) : il le hache lui-même via son plan de contrôle.
+    ("ep-x-123.eu-central-1.aws.neon.tech", False),
+])  # fmt: skip
+def test_password_is_hashed_client_side_except_for_neon(host, hashed):
+    assert bi_role.hash_client_side(host) is hashed
+
+
 def test_bi_role_refuses_a_weak_password(conn):
     with pytest.raises(ValueError, match="16 caractères"):
         bi_role.ensure(conn, "court", role=TEST_ROLE)

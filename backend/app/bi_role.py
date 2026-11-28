@@ -8,7 +8,8 @@ sur les vues. Ses sessions sont en lecture seule et bornées dans le temps.
 - droits par défaut : une vue AJOUTÉE plus tard par le propriétaire est lisible tout de suite
   (CREATE OR REPLACE VIEW, lui, garde les droits existants) ;
 - mot de passe lu dans BI_DB_PASSWORD (.env, jamais commité), jamais affiché ni journalisé, et
-  envoyé au serveur sous forme de hachage SCRAM uniquement.
+  envoyé au serveur sous forme de hachage SCRAM uniquement (sauf Neon, qui l'exige en clair :
+  hash_client_side).
 """
 
 import logging
@@ -28,6 +29,14 @@ MIN_PASSWORD_LENGTH = 16
 STATEMENT_TIMEOUT = "120s"
 
 
+def hash_client_side(host: str) -> bool:
+    """Neon refuse un mot de passe déjà haché (« Neon only supports being given plaintext
+    passwords », mesuré le 2026-11-28) : son plan de contrôle le reçoit et le stocke lui-même en
+    SCRAM. Sur ce projet Neon, aucune requête n'est journalisée (log_statement = none, pas de
+    pg_stat_statements, vérifié le même jour). Partout ailleurs : hachage côté client."""
+    return not host.endswith(".neon.tech")
+
+
 def ensure(conn: psycopg.Connection, password: str, role: str = ROLE) -> None:
     if len(password) < MIN_PASSWORD_LENGTH:
         raise ValueError(f"BI_DB_PASSWORD : {MIN_PASSWORD_LENGTH} caractères minimum")
@@ -36,10 +45,16 @@ def ensure(conn: psycopg.Connection, password: str, role: str = ROLE) -> None:
     # Mot de passe passé en littéral SQL échappé par psycopg (jamais concaténé, jamais affiché).
     # Haché en SCRAM-SHA-256 CÔTÉ CLIENT : seul le hachage part vers le serveur, donc un journal
     # de requêtes (DDL tracé, erreur, pg_stat_statements) ne contient jamais le mot de passe.
-    hashed = conn.pgconn.encrypt_password(password.encode(), role.encode(), b"scram-sha-256")
+    # Sauf Neon, qui l'exige en clair (voir hash_client_side).
+    if hash_client_side(conn.info.host or ""):
+        secret = conn.pgconn.encrypt_password(
+            password.encode(), role.encode(), b"scram-sha-256"
+        ).decode()
+    else:
+        secret = password
     verb = sql.SQL("ALTER" if exists else "CREATE")
     create = sql.SQL("{} ROLE {} WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD {}")
-    conn.execute(create.format(verb, name, sql.Literal(hashed.decode())))
+    conn.execute(create.format(verb, name, sql.Literal(secret)))
     database = conn.execute("SELECT current_database()").fetchone()[0]
     for statement in (
         "ALTER ROLE {role} SET default_transaction_read_only = on",

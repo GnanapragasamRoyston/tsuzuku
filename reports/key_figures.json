@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-28T19:49:26Z",
+  "generated_at": "2026-11-28T20:03:22Z",
   "sources": {
     "data_quality": {
       "file": "reports/data_quality.json",
@@ -19,7 +19,7 @@
     },
     "powerbi_summary": {
       "file": "reports/powerbi_summary.json",
-      "generated_at": "2026-11-28T19:49:26Z"
+      "generated_at": "2026-11-28T20:03:09Z"
     }
   },
   "data": {
@@ -1338,7 +1338,7 @@
     }
   },
   "powerbi": {
-    "database": "locale",
+    "database": "production",
     "anime_with_drop_data": 3339,
     "anime_with_tags": 3236,
     "global_drop_rate": 0.07520648275949049,

@@ -37,7 +37,11 @@ guide. La production est sur Neon, facturé au temps de calcul (le serveur s'end
   d'entrées publié à côté des lignes par statut : la soustraction redonnerait un statut masqué
   (testé). Conséquence assumée : la page reste vide tant qu'il y a moins de 5 comptes.
 - **Mot de passe du rôle** haché en SCRAM-SHA-256 côté client : seul le hachage part vers le
-  serveur, un journal de requêtes ne peut pas le contenir (testé).
+  serveur, un journal de requêtes ne peut pas le contenir (testé). **Exception : Neon**, qui
+  refuse un mot de passe déjà haché (« Neon only supports being given plaintext passwords »,
+  mesuré le 2026-11-28) et le hache lui-même via son plan de contrôle. Sur ce projet, Neon ne
+  journalise aucune requête (`log_statement = none`, pas de `pg_stat_statements`, vérifié le même
+  jour).
 - **Vues réappliquées seulement si elles changent** : `CREATE OR REPLACE VIEW` pose un verrou
   exclusif même sans changement. L'empreinte SHA-256 de `views_powerbi.sql` est gardée en
   commentaire du schéma `bi` ; le pipeline et le job de migration ne refont rien si elle est
