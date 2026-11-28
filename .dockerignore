@@ -11,5 +11,6 @@
 !config/settings.yaml
 !pipeline/src/tsuzuku_pipeline/db/schema_catalog.sql
 !pipeline/src/tsuzuku_pipeline/db/schema_mart.sql
+!pipeline/src/tsuzuku_pipeline/db/views_powerbi.sql
 **/__pycache__
 **/.venv
